@@ -5,6 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import re
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
@@ -16,6 +17,35 @@ import secrets
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Helper function to convert Google Drive URLs to direct image URLs
+def convert_google_drive_url(url: str, for_download: bool = False) -> str:
+    if not url:
+        return url
+    
+    file_id = None
+    patterns = [
+        r'drive\.google\.com/file/d/([a-zA-Z0-9_-]+)',
+        r'drive\.google\.com/open\?id=([a-zA-Z0-9_-]+)',
+        r'drive\.google\.com/uc\?.*id=([a-zA-Z0-9_-]+)',
+        r'drive\.google\.com/thumbnail\?.*id=([a-zA-Z0-9_-]+)',
+        r'lh3\.googleusercontent\.com/d/([a-zA-Z0-9_-]+)',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            file_id = match.group(1)
+            break
+    
+    if file_id:
+        if for_download:
+            return f"https://drive.google.com/uc?export=download&id={file_id}"
+        else:
+            # Use lh3.googleusercontent.com for better image embedding
+            return f"https://lh3.googleusercontent.com/d/{file_id}"
+    
+    return url
 
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)

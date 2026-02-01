@@ -7,6 +7,8 @@ import Navigation from '@/components/Navigation';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import ResourceHub from '@/pages/ResourceHub';
 import Funamatics from '@/pages/Funamatics';
 import Curiofacts from '@/pages/Curiofacts';

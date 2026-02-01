@@ -488,7 +488,7 @@ async def forgot_password(request: PasswordResetRequest):
     await db.password_reset_tokens.insert_one(token_doc)
     
     # Send email with reset link
-    reset_link = f"{os.environ.get('FRONTEND_URL', 'https://mentismath.preview.emergentagent.com')}/reset-password?token={reset_token}"
+    reset_link = f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/reset-password?token={reset_token}"
     
     try:
         # Check if SendGrid is configured
@@ -604,7 +604,7 @@ async def send_resource_approval_email(user_email: str, user_name: str, resource
     try:
         sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
         from_email = os.environ.get('FROM_EMAIL', 'noreply@mentis.com')
-        frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismath.preview.emergentagent.com')
+        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
         
         if not sendgrid_api_key:
             logger.warning(f"SendGrid not configured. Cannot send approval email to {user_email}")

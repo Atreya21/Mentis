@@ -447,9 +447,12 @@ async def update_site_settings(settings_update: SiteSettingsUpdate, admin: User 
 @api_router.post("/auth/forgot-password")
 async def forgot_password(request: PasswordResetRequest):
     user = await db.users.find_one({"email": request.email}, {"_id": 0})
+    
+    # Always return success message (don't reveal if email exists)
+    success_message = {"message": "If your email is registered, you will receive a password reset link shortly"}
+    
     if not user:
-        # Don't reveal if email exists or not for security
-        return {"message": "If your email is registered, you will receive a password reset link"}
+        return success_message
     
     # Generate secure token
     reset_token = secrets.token_urlsafe(32)
@@ -466,16 +469,52 @@ async def forgot_password(request: PasswordResetRequest):
     
     await db.password_reset_tokens.insert_one(token_doc)
     
-    # In production, send email here
-    # For now, return the token (admins can share this manually)
-    reset_link = f"https://mathnet-social.preview.emergentagent.com/reset-password?token={reset_token}"
+    # Send email with reset link
+    reset_link = f"{os.environ.get('FRONTEND_URL', 'https://mathnet-social.preview.emergentagent.com')}/reset-password?token={reset_token}"
     
-    return {
-        "message": "If your email is registered, you will receive a password reset link",
-        "reset_link": reset_link,
-        "token": reset_token,
-        "note": "Share this link with the user manually or via email"
-    }
+    try:
+        # Check if SendGrid is configured
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        from_email = os.environ.get('FROM_EMAIL', 'noreply@mentis.com')
+        
+        if sendgrid_api_key:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail, Email, To, Content
+            
+            message = Mail(
+                from_email=Email(from_email),
+                to_emails=To(request.email),
+                subject='Reset Your Mentis Password',
+                html_content=f'''
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #f97316;">Reset Your Password</h2>
+                    <p>Hi there,</p>
+                    <p>You recently requested to reset your password for your Mentis account. Click the button below to reset it:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{reset_link}" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block;">Reset Password</a>
+                    </div>
+                    <p>Or copy and paste this link into your browser:</p>
+                    <p style="color: #64748b; word-break: break-all;">{reset_link}</p>
+                    <p><strong>This link will expire in 1 hour.</strong></p>
+                    <p>If you didn't request a password reset, you can safely ignore this email.</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+                    <p style="color: #64748b; font-size: 12px;">Mentis - Mathematics Community Platform</p>
+                </div>
+                '''
+            )
+            
+            sg = SendGridAPIClient(sendgrid_api_key)
+            response = sg.send(message)
+            logger.info(f"Password reset email sent to {request.email}, status: {response.status_code}")
+        else:
+            # Log for admin to manually share (development mode)
+            logger.warning(f"SendGrid not configured. Reset link for {request.email}: {reset_link}")
+            
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {str(e)}")
+        # Don't reveal error to user for security
+    
+    return success_message
 
 @api_router.post("/auth/reset-password")
 async def reset_password(reset_data: PasswordReset):

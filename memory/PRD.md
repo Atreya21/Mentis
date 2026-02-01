@@ -13,16 +13,18 @@ Build a website called "Mentis" for a mathematics community with user authentica
 - [x] Role-based access control (user, admin)
 - [x] Secure password reset via email (SendGrid)
 
-### Four Core Sections
+### Five Core Sections
 1. **Resource Hub** - [x] Students can find notes and playlists. Resources require admin approval.
 2. **Funamatics** - [x] Gaming section with links to external math-related games.
 3. **Curiofacts** - [x] Weekly updates of interesting math facts.
 4. **Matrix** - [x] Community joining section with live member/college counts and WhatsApp link.
+5. **Connect** - [x] User discovery, connection requests, and real-time chat.
 
 ### Admin Control Panel
 - [x] Approve/reject pending resources
 - [x] Add/delete content in Resource Hub, Funamatics, Curiofacts
 - [x] View registered users and export as CSV
+- [x] Delete users and matrix members
 - [x] Promote users to admin status
 - [x] Update site-wide settings (hero image)
 
@@ -30,12 +32,14 @@ Build a website called "Mentis" for a mathematics community with user authentica
 - [x] Modern dark theme with academic elegance
 - [x] Interactive animations (Framer Motion)
 - [x] Footer on every page with contact email: mentis.mathematics@gmail.com
+- [x] Removed "Made with Emergent" branding
 
 ## Tech Stack
-- **Backend:** FastAPI, Python, MongoDB (Motor async driver)
+- **Backend:** FastAPI, Python, MongoDB (Motor async driver), WebSockets
 - **Frontend:** React, Tailwind CSS, shadcn/ui, Framer Motion
 - **Authentication:** JWT with Passlib (bcrypt)
 - **Email:** SendGrid for transactional emails
+- **Real-time:** WebSocket for live chat
 
 ## Database Schema
 - `users`: {id, name, email, hashed_password, role, college}
@@ -44,7 +48,9 @@ Build a website called "Mentis" for a mathematics community with user authentica
 - `curiofacts`: {id, title, content, image_url, published_at}
 - `matrix_registrations`: {id, name, email, college, created_at}
 - `password_reset_tokens`: {email, token, expires_at, used}
-- `settings`: {key, hero_image_url}
+- `site_settings`: {id, hero_image_url, updated_at}
+- `connections`: {id, requester_id, receiver_id, status, created_at, updated_at}
+- `messages`: {id, connection_id, sender_id, content, created_at, read}
 
 ## Key API Endpoints
 - `POST /api/auth/signup` - User registration
@@ -56,19 +62,30 @@ Build a website called "Mentis" for a mathematics community with user authentica
 - `GET /api/curiofacts` - Get all facts
 - `GET /api/matrix/stats` - Get community statistics
 - `GET /api/admin/users` - Admin: get all users
+- `DELETE /api/admin/delete-user/{id}` - Admin: delete user
+- `DELETE /api/admin/delete-matrix-member/{id}` - Admin: delete matrix member
 - `POST /api/admin/promote-user/{user_id}` - Admin: promote to admin
-- `PUT /api/settings/hero-image` - Admin: update hero image
+- `PATCH /api/admin/site-settings` - Admin: update hero image
+- `GET /api/users/search` - Search users by name/email/college
+- `POST /api/connections/request` - Send connection request
+- `POST /api/connections/{id}/accept` - Accept connection request
+- `POST /api/connections/{id}/reject` - Reject connection request
+- `GET /api/connections` - Get user's connections
+- `GET /api/messages/{connection_id}` - Get chat messages
+- `POST /api/messages/{connection_id}` - Send message
+- `WS /ws/{token}` - WebSocket for real-time chat
 
 ## Implementation Status
 **MVP COMPLETE** ✅ (as of February 2026)
 
 All requested features have been implemented and tested:
 - Full authentication flow with secure password reset
-- All four content sections populated with data
-- Comprehensive admin dashboard
+- All five content sections (including Connect with real-time chat)
+- Comprehensive admin dashboard with user/member deletion
 - Dark theme with animations
 - Footer on all pages
 - Email notifications when user resources are approved
+- Google Drive URL support for images
 
 ## Test Credentials
 - **Admin Email:** atreyaghoshal.68@gmail.com
@@ -78,8 +95,9 @@ All requested features have been implemented and tested:
 - **SendGrid:** Password reset emails & resource approval notifications (API key configured)
 
 ## Files of Reference
-- `/app/backend/server.py` - Main API server
+- `/app/backend/server.py` - Main API server with WebSocket support
 - `/app/frontend/src/pages/AdminDashboard.jsx` - Admin panel
+- `/app/frontend/src/pages/ConnectPage.jsx` - User discovery & chat
 - `/app/frontend/src/App.js` - Frontend routes
 - `/app/backend/.env` - Environment configuration
 

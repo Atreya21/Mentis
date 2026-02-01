@@ -255,7 +255,12 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/games`, gameForm, {
+      // Convert Google Drive URLs for thumbnail
+      const processedGameForm = {
+        ...gameForm,
+        thumbnail: convertGoogleDriveUrl(gameForm.thumbnail, false)
+      };
+      await axios.post(`${API}/games`, processedGameForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Game created successfully!');
@@ -272,7 +277,12 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/curiofacts`, factForm, {
+      // Convert Google Drive URLs for image
+      const processedFactForm = {
+        ...factForm,
+        image_url: convertGoogleDriveUrl(factForm.image_url, false)
+      };
+      await axios.post(`${API}/curiofacts`, processedFactForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Curiofact published successfully!');
@@ -289,7 +299,12 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/admin/create-resource`, resourceForm, {
+      // Convert Google Drive URLs for resources (PDFs, docs, etc.)
+      const processedResourceForm = {
+        ...resourceForm,
+        url: convertGoogleDriveUrl(resourceForm.url, true) // forceDownload for documents
+      };
+      await axios.post(`${API}/admin/create-resource`, processedResourceForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Resource created and approved!');

@@ -15,6 +15,33 @@ import { BookOpen, Plus, Filter } from 'lucide-react';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Utility function to convert Google Drive URLs to direct/viewable URLs
+const convertGoogleDriveUrl = (url, forceDownload = false) => {
+  if (!url) return url;
+  
+  let fileId = null;
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      fileId = match[1];
+      break;
+    }
+  }
+  
+  if (fileId) {
+    const exportType = forceDownload ? 'download' : 'view';
+    return `https://drive.google.com/uc?export=${exportType}&id=${fileId}`;
+  }
+  
+  return url;
+};
+
 const ResourceHub = () => {
   const { user } = useContext(AuthContext);
   const [resources, setResources] = useState([]);

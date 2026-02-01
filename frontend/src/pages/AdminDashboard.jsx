@@ -24,6 +24,7 @@ const AdminDashboard = () => {
   const [allFacts, setAllFacts] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [matrixMembers, setMatrixMembers] = useState([]);
+  const [siteSettings, setSiteSettings] = useState({ hero_image_url: '' });
   const [stats, setStats] = useState({ users: 0, resources: 0, games: 0, facts: 0, matrixMembers: 0 });
   const [gameDialogOpen, setGameDialogOpen] = useState(false);
   const [factDialogOpen, setFactDialogOpen] = useState(false);

@@ -120,9 +120,12 @@ const LandingPage = () => {
             <div className="gradient-border glow-on-hover">
               <div className="gradient-border-inner p-2">
                 <img
-                  src="https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85"
-                  alt="Abstract mathematics geometry"
+                  src={heroImage}
+                  alt="Mentis Hero"
                   className="rounded-2xl"
+                  onError={(e) => {
+                    e.target.src = 'https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85';
+                  }}
                 />
               </div>
             </div>

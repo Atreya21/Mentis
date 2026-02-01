@@ -615,18 +615,17 @@ const AdminDashboard = () => {
 
           {/* Upload New Content Tab */}
           <TabsContent value="upload" className="space-y-6">
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-            {/* Upload Resource Card - already exists in Upload tab, placeholder content here */}
+            {/* Upload Resource Card - placeholder for upload dialogs */}
             <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-white">Upload content using the dialogs above</CardTitle>
+                <CardTitle className="text-white">Upload New Content</CardTitle>
                 <CardDescription className="text-slate-400">
-                  Use the buttons to add new resources, games, and curiofacts
+                  Add new resources, games, and curiofacts using the forms in the original tabs
                 </CardDescription>
               </CardHeader>
+              <CardContent>
+                <p className="text-slate-400">This tab will contain upload forms for resources, games, and curiofacts.</p>
+              </CardContent>
             </Card>
           </TabsContent>
 

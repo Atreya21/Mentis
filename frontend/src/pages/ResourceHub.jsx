@@ -61,29 +61,33 @@ const ResourceHub = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 bg-slate-50">
+    <div className="min-h-screen pt-20 bg-slate-950">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-          <div>
-            <h1 className="font-heading text-5xl md:text-6xl font-bold text-slate-900 mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="font-heading text-5xl md:text-6xl font-bold text-white mb-4">
               Resource Hub
             </h1>
-            <p className="text-lg text-slate-600">
+            <p className="text-lg text-slate-400">
               Curated mathematical resources from our community
             </p>
-          </div>
+          </motion.div>
 
           {user && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="rounded-full bg-orange-500 hover:bg-orange-600" data-testid="submit-resource-btn">
+                <Button className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect" data-testid="submit-resource-btn">
                   <Plus className="w-4 h-4 mr-2" />
                   Submit Resource
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl bg-slate-800 border-slate-700">
                 <DialogHeader>
-                  <DialogTitle className="font-heading text-2xl">Submit a Resource</DialogTitle>
+                  <DialogTitle className="font-heading text-2xl text-white">Submit a Resource</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                   <div>

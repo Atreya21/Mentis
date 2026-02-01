@@ -320,17 +320,74 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 bg-slate-50">
+    <div className="min-h-screen pt-20 bg-slate-950">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
-        <h1 className="font-heading text-5xl font-bold text-slate-900 mb-12">
-          Admin Dashboard
-        </h1>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center gap-3 mb-8">
+            <Shield className="w-10 h-10 text-orange-500" />
+            <h1 className="font-heading text-5xl font-bold text-white">Admin Control Panel</h1>
+          </div>
 
-        <Tabs defaultValue="resources" className="space-y-8">
-          <TabsList>
-            <TabsTrigger value="resources" data-testid="admin-tab-resources">Pending Resources</TabsTrigger>
-            <TabsTrigger value="games" data-testid="admin-tab-games">Manage Games</TabsTrigger>
-            <TabsTrigger value="facts" data-testid="admin-tab-facts">Manage Curiofacts</TabsTrigger>
+          {/* Stats Overview */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                  <div className="text-3xl font-bold text-white">{stats.users}</div>
+                  <div className="text-sm text-slate-400">Users</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <BookOpen className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                  <div className="text-3xl font-bold text-white">{stats.resources}</div>
+                  <div className="text-sm text-slate-400">Resources</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <Gamepad2 className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                  <div className="text-3xl font-bold text-white">{stats.games}</div>
+                  <div className="text-sm text-slate-400">Games</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <Sparkles className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                  <div className="text-3xl font-bold text-white">{stats.facts}</div>
+                  <div className="text-sm text-slate-400">Curiofacts</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <Users className="w-8 h-8 text-orange-400 mx-auto mb-2" />
+                  <div className="text-3xl font-bold text-white">{stats.matrixMembers}</div>
+                  <div className="text-sm text-slate-400">Matrix</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+        <Tabs defaultValue="pending" className="space-y-8">
+          <TabsList className="bg-slate-800 border border-slate-700">
+            <TabsTrigger value="pending" data-testid="admin-tab-pending">Pending Approvals</TabsTrigger>
+            <TabsTrigger value="users" data-testid="admin-tab-users">User Management</TabsTrigger>
+            <TabsTrigger value="content" data-testid="admin-tab-content">Manage Content</TabsTrigger>
+            <TabsTrigger value="upload" data-testid="admin-tab-upload">Upload New</TabsTrigger>
+            <TabsTrigger value="matrix" data-testid="admin-tab-matrix">Matrix Members</TabsTrigger>
           </TabsList>
 
           <TabsContent value="resources">

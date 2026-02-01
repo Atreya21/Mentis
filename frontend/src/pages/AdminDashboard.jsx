@@ -330,6 +330,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleUpdateHeroImage = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/admin/site-settings`, 
+        { hero_image_url: siteSettings.hero_image_url },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Hero image updated successfully!');
+      fetchSiteSettings();
+    } catch (err) {
+      toast.error('Failed to update hero image');
+    }
+  };
+
   return (
     <div className="min-h-screen pt-20 bg-slate-950">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">

@@ -948,7 +948,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                   <p className="text-xs text-slate-500">
-                    💡 Tip: For Google Drive files, make sure sharing is set to "Anyone with the link can view"
+                    💡 Tip: For Google Drive files, make sure sharing is set to &quot;Anyone with the link can view&quot;
                   </p>
                   <Button type="submit" className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600" data-testid="submit-resource-btn">
                     <Plus className="w-4 h-4 mr-2" /> Add Resource

@@ -59,6 +59,7 @@ const AdminDashboard = () => {
     fetchAllFacts();
     fetchAllUsers();
     fetchMatrixMembers();
+    fetchSiteSettings();
     fetchStats();
   }, []);
 

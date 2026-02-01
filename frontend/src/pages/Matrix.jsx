@@ -174,10 +174,33 @@ const Matrix = () => {
             </Button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-green-900 text-center">
-            <p className="font-mono text-sm text-green-400">
-              App launching soon. Stay connected for updates.
-            </p>
+          <div className="mt-8 pt-8 border-t border-green-900 space-y-4">
+            <div className="text-center">
+              <p className="font-mono text-sm text-green-400 mb-4">
+                App launching soon. Stay connected for updates.
+              </p>
+            </div>
+            
+            <div className="bg-green-900/20 border border-green-800 rounded-lg p-6 text-center">
+              <h3 className="font-mono text-lg font-bold text-green-400 mb-3 uppercase tracking-wider">
+                Join Our WhatsApp Community
+              </h3>
+              <p className="font-mono text-sm text-green-500 mb-4">
+                Connect with fellow mathematics enthusiasts, get updates, and participate in discussions
+              </p>
+              <a
+                href="https://docs.google.com/forms/d/e/1FAIpQLSfR6H5KD8WIhl3OfMhuDMib7Z-VzjqYb6AWZkz9Q33cfSFu7g/viewform"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white font-mono uppercase tracking-widest rounded-lg h-12 px-6 transition-all hover:scale-105"
+                  data-testid="whatsapp-join-btn"
+                >
+                  Join WhatsApp Group
+                </Button>
+              </a>
+            </div>
           </div>
         </motion.div>
       </div>

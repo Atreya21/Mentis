@@ -683,6 +683,119 @@ const ConnectPage = () => {
             </Card>
           </div>
         </div>
+
+        {/* User Profile Dialog */}
+        <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+          <DialogContent className="bg-slate-900 border-slate-700 max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-white">User Profile</DialogTitle>
+            </DialogHeader>
+            {loadingProfile ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+              </div>
+            ) : selectedUserProfile ? (
+              <div className="space-y-6">
+                {/* Profile Header */}
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-3xl">
+                    {selectedUserProfile.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{selectedUserProfile.name}</h3>
+                    <p className="text-slate-400">{selectedUserProfile.email}</p>
+                    {selectedUserProfile.college && (
+                      <Badge variant="outline" className="mt-2 border-slate-600 text-slate-300">
+                        {selectedUserProfile.college}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                    <BookOpen className="w-5 h-5 text-orange-400 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-white">{selectedUserProfile.resources_count || 0}</p>
+                    <p className="text-xs text-slate-400">Approved Resources</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                    <Link2 className="w-5 h-5 text-green-400 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-white">{selectedUserProfile.connections_count || 0}</p>
+                    <p className="text-xs text-slate-400">Connections</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                    <Calendar className="w-5 h-5 text-blue-400 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-white">
+                      {new Date(selectedUserProfile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                    </p>
+                    <p className="text-xs text-slate-400">Member Since</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3">
+                  {selectedUserProfile.connection_status === 'accepted' ? (
+                    <Button 
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        const conn = connections.find(c => 
+                          c.other_user?.id === selectedUserProfile.id
+                        );
+                        if (conn) {
+                          openChat(conn);
+                          setProfileDialogOpen(false);
+                        }
+                      }}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Message
+                    </Button>
+                  ) : selectedUserProfile.connection_status === 'pending' ? (
+                    selectedUserProfile.is_requester ? (
+                      <Badge className="bg-yellow-600 px-4 py-2">Request Pending</Badge>
+                    ) : (
+                      <>
+                        <Button 
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            acceptRequest(selectedUserProfile.connection_id);
+                            setProfileDialogOpen(false);
+                          }}
+                        >
+                          <Check className="w-4 h-4 mr-2" />
+                          Accept
+                        </Button>
+                        <Button 
+                          variant="destructive"
+                          className="flex-1"
+                          onClick={() => {
+                            rejectRequest(selectedUserProfile.connection_id);
+                            setProfileDialogOpen(false);
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Reject
+                        </Button>
+                      </>
+                    )
+                  ) : (
+                    <Button 
+                      className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+                      onClick={() => {
+                        sendConnectionRequest(selectedUserProfile.id);
+                        setProfileDialogOpen(false);
+                      }}
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Connect
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

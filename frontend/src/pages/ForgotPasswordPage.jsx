@@ -22,10 +22,9 @@ const ForgotPasswordPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/auth/forgot-password`, { email });
-      setResetLink(res.data.reset_link);
+      await axios.post(`${API}/auth/forgot-password`, { email });
       setSubmitted(true);
-      toast.success('Password reset link generated!');
+      toast.success('Password reset email sent!');
     } catch (err) {
       toast.error('Failed to process request');
     } finally {

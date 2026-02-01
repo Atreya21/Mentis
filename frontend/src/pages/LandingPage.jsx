@@ -113,39 +113,59 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section className="py-20 md:py-32 bg-white">
+      <section className="py-20 md:py-32 bg-slate-900">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <div className="text-center mb-16">
-            <h2 className="font-heading text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-4">
+            <motion.h2 
+              className="font-heading text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
               Everything You Need
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            </motion.h2>
+            <motion.p 
+              className="text-lg text-slate-400 max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+            >
               Four powerful sections designed to enhance your mathematical journey
-            </p>
+            </motion.p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 md:gap-12">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
+                  whileHover={{ scale: 1.02 }}
                 >
                   <Link to={feature.link}>
-                    <div className="bg-white border border-slate-100 p-8 rounded-xl hover:-translate-y-1 transition-all duration-300 hover:shadow-lg group">
-                      <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-500 transition-colors">
-                        <Icon className="w-6 h-6 text-orange-500 group-hover:text-white transition-colors" />
+                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-8 rounded-2xl hover-lift card-hover shine-effect group relative overflow-hidden">
+                      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${feature.color} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`}></div>
+                      <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative z-10`}>
+                        <Icon className="w-7 h-7 text-white" />
                       </div>
-                      <h3 className="font-heading text-2xl md:text-3xl font-medium text-slate-900 mb-3">
+                      <h3 className="font-heading text-2xl md:text-3xl font-medium text-white mb-3 relative z-10">
                         {feature.title}
                       </h3>
-                      <p className="text-base leading-relaxed text-slate-600">
+                      <p className="text-base leading-relaxed text-slate-400 relative z-10">
                         {feature.description}
                       </p>
+                      <motion.div 
+                        className="mt-4 text-orange-400 font-medium inline-flex items-center gap-2 relative z-10"
+                        whileHover={{ x: 5 }}
+                      >
+                        Explore <span>\u2192</span>
+                      </motion.div>
                     </div>
                   </Link>
                 </motion.div>
@@ -155,19 +175,41 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section className="py-20 md:py-32 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-6 md:px-12 text-center">
-          <h2 className="font-heading text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-6">
+      <section className="py-20 md:py-32 bg-slate-950 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-orange-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
+        </div>
+        <div className="max-w-4xl mx-auto px-6 md:px-12 text-center relative z-10">
+          <motion.h2 
+            className="font-heading text-4xl md:text-5xl font-semibold tracking-tight text-white mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
             Ready to Begin?
-          </h2>
-          <p className="text-lg text-slate-600 mb-8">
+          </motion.h2>
+          <motion.p 
+            className="text-lg text-slate-400 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true }}
+          >
             Join thousands of mathematics enthusiasts already learning and growing together
-          </p>
-          <Link to="/signup">
-            <Button size="lg" className="rounded-full h-12 px-8 bg-orange-500 hover:bg-orange-600" data-testid="cta-signup-btn">
-              Create Your Account
-            </Button>
-          </Link>
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
+            <Link to="/signup">
+              <Button size="lg" className="rounded-full h-14 px-10 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect glow-on-hover" data-testid="cta-signup-btn">
+                Create Your Account
+              </Button>
+            </Link>
+          </motion.div>
         </div>
       </section>
     </div>

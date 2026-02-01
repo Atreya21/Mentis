@@ -90,7 +90,8 @@ class Resource(BaseModel):
     content_type: str
     url: str
     topic: str
-    submitted_by: str
+    submitted_by: Optional[str] = None
+    uploader_name: Optional[str] = None
     status: str = "pending"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

@@ -512,12 +512,18 @@ const ConnectPage = () => {
                               className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors"
                               data-testid="user-card"
                             >
-                              <div className="flex items-center gap-4">
+                              <div 
+                                className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => viewUserProfile(u.id)}
+                              >
                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
                                   {u.name?.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                  <p className="text-white font-medium">{u.name}</p>
+                                  <p className="text-white font-medium flex items-center gap-2">
+                                    {u.name}
+                                    <Eye className="w-3 h-3 text-slate-500" />
+                                  </p>
                                   <p className="text-slate-400 text-sm">{u.email}</p>
                                   {u.college && (
                                     <Badge variant="outline" className="mt-1 text-xs border-slate-600 text-slate-400">
@@ -526,7 +532,16 @@ const ConnectPage = () => {
                                   )}
                                 </div>
                               </div>
-                              <div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                                  onClick={() => viewUserProfile(u.id)}
+                                  data-testid="view-profile-btn"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
                                 {u.connection_status === 'accepted' ? (
                                   <Button 
                                     size="sm" 

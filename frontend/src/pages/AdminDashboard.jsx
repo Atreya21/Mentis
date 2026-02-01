@@ -24,6 +24,8 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({ users: 0, resources: 0, games: 0, facts: 0, matrixMembers: 0 });
   const [gameDialogOpen, setGameDialogOpen] = useState(false);
   const [factDialogOpen, setFactDialogOpen] = useState(false);
+  const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
+  
   const [gameForm, setGameForm] = useState({
     title: '',
     description: '',
@@ -31,15 +33,52 @@ const AdminDashboard = () => {
     thumbnail: '',
     difficulty: 'easy'
   });
+  
   const [factForm, setFactForm] = useState({
     title: '',
     content: '',
     image_url: ''
   });
 
+  const [resourceForm, setResourceForm] = useState({
+    title: '',
+    description: '',
+    content_type: 'notes',
+    url: '',
+    topic: ''
+  });
+
   useEffect(() => {
     fetchPendingResources();
+    fetchAllUsers();
+    fetchMatrixMembers();
+    fetchStats();
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const [usersRes, resourcesRes, gamesRes, factsRes, matrixRes] = await Promise.all([
+        axios.get(`${API}/admin/users`, { headers }),
+        axios.get(`${API}/resources`, { headers }),
+        axios.get(`${API}/games`, { headers }),
+        axios.get(`${API}/curiofacts`, { headers }),
+        axios.get(`${API}/matrix/stats`)
+      ]);
+
+      setStats({
+        users: usersRes.data.length,
+        resources: resourcesRes.data.filter(r => r.status === 'approved').length,
+        games: gamesRes.data.length,
+        facts: factsRes.data.length,
+        matrixMembers: matrixRes.data.total_members
+      });
+    } catch (err) {
+      console.error('Failed to fetch stats');
+    }
+  };
 
   const fetchPendingResources = async () => {
     try {

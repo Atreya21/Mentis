@@ -619,164 +619,67 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="games">
-            <Card>
+            {/* Upload Resource Card - already exists in Upload tab, placeholder content here */}
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Game Management</CardTitle>
-                  <Dialog open={gameDialogOpen} onOpenChange={setGameDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-orange-500 hover:bg-orange-600" data-testid="add-game-btn">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Game
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle className="font-heading text-2xl">Add New Game</DialogTitle>
-                      </DialogHeader>
-                      <form onSubmit={handleCreateGame} className="space-y-4 mt-4">
-                        <div>
-                          <Label htmlFor="game-title">Title</Label>
-                          <Input
-                            id="game-title"
-                            value={gameForm.title}
-                            onChange={(e) => setGameForm({ ...gameForm, title: e.target.value })}
-                            required
-                            className="mt-2"
-                            data-testid="game-title-input"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="game-description">Description</Label>
-                          <Textarea
-                            id="game-description"
-                            value={gameForm.description}
-                            onChange={(e) => setGameForm({ ...gameForm, description: e.target.value })}
-                            required
-                            className="mt-2"
-                            rows={3}
-                            data-testid="game-description-input"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="game-url">Game URL</Label>
-                          <Input
-                            id="game-url"
-                            type="url"
-                            value={gameForm.url}
-                            onChange={(e) => setGameForm({ ...gameForm, url: e.target.value })}
-                            required
-                            className="mt-2"
-                            data-testid="game-url-input"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="game-thumbnail">Thumbnail URL (optional)</Label>
-                          <Input
-                            id="game-thumbnail"
-                            type="url"
-                            value={gameForm.thumbnail}
-                            onChange={(e) => setGameForm({ ...gameForm, thumbnail: e.target.value })}
-                            className="mt-2"
-                            data-testid="game-thumbnail-input"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="game-difficulty">Difficulty</Label>
-                          <Select
-                            value={gameForm.difficulty}
-                            onValueChange={(value) => setGameForm({ ...gameForm, difficulty: value })}
-                          >
-                            <SelectTrigger className="mt-2" data-testid="game-difficulty-select">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="easy">Easy</SelectItem>
-                              <SelectItem value="medium">Medium</SelectItem>
-                              <SelectItem value="hard">Hard</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button type="submit" className="w-full bg-slate-900 hover:bg-slate-800" data-testid="game-submit-btn">
-                          Create Game
-                        </Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+                <CardTitle className="text-white">Upload content using the dialogs above</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Use the buttons to add new resources, games, and curiofacts
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-slate-600">Add games for the Funamatics section</p>
-              </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="facts">
-            <Card>
+          {/* Matrix Members Tab */}
+          <TabsContent value="matrix">
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Curiofacts Management</CardTitle>
-                  <Dialog open={factDialogOpen} onOpenChange={setFactDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-orange-500 hover:bg-orange-600" data-testid="add-fact-btn">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Publish Fact
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle className="font-heading text-2xl">Publish Curiofact</DialogTitle>
-                      </DialogHeader>
-                      <form onSubmit={handleCreateFact} className="space-y-4 mt-4">
-                        <div>
-                          <Label htmlFor="fact-title">Title</Label>
-                          <Input
-                            id="fact-title"
-                            value={factForm.title}
-                            onChange={(e) => setFactForm({ ...factForm, title: e.target.value })}
-                            required
-                            className="mt-2"
-                            data-testid="fact-title-input"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="fact-content">Content</Label>
-                          <Textarea
-                            id="fact-content"
-                            value={factForm.content}
-                            onChange={(e) => setFactForm({ ...factForm, content: e.target.value })}
-                            required
-                            className="mt-2"
-                            rows={6}
-                            data-testid="fact-content-input"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="fact-image">Image URL (optional)</Label>
-                          <Input
-                            id="fact-image"
-                            type="url"
-                            value={factForm.image_url}
-                            onChange={(e) => setFactForm({ ...factForm, image_url: e.target.value })}
-                            className="mt-2"
-                            data-testid="fact-image-input"
-                          />
-                        </div>
-                        <Button type="submit" className="w-full bg-slate-900 hover:bg-slate-800" data-testid="fact-submit-btn">
-                          Publish Curiofact
-                        </Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
+                  <div>
+                    <CardTitle className="text-white">Matrix Community Members</CardTitle>
+                    <CardDescription className="text-slate-400">View all community registrations</CardDescription>
+                  </div>
+                  <Button
+                    onClick={handleExportMatrix}
+                    className="bg-green-600 hover:bg-green-700"
+                    data-testid="export-matrix-btn"
+                  >
+                    Export CSV
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-600">Publish weekly mathematical facts and updates</p>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-700">
+                        <TableHead className="text-slate-300">Name</TableHead>
+                        <TableHead className="text-slate-300">Email</TableHead>
+                        <TableHead className="text-slate-300">College</TableHead>
+                        <TableHead className="text-slate-300">Interests</TableHead>
+                        <TableHead className="text-slate-300">Joined</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {matrixMembers.map((member) => (
+                        <TableRow key={member.id} className="border-slate-700" data-testid="matrix-member-row">
+                          <TableCell className="text-white font-medium">{member.name}</TableCell>
+                          <TableCell className="text-slate-400">{member.email}</TableCell>
+                          <TableCell className="text-slate-400">{member.college}</TableCell>
+                          <TableCell className="text-slate-400 max-w-xs truncate">{member.interests}</TableCell>
+                          <TableCell className="text-slate-400">
+                            {new Date(member.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+        </motion.div>
       </div>
     </div>
   );

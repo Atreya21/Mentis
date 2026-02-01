@@ -160,12 +160,6 @@ const LandingPage = () => {
                       <p className="text-base leading-relaxed text-slate-400 relative z-10">
                         {feature.description}
                       </p>
-                      <motion.div 
-                        className="mt-4 text-orange-400 font-medium inline-flex items-center gap-2 relative z-10"
-                        whileHover={{ x: 5 }}
-                      >
-                        Explore <span>\u2192</span>
-                      </motion.div>
                     </div>
                   </Link>
                 </motion.div>

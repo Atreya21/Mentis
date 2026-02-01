@@ -305,7 +305,11 @@ async def get_games():
 
 @api_router.post("/games", response_model=Game)
 async def create_game(game_data: GameCreate, admin: User = Depends(get_admin_user)):
-    game = Game(**game_data.model_dump())
+    game_dict = game_data.model_dump()
+    # Convert Google Drive URL for thumbnail
+    if game_dict.get('thumbnail'):
+        game_dict['thumbnail'] = convert_google_drive_url(game_dict['thumbnail'], for_download=False)
+    game = Game(**game_dict)
     doc = game.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.games.insert_one(doc)
@@ -321,7 +325,11 @@ async def get_curiofacts():
 
 @api_router.post("/curiofacts", response_model=Curiofact)
 async def create_curiofact(fact_data: CuriofactCreate, admin: User = Depends(get_admin_user)):
-    fact = Curiofact(**fact_data.model_dump())
+    fact_dict = fact_data.model_dump()
+    # Convert Google Drive URL for image
+    if fact_dict.get('image_url'):
+        fact_dict['image_url'] = convert_google_drive_url(fact_dict['image_url'], for_download=False)
+    fact = Curiofact(**fact_dict)
     doc = fact.model_dump()
     doc['published_at'] = doc['published_at'].isoformat()
     await db.curiofacts.insert_one(doc)

@@ -370,6 +370,31 @@ async def delete_curiofact(fact_id: str, admin: User = Depends(get_admin_user)):
         raise HTTPException(status_code=404, detail="Curiofact not found")
     return {"message": "Curiofact deleted successfully"}
 
+@api_router.delete("/admin/delete-user/{user_id}")
+async def delete_user(user_id: str, admin: User = Depends(get_admin_user)):
+    # Prevent admin from deleting themselves
+    if user_id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    # Check if user exists
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete the user
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": f"User {user.get('email', '')} deleted successfully"}
+
+@api_router.delete("/admin/delete-matrix-member/{member_id}")
+async def delete_matrix_member(member_id: str, admin: User = Depends(get_admin_user)):
+    result = await db.matrix_registrations.delete_one({"id": member_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Matrix member not found")
+    return {"message": "Matrix member removed successfully"}
+
 @api_router.get("/admin/export-users-csv")
 async def export_users_csv(admin: User = Depends(get_admin_user)):
     from fastapi.responses import StreamingResponse

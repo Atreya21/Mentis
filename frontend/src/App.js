@@ -91,6 +91,8 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
             <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/resources" element={<ResourceHub />} />
             <Route path="/funamatics" element={<Funamatics />} />
             <Route path="/curiofacts" element={<Curiofacts />} />

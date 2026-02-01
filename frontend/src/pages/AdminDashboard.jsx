@@ -122,6 +122,36 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAllResources = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/resources`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAllResources(res.data.filter(r => r.status === 'approved'));
+    } catch (err) {
+      toast.error('Failed to fetch resources');
+    }
+  };
+
+  const fetchAllGames = async () => {
+    try {
+      const res = await axios.get(`${API}/games`);
+      setAllGames(res.data);
+    } catch (err) {
+      toast.error('Failed to fetch games');
+    }
+  };
+
+  const fetchAllFacts = async () => {
+    try {
+      const res = await axios.get(`${API}/curiofacts`);
+      setAllFacts(res.data);
+    } catch (err) {
+      toast.error('Failed to fetch curiofacts');
+    }
+  };
+
   const handleApproval = async (resourceId, status) => {
     try {
       const token = localStorage.getItem('token');

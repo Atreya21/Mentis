@@ -100,6 +100,7 @@ function App() {
               <Route path="/funamatics" element={<Funamatics />} />
               <Route path="/curiofacts" element={<Curiofacts />} />
               <Route path="/matrix" element={<Matrix />} />
+              <Route path="/connect" element={user ? <ConnectPage /> : <Navigate to="/login" />} />
               <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
               <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} />
             </Routes>

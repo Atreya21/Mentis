@@ -163,6 +163,24 @@ const ConnectPage = () => {
     }
   };
 
+  // View user profile
+  const viewUserProfile = async (userId) => {
+    setLoadingProfile(true);
+    setProfileDialogOpen(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/users/${userId}/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSelectedUserProfile(res.data);
+    } catch (err) {
+      toast.error('Failed to load profile');
+      setProfileDialogOpen(false);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
   // Fetch messages for a connection
   const fetchMessages = async (connectionId) => {
     try {

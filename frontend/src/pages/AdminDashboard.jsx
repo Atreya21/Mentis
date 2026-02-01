@@ -25,6 +25,7 @@ const convertGoogleDriveUrl = (url, forceDownload = false) => {
   // Pattern 1: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
   // Pattern 2: https://drive.google.com/open?id=FILE_ID
   // Pattern 3: https://drive.google.com/uc?id=FILE_ID
+  // Pattern 4: https://drive.google.com/thumbnail?id=FILE_ID
   
   let fileId = null;
   
@@ -33,8 +34,8 @@ const convertGoogleDriveUrl = (url, forceDownload = false) => {
     /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
     /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
     /drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/,
-    /drive\.google\.com\/uc\?export=view&id=([a-zA-Z0-9_-]+)/,
-    /drive\.google\.com\/uc\?export=download&id=([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/thumbnail\?.*id=([a-zA-Z0-9_-]+)/,
+    /lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/,
   ];
   
   for (const pattern of patterns) {
@@ -47,10 +48,14 @@ const convertGoogleDriveUrl = (url, forceDownload = false) => {
   
   // If we found a Google Drive file ID, convert to appropriate URL
   if (fileId) {
-    // For downloads (PDFs, documents), use export=download
-    // For images/viewing, use export=view
-    const exportType = forceDownload ? 'download' : 'view';
-    return `https://drive.google.com/uc?export=${exportType}&id=${fileId}`;
+    if (forceDownload) {
+      // For downloads (PDFs, documents)
+      return `https://drive.google.com/uc?export=download&id=${fileId}`;
+    } else {
+      // For images - use lh3.googleusercontent.com which works better for embedding
+      // This format bypasses CORS issues and works reliably for images
+      return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
   }
   
   // Return original URL if not a Google Drive link

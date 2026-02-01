@@ -633,17 +633,30 @@ const AdminDashboard = () => {
                             {new Date(user.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                            {user.role !== 'admin' && (
-                              <Button
-                                size="sm"
-                                onClick={() => handlePromoteToAdmin(user.id)}
-                                className="bg-orange-600 hover:bg-orange-700"
-                                data-testid="promote-admin-btn"
-                              >
-                                <Shield className="w-3 h-3 mr-1" />
-                                Promote
-                              </Button>
-                            )}
+                            <div className="flex gap-2">
+                              {user.role !== 'admin' && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handlePromoteToAdmin(user.id)}
+                                  className="bg-orange-600 hover:bg-orange-700"
+                                  data-testid="promote-admin-btn"
+                                >
+                                  <Shield className="w-3 h-3 mr-1" />
+                                  Promote
+                                </Button>
+                              )}
+                              {user.role !== 'admin' && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteUser(user.id, user.email)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                  data-testid="delete-user-btn"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

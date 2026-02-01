@@ -696,16 +696,237 @@ const AdminDashboard = () => {
 
           {/* Upload New Content Tab */}
           <TabsContent value="upload" className="space-y-6">
-            {/* Upload Resource Card - placeholder for upload dialogs */}
+            {/* Add New Game */}
             <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-white">Upload New Content</CardTitle>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Gamepad2 className="w-5 h-5 text-orange-400" />
+                  Add New Game
+                </CardTitle>
                 <CardDescription className="text-slate-400">
-                  Add new resources, games, and curiofacts using the forms in the original tabs
+                  Add a new math game to the Funamatics section
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-400">This tab will contain upload forms for resources, games, and curiofacts.</p>
+                <form onSubmit={handleCreateGame} className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-300">Game Title *</Label>
+                      <Input
+                        value={gameForm.title}
+                        onChange={(e) => setGameForm({ ...gameForm, title: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white"
+                        placeholder="e.g., Math Puzzle Challenge"
+                        required
+                        data-testid="game-title-input"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-slate-300">Difficulty *</Label>
+                      <Select value={gameForm.difficulty} onValueChange={(value) => setGameForm({ ...gameForm, difficulty: value })}>
+                        <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="easy">Easy</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="hard">Hard</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-slate-300">Description *</Label>
+                    <Textarea
+                      value={gameForm.description}
+                      onChange={(e) => setGameForm({ ...gameForm, description: e.target.value })}
+                      className="bg-slate-900 border-slate-700 text-white"
+                      placeholder="Describe what makes this game fun and educational..."
+                      rows={3}
+                      required
+                      data-testid="game-description-input"
+                    />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-300">Game URL *</Label>
+                      <Input
+                        type="url"
+                        value={gameForm.url}
+                        onChange={(e) => setGameForm({ ...gameForm, url: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white"
+                        placeholder="https://example.com/game"
+                        required
+                        data-testid="game-url-input"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-slate-300">Thumbnail URL</Label>
+                      <Input
+                        type="url"
+                        value={gameForm.thumbnail}
+                        onChange={(e) => setGameForm({ ...gameForm, thumbnail: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white"
+                        placeholder="https://example.com/image.jpg"
+                        data-testid="game-thumbnail-input"
+                      />
+                    </div>
+                  </div>
+                  {gameForm.thumbnail && (
+                    <div>
+                      <Label className="text-slate-300 mb-2 block">Thumbnail Preview:</Label>
+                      <img src={gameForm.thumbnail} alt="Preview" className="max-w-xs h-32 object-cover rounded-lg border border-slate-700" onError={(e) => e.target.style.display='none'} />
+                    </div>
+                  )}
+                  <Button type="submit" className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="submit-game-btn">
+                    <Plus className="w-4 h-4 mr-2" /> Add Game
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Add New Curiofact */}
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-pink-400" />
+                  Add New Curiofact
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Share an interesting mathematical fact with the community
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateFact} className="space-y-4">
+                  <div>
+                    <Label className="text-slate-300">Fact Title *</Label>
+                    <Input
+                      value={factForm.title}
+                      onChange={(e) => setFactForm({ ...factForm, title: e.target.value })}
+                      className="bg-slate-900 border-slate-700 text-white"
+                      placeholder="e.g., The Mystery of Pi"
+                      required
+                      data-testid="fact-title-input"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-300">Content *</Label>
+                    <Textarea
+                      value={factForm.content}
+                      onChange={(e) => setFactForm({ ...factForm, content: e.target.value })}
+                      className="bg-slate-900 border-slate-700 text-white"
+                      placeholder="Write your fascinating math fact here..."
+                      rows={4}
+                      required
+                      data-testid="fact-content-input"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-300">Image URL (optional)</Label>
+                    <Input
+                      type="url"
+                      value={factForm.image_url}
+                      onChange={(e) => setFactForm({ ...factForm, image_url: e.target.value })}
+                      className="bg-slate-900 border-slate-700 text-white"
+                      placeholder="https://example.com/fact-image.jpg"
+                      data-testid="fact-image-input"
+                    />
+                  </div>
+                  {factForm.image_url && (
+                    <div>
+                      <Label className="text-slate-300 mb-2 block">Image Preview:</Label>
+                      <img src={factForm.image_url} alt="Preview" className="max-w-xs h-32 object-cover rounded-lg border border-slate-700" onError={(e) => e.target.style.display='none'} />
+                    </div>
+                  )}
+                  <Button type="submit" className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600" data-testid="submit-fact-btn">
+                    <Plus className="w-4 h-4 mr-2" /> Publish Curiofact
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Add New Resource */}
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-green-400" />
+                  Add New Resource
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Add educational resources directly (auto-approved)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateResource} className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-300">Resource Title *</Label>
+                      <Input
+                        value={resourceForm.title}
+                        onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white"
+                        placeholder="e.g., Calculus Fundamentals"
+                        required
+                        data-testid="resource-title-input"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-slate-300">Topic *</Label>
+                      <Input
+                        value={resourceForm.topic}
+                        onChange={(e) => setResourceForm({ ...resourceForm, topic: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white"
+                        placeholder="e.g., Calculus, Algebra, Geometry"
+                        required
+                        data-testid="resource-topic-input"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-slate-300">Description *</Label>
+                    <Textarea
+                      value={resourceForm.description}
+                      onChange={(e) => setResourceForm({ ...resourceForm, description: e.target.value })}
+                      className="bg-slate-900 border-slate-700 text-white"
+                      placeholder="Describe what this resource covers..."
+                      rows={3}
+                      required
+                      data-testid="resource-description-input"
+                    />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-300">Content Type *</Label>
+                      <Select value={resourceForm.content_type} onValueChange={(value) => setResourceForm({ ...resourceForm, content_type: value })}>
+                        <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="notes">Notes</SelectItem>
+                          <SelectItem value="video">Video</SelectItem>
+                          <SelectItem value="playlist">Playlist</SelectItem>
+                          <SelectItem value="book">Book</SelectItem>
+                          <SelectItem value="article">Article</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-slate-300">Resource URL *</Label>
+                      <Input
+                        type="url"
+                        value={resourceForm.url}
+                        onChange={(e) => setResourceForm({ ...resourceForm, url: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white"
+                        placeholder="https://example.com/resource"
+                        required
+                        data-testid="resource-url-input"
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600" data-testid="submit-resource-btn">
+                    <Plus className="w-4 h-4 mr-2" /> Add Resource
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>

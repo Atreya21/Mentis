@@ -17,6 +17,42 @@ import { motion } from 'framer-motion';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Utility function to convert Google Drive URLs to direct image URLs
+const convertToDirectImageUrl = (url) => {
+  if (!url) return url;
+  
+  // Google Drive file link patterns
+  // Pattern 1: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+  // Pattern 2: https://drive.google.com/open?id=FILE_ID
+  // Pattern 3: https://drive.google.com/uc?id=FILE_ID
+  
+  let fileId = null;
+  
+  // Extract file ID from various Google Drive URL formats
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/uc\?export=view&id=([a-zA-Z0-9_-]+)/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      fileId = match[1];
+      break;
+    }
+  }
+  
+  // If we found a Google Drive file ID, convert to direct URL
+  if (fileId) {
+    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  }
+  
+  // Return original URL if not a Google Drive link
+  return url;
+};
+
 const AdminDashboard = () => {
   const [pendingResources, setPendingResources] = useState([]);
   const [allResources, setAllResources] = useState([]);

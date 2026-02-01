@@ -189,7 +189,7 @@ const ResourceHub = () => {
                       placeholder="https://drive.google.com/file/d/... or direct URL"
                       data-testid="resource-url-input"
                     />
-                    <p className="text-xs text-slate-500 mt-1">For Google Drive, set sharing to "Anyone with the link"</p>
+                    <p className="text-xs text-slate-500 mt-1">For Google Drive, set sharing to &quot;Anyone with the link&quot;</p>
                   </div>
                   <Button type="submit" className="w-full rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="resource-submit-btn">
                     Submit

@@ -164,6 +164,18 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchResetTokens = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/admin/password-reset-tokens`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setResetTokens(res.data);
+    } catch (err) {
+      console.error('Failed to fetch reset tokens');
+    }
+  };
+
   const handleApproval = async (resourceId, status) => {
     try {
       const token = localStorage.getItem('token');

@@ -935,18 +935,21 @@ const AdminDashboard = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-slate-300">Resource URL *</Label>
+                      <Label className="text-slate-300">Resource URL * <span className="text-orange-400 text-xs">(Google Drive PDFs supported)</span></Label>
                       <Input
                         type="url"
                         value={resourceForm.url}
                         onChange={(e) => setResourceForm({ ...resourceForm, url: e.target.value })}
                         className="bg-slate-900 border-slate-700 text-white"
-                        placeholder="https://example.com/resource"
+                        placeholder="https://drive.google.com/file/d/... or direct URL"
                         required
                         data-testid="resource-url-input"
                       />
                     </div>
                   </div>
+                  <p className="text-xs text-slate-500">
+                    💡 Tip: For Google Drive files, make sure sharing is set to "Anyone with the link can view"
+                  </p>
                   <Button type="submit" className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600" data-testid="submit-resource-btn">
                     <Plus className="w-4 h-4 mr-2" /> Add Resource
                   </Button>

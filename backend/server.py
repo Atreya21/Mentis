@@ -581,6 +581,57 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+async def send_resource_approval_email(user_email: str, user_name: str, resource_title: str):
+    """Send email notification when a user's resource is approved"""
+    try:
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        from_email = os.environ.get('FROM_EMAIL', 'noreply@mentis.com')
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismath.preview.emergentagent.com')
+        
+        if not sendgrid_api_key:
+            logger.warning(f"SendGrid not configured. Cannot send approval email to {user_email}")
+            return False
+            
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Email, To
+        
+        message = Mail(
+            from_email=Email(from_email),
+            to_emails=To(user_email),
+            subject='🎉 Your Resource Has Been Approved! - Mentis',
+            html_content=f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 10px;">
+                <h2 style="color: #f97316; margin-bottom: 20px;">Great News, {user_name}! 🎉</h2>
+                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
+                    Your submitted resource <strong style="color: #f97316;">"{resource_title}"</strong> has been reviewed and approved by our team!
+                </p>
+                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
+                    It's now live on the Resource Hub and available to the entire Mentis community. Thank you for contributing to our growing collection of mathematics resources!
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{frontend_url}/resources" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">View Resource Hub</a>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px;">
+                    Keep contributing and help us build the best mathematics resource collection!
+                </p>
+                <hr style="border: none; border-top: 1px solid #374151; margin: 30px 0;">
+                <p style="color: #64748b; font-size: 12px; text-align: center;">
+                    Mentis - Mathematics Community Platform<br>
+                    <a href="mailto:mentis.mathematics@gmail.com" style="color: #f97316;">mentis.mathematics@gmail.com</a>
+                </p>
+            </div>
+            '''
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        logger.info(f"Resource approval email sent to {user_email}, status: {response.status_code}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send resource approval email to {user_email}: {str(e)}")
+        return False
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()

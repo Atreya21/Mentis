@@ -61,6 +61,7 @@ const AdminDashboard = () => {
     fetchAllUsers();
     fetchMatrixMembers();
     fetchSiteSettings();
+    fetchResetTokens();
     fetchStats();
   }, []);
 

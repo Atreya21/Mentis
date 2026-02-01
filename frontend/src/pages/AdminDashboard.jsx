@@ -656,6 +656,93 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
+          {/* Site Settings Tab */}
+          <TabsContent value="settings">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Site Settings</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Customize your website appearance and settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleUpdateHeroImage} className="space-y-6">
+                  <div>
+                    <Label htmlFor="hero-image" className="text-slate-300 text-lg font-semibold mb-2 block">
+                      Home Page Hero Image
+                    </Label>
+                    <p className="text-sm text-slate-400 mb-4">
+                      Upload your company logo or hero image to an image hosting service (Imgur, Google Drive, Cloudinary, etc.) and paste the direct image URL below.
+                    </p>
+                    <Input
+                      id="hero-image"
+                      type="url"
+                      value={siteSettings.hero_image_url}
+                      onChange={(e) => setSiteSettings({ ...siteSettings, hero_image_url: e.target.value })}
+                      className="bg-slate-900 border-slate-700 text-white"
+                      placeholder="https://example.com/your-logo.png"
+                      data-testid="hero-image-input"
+                    />
+                    <p className="text-xs text-slate-500 mt-2">
+                      💡 Tip: For best results, use an image with dimensions around 800x600 pixels
+                    </p>
+                  </div>
+
+                  {siteSettings.hero_image_url && (
+                    <div>
+                      <Label className="text-slate-300 mb-2 block">Preview:</Label>
+                      <div className="border-2 border-slate-700 rounded-lg p-4 bg-slate-900">
+                        <img
+                          src={siteSettings.hero_image_url}
+                          alt="Hero preview"
+                          className="max-w-md h-auto rounded-lg"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/400x300?text=Invalid+Image+URL';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-4">
+                    <Button 
+                      type="submit" 
+                      className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+                      data-testid="save-hero-image-btn"
+                    >
+                      Save Changes
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      onClick={() => fetchSiteSettings()}
+                      className="border-slate-700 hover:bg-slate-800"
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </form>
+
+                <div className="mt-8 pt-8 border-t border-slate-700">
+                  <h3 className="text-white font-semibold text-lg mb-4">How to Upload Your Logo/Image:</h3>
+                  <ol className="list-decimal list-inside space-y-2 text-slate-400 text-sm">
+                    <li>Upload your image to a free hosting service like:
+                      <ul className="list-disc list-inside ml-6 mt-1 text-slate-500">
+                        <li><a href="https://imgur.com" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300">Imgur.com</a> (recommended)</li>
+                        <li><a href="https://cloudinary.com" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300">Cloudinary.com</a></li>
+                        <li>Google Drive (set to public and use direct link)</li>
+                      </ul>
+                    </li>
+                    <li>Copy the direct image URL (should end with .jpg, .png, .webp, etc.)</li>
+                    <li>Paste the URL in the field above</li>
+                    <li>Preview the image and click "Save Changes"</li>
+                    <li>Visit your homepage to see the updated image</li>
+                  </ol>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Matrix Members Tab */}
           <TabsContent value="matrix">
             <Card className="bg-slate-800/50 border-slate-700">

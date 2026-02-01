@@ -362,6 +362,36 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteUser = async (userId, userEmail) => {
+    if (!window.confirm(`Are you sure you want to delete user "${userEmail}"? This action cannot be undone.`)) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/delete-user/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('User deleted successfully');
+      fetchAllUsers();
+      fetchStats();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to delete user');
+    }
+  };
+
+  const handleDeleteMatrixMember = async (memberId, memberEmail) => {
+    if (!window.confirm(`Are you sure you want to remove "${memberEmail}" from Matrix?`)) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/delete-matrix-member/${memberId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Matrix member removed successfully');
+      fetchMatrixMembers();
+      fetchStats();
+    } catch (err) {
+      toast.error('Failed to remove matrix member');
+    }
+  };
+
   const handleExportUsers = async () => {
     try {
       const token = localStorage.getItem('token');

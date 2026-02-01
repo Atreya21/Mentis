@@ -706,6 +706,357 @@ async def get_password_reset_tokens(admin: User = Depends(get_admin_user)):
     
     return tokens
 
+# ============== CONNECT FEATURE - User Discovery & Chat ==============
+
+@api_router.get("/users/search")
+async def search_users(
+    q: Optional[str] = None,
+    college: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Search users by name, email, or college"""
+    query = {"id": {"$ne": current_user.id}}  # Exclude current user
+    
+    if q:
+        query["$or"] = [
+            {"name": {"$regex": q, "$options": "i"}},
+            {"email": {"$regex": q, "$options": "i"}}
+        ]
+    
+    if college:
+        query["college"] = {"$regex": college, "$options": "i"}
+    
+    users = await db.users.find(query, {"_id": 0, "password": 0}).limit(50).to_list(50)
+    
+    # Get connection status for each user
+    for user in users:
+        if isinstance(user.get('created_at'), str):
+            user['created_at'] = datetime.fromisoformat(user['created_at'])
+        
+        # Check if there's an existing connection
+        connection = await db.connections.find_one({
+            "$or": [
+                {"requester_id": current_user.id, "receiver_id": user['id']},
+                {"requester_id": user['id'], "receiver_id": current_user.id}
+            ]
+        }, {"_id": 0})
+        
+        if connection:
+            user['connection_status'] = connection['status']
+            user['connection_id'] = connection['id']
+            user['is_requester'] = connection['requester_id'] == current_user.id
+        else:
+            user['connection_status'] = None
+            user['connection_id'] = None
+            user['is_requester'] = None
+    
+    return users
+
+@api_router.get("/users/colleges")
+async def get_colleges(current_user: User = Depends(get_current_user)):
+    """Get list of unique colleges for filtering"""
+    colleges = await db.users.distinct("college")
+    return [c for c in colleges if c]  # Filter out None/empty
+
+@api_router.post("/connections/request")
+async def send_connection_request(request: ConnectionRequest, current_user: User = Depends(get_current_user)):
+    """Send a connection request to another user"""
+    if request.receiver_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot send connection request to yourself")
+    
+    # Check if receiver exists
+    receiver = await db.users.find_one({"id": request.receiver_id}, {"_id": 0})
+    if not receiver:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if connection already exists
+    existing = await db.connections.find_one({
+        "$or": [
+            {"requester_id": current_user.id, "receiver_id": request.receiver_id},
+            {"requester_id": request.receiver_id, "receiver_id": current_user.id}
+        ]
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Connection already exists")
+    
+    connection = Connection(
+        requester_id=current_user.id,
+        receiver_id=request.receiver_id
+    )
+    
+    doc = connection.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.connections.insert_one(doc)
+    
+    # Notify receiver via WebSocket if online
+    await manager.send_personal_message({
+        "type": "connection_request",
+        "from_user": {"id": current_user.id, "name": current_user.name},
+        "connection_id": connection.id
+    }, request.receiver_id)
+    
+    return {"message": "Connection request sent", "connection_id": connection.id}
+
+@api_router.post("/connections/{connection_id}/accept")
+async def accept_connection(connection_id: str, current_user: User = Depends(get_current_user)):
+    """Accept a connection request"""
+    connection = await db.connections.find_one({"id": connection_id}, {"_id": 0})
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the receiver can accept this request")
+    
+    if connection['status'] != 'pending':
+        raise HTTPException(status_code=400, detail="Connection is not pending")
+    
+    await db.connections.update_one(
+        {"id": connection_id},
+        {"$set": {"status": "accepted", "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Notify requester via WebSocket
+    await manager.send_personal_message({
+        "type": "connection_accepted",
+        "from_user": {"id": current_user.id, "name": current_user.name},
+        "connection_id": connection_id
+    }, connection['requester_id'])
+    
+    return {"message": "Connection accepted"}
+
+@api_router.post("/connections/{connection_id}/reject")
+async def reject_connection(connection_id: str, current_user: User = Depends(get_current_user)):
+    """Reject a connection request"""
+    connection = await db.connections.find_one({"id": connection_id}, {"_id": 0})
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the receiver can reject this request")
+    
+    if connection['status'] != 'pending':
+        raise HTTPException(status_code=400, detail="Connection is not pending")
+    
+    await db.connections.update_one(
+        {"id": connection_id},
+        {"$set": {"status": "rejected", "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Connection rejected"}
+
+@api_router.delete("/connections/{connection_id}")
+async def remove_connection(connection_id: str, current_user: User = Depends(get_current_user)):
+    """Remove an existing connection"""
+    connection = await db.connections.find_one({"id": connection_id}, {"_id": 0})
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['requester_id'] != current_user.id and connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to remove this connection")
+    
+    await db.connections.delete_one({"id": connection_id})
+    # Also delete all messages in this connection
+    await db.messages.delete_many({"connection_id": connection_id})
+    
+    return {"message": "Connection removed"}
+
+@api_router.get("/connections")
+async def get_connections(current_user: User = Depends(get_current_user)):
+    """Get all accepted connections for current user"""
+    connections = await db.connections.find({
+        "$or": [
+            {"requester_id": current_user.id},
+            {"receiver_id": current_user.id}
+        ],
+        "status": "accepted"
+    }, {"_id": 0}).to_list(100)
+    
+    # Enrich with user details
+    for conn in connections:
+        if isinstance(conn.get('created_at'), str):
+            conn['created_at'] = datetime.fromisoformat(conn['created_at'])
+        if isinstance(conn.get('updated_at'), str):
+            conn['updated_at'] = datetime.fromisoformat(conn['updated_at'])
+        
+        # Get the other user's details
+        other_user_id = conn['receiver_id'] if conn['requester_id'] == current_user.id else conn['requester_id']
+        other_user = await db.users.find_one({"id": other_user_id}, {"_id": 0, "password": 0})
+        conn['other_user'] = other_user
+        
+        # Get last message
+        last_message = await db.messages.find_one(
+            {"connection_id": conn['id']},
+            {"_id": 0}
+        )
+        if last_message:
+            conn['last_message'] = last_message
+        
+        # Count unread messages
+        unread_count = await db.messages.count_documents({
+            "connection_id": conn['id'],
+            "sender_id": {"$ne": current_user.id},
+            "read": False
+        })
+        conn['unread_count'] = unread_count
+    
+    return connections
+
+@api_router.get("/connections/pending")
+async def get_pending_requests(current_user: User = Depends(get_current_user)):
+    """Get pending connection requests received by current user"""
+    connections = await db.connections.find({
+        "receiver_id": current_user.id,
+        "status": "pending"
+    }, {"_id": 0}).to_list(50)
+    
+    # Enrich with requester details
+    for conn in connections:
+        if isinstance(conn.get('created_at'), str):
+            conn['created_at'] = datetime.fromisoformat(conn['created_at'])
+        requester = await db.users.find_one({"id": conn['requester_id']}, {"_id": 0, "password": 0})
+        conn['requester'] = requester
+    
+    return connections
+
+@api_router.get("/connections/sent")
+async def get_sent_requests(current_user: User = Depends(get_current_user)):
+    """Get pending connection requests sent by current user"""
+    connections = await db.connections.find({
+        "requester_id": current_user.id,
+        "status": "pending"
+    }, {"_id": 0}).to_list(50)
+    
+    # Enrich with receiver details
+    for conn in connections:
+        if isinstance(conn.get('created_at'), str):
+            conn['created_at'] = datetime.fromisoformat(conn['created_at'])
+        receiver = await db.users.find_one({"id": conn['receiver_id']}, {"_id": 0, "password": 0})
+        conn['receiver'] = receiver
+    
+    return connections
+
+@api_router.get("/messages/{connection_id}")
+async def get_messages(connection_id: str, current_user: User = Depends(get_current_user)):
+    """Get all messages for a connection"""
+    # Verify user is part of this connection
+    connection = await db.connections.find_one({"id": connection_id}, {"_id": 0})
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['requester_id'] != current_user.id and connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view these messages")
+    
+    if connection['status'] != 'accepted':
+        raise HTTPException(status_code=400, detail="Connection is not accepted")
+    
+    messages = await db.messages.find(
+        {"connection_id": connection_id},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(500)
+    
+    for msg in messages:
+        if isinstance(msg.get('created_at'), str):
+            msg['created_at'] = datetime.fromisoformat(msg['created_at'])
+    
+    # Mark messages as read
+    await db.messages.update_many(
+        {"connection_id": connection_id, "sender_id": {"$ne": current_user.id}, "read": False},
+        {"$set": {"read": True}}
+    )
+    
+    return messages
+
+@api_router.post("/messages/{connection_id}")
+async def send_message(connection_id: str, message: MessageCreate, current_user: User = Depends(get_current_user)):
+    """Send a message in a connection"""
+    # Verify user is part of this connection
+    connection = await db.connections.find_one({"id": connection_id}, {"_id": 0})
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['requester_id'] != current_user.id and connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to send messages here")
+    
+    if connection['status'] != 'accepted':
+        raise HTTPException(status_code=400, detail="Connection is not accepted")
+    
+    new_message = Message(
+        connection_id=connection_id,
+        sender_id=current_user.id,
+        content=message.content
+    )
+    
+    doc = new_message.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.messages.insert_one(doc)
+    
+    # Notify the other user via WebSocket
+    other_user_id = connection['receiver_id'] if connection['requester_id'] == current_user.id else connection['requester_id']
+    await manager.send_personal_message({
+        "type": "new_message",
+        "message": {
+            "id": new_message.id,
+            "connection_id": connection_id,
+            "sender_id": current_user.id,
+            "sender_name": current_user.name,
+            "content": message.content,
+            "created_at": doc['created_at']
+        }
+    }, other_user_id)
+    
+    return {"message": "Message sent", "id": new_message.id}
+
+# WebSocket endpoint for real-time chat
+@app.websocket("/ws/{token}")
+async def websocket_endpoint(websocket: WebSocket, token: str):
+    try:
+        # Verify token and get user
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            await websocket.close(code=4001)
+            return
+        
+        user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        if not user:
+            await websocket.close(code=4001)
+            return
+        
+        await manager.connect(websocket, user_id)
+        
+        try:
+            while True:
+                data = await websocket.receive_text()
+                message_data = json.loads(data)
+                
+                if message_data.get('type') == 'ping':
+                    await websocket.send_json({"type": "pong"})
+                elif message_data.get('type') == 'typing':
+                    # Notify the other user that current user is typing
+                    connection_id = message_data.get('connection_id')
+                    if connection_id:
+                        connection = await db.connections.find_one({"id": connection_id}, {"_id": 0})
+                        if connection:
+                            other_user_id = connection['receiver_id'] if connection['requester_id'] == user_id else connection['requester_id']
+                            await manager.send_personal_message({
+                                "type": "typing",
+                                "connection_id": connection_id,
+                                "user_id": user_id
+                            }, other_user_id)
+        except WebSocketDisconnect:
+            manager.disconnect(user_id)
+    except jwt.ExpiredSignatureError:
+        await websocket.close(code=4001)
+    except jwt.InvalidTokenError:
+        await websocket.close(code=4001)
+
 app.include_router(api_router)
 
 app.add_middleware(

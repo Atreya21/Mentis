@@ -235,16 +235,34 @@ async def get_resources(status: Optional[str] = None):
 
 @api_router.patch("/resources/{resource_id}", response_model=Resource)
 async def update_resource_status(resource_id: str, update: ResourceApprove, admin: User = Depends(get_admin_user)):
+    # Get the resource first to check current status and get submitter info
+    existing_resource = await db.resources.find_one({"id": resource_id}, {"_id": 0})
+    if not existing_resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    
+    was_pending = existing_resource.get('status') == 'pending'
+    
     result = await db.resources.find_one_and_update(
         {"id": resource_id},
         {"$set": {"status": update.status}},
         return_document=True
     )
-    if not result:
-        raise HTTPException(status_code=404, detail="Resource not found")
     result.pop('_id', None)
     if isinstance(result['created_at'], str):
         result['created_at'] = datetime.fromisoformat(result['created_at'])
+    
+    # Send approval email if resource was pending and is now approved
+    if was_pending and update.status == 'approved':
+        submitter_id = existing_resource.get('submitted_by')
+        if submitter_id:
+            submitter = await db.users.find_one({"id": submitter_id}, {"_id": 0})
+            if submitter and submitter.get('email'):
+                await send_resource_approval_email(
+                    user_email=submitter['email'],
+                    user_name=submitter.get('name', 'Mentis User'),
+                    resource_title=existing_resource.get('title', 'Your Resource')
+                )
+    
     return Resource(**result)
 
 @api_router.get("/games", response_model=List[Game])

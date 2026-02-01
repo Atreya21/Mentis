@@ -470,7 +470,7 @@ async def forgot_password(request: PasswordResetRequest):
     await db.password_reset_tokens.insert_one(token_doc)
     
     # Send email with reset link
-    reset_link = f"{os.environ.get('FRONTEND_URL', 'https://mathnet-social.preview.emergentagent.com')}/reset-password?token={reset_token}"
+    reset_link = f"{os.environ.get('FRONTEND_URL', 'https://mentismath.preview.emergentagent.com')}/reset-password?token={reset_token}"
     
     try:
         # Check if SendGrid is configured

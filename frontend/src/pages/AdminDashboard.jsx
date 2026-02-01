@@ -53,6 +53,9 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchPendingResources();
+    fetchAllResources();
+    fetchAllGames();
+    fetchAllFacts();
     fetchAllUsers();
     fetchMatrixMembers();
     fetchStats();

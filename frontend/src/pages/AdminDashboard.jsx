@@ -753,6 +753,50 @@ const AdminDashboard = () => {
                     <li>Visit your homepage to see the updated image</li>
                   </ol>
                 </div>
+
+                {/* Password Reset Tokens Section */}
+                {resetTokens.length > 0 && (
+                  <div className="mt-8 pt-8 border-t border-slate-700">
+                    <h3 className="text-white font-semibold text-lg mb-4">Recent Password Reset Requests</h3>
+                    <p className="text-sm text-slate-400 mb-4">
+                      Users who requested password reset. Share the reset link with them manually.
+                    </p>
+                    <div className="space-y-3">
+                      {resetTokens.map((tokenData) => (
+                        <div key={tokenData.id} className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="text-white font-medium">{tokenData.email}</p>
+                              <p className="text-xs text-slate-500">
+                                Requested: {new Date(tokenData.created_at).toLocaleString()}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                Expires: {new Date(tokenData.expires_at).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="mt-2">
+                            <p className="text-xs text-slate-500 mb-1">Reset Link:</p>
+                            <code className="text-xs text-orange-400 break-all block bg-slate-950 p-2 rounded">
+                              https://mathnet-social.preview.emergentagent.com/reset-password?token={tokenData.token}
+                            </code>
+                            <Button
+                              size="sm"
+                              className="mt-2 bg-slate-700 hover:bg-slate-600"
+                              onClick={() => {
+                                const link = `https://mathnet-social.preview.emergentagent.com/reset-password?token=${tokenData.token}`;
+                                navigator.clipboard.writeText(link);
+                                toast.success('Reset link copied!');
+                              }}
+                            >
+                              Copy Link
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

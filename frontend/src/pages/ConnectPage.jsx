@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { 
   Search, UserPlus, Check, X, MessageCircle, Send, 
   Users, Bell, Clock, UserCheck, Filter, Loader2,
-  ArrowLeft, Circle
+  ArrowLeft, Circle, BookOpen, Calendar, Link2, Eye
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -28,6 +29,9 @@ const ConnectPage = () => {
   const [colleges, setColleges] = useState([]);
   const [users, setUsers] = useState([]);
   const [connections, setConnections] = useState([]);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
   const [loading, setLoading] = useState(false);

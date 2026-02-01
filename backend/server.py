@@ -318,6 +318,15 @@ async def get_resources(status: Optional[str] = None):
     for r in resources:
         if isinstance(r['created_at'], str):
             r['created_at'] = datetime.fromisoformat(r['created_at'])
+        # Get uploader info
+        if r.get('submitted_by'):
+            uploader = await db.users.find_one({"id": r['submitted_by']}, {"_id": 0, "password": 0})
+            if uploader:
+                r['uploader_name'] = uploader.get('name', 'Unknown')
+            else:
+                r['uploader_name'] = 'Unknown'
+        else:
+            r['uploader_name'] = 'Admin'
     return resources
 
 @api_router.patch("/resources/{resource_id}", response_model=Resource)

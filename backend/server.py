@@ -509,8 +509,11 @@ async def get_site_settings():
 
 @api_router.patch("/admin/site-settings", response_model=SiteSettings)
 async def update_site_settings(settings_update: SiteSettingsUpdate, admin: User = Depends(get_admin_user)):
+    # Convert Google Drive URL for hero image
+    hero_image_url = convert_google_drive_url(settings_update.hero_image_url, for_download=False)
+    
     update_data = {
-        "hero_image_url": settings_update.hero_image_url,
+        "hero_image_url": hero_image_url,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     

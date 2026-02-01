@@ -3,8 +3,25 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Gamepad2, Sparkles, Network } from 'lucide-react';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const LandingPage = () => {
+  const [heroImage, setHeroImage] = React.useState('https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85');
+
+  React.useEffect(() => {
+    const fetchSiteSettings = async () => {
+      try {
+        const res = await axios.get(`${API}/site-settings`);
+        setHeroImage(res.data.hero_image_url);
+      } catch (err) {
+        console.error('Failed to fetch site settings');
+      }
+    };
+    fetchSiteSettings();
+  }, []);
   const features = [
     {
       icon: BookOpen,

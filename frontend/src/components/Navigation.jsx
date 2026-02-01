@@ -42,16 +42,24 @@ const Navigation = () => {
             {user ? (
               <>
                 <Link to="/dashboard">
-                  <Button variant="outline" size="sm" className="rounded-full" data-testid="dashboard-btn">
+                  <Button variant="outline" size="sm" className="rounded-full border-slate-700 hover:bg-slate-800" data-testid="dashboard-btn">
                     <User className="w-4 h-4 mr-2" />
                     Dashboard
                   </Button>
                 </Link>
+                {user.role === 'admin' && (
+                  <Link to="/admin">
+                    <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="admin-dashboard-btn">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
                 <Button
                   onClick={logout}
                   variant="ghost"
                   size="sm"
-                  className="rounded-full"
+                  className="rounded-full hover:bg-slate-800"
                   data-testid="logout-btn"
                 >
                   <LogOut className="w-4 h-4" />
@@ -60,12 +68,12 @@ const Navigation = () => {
             ) : (
               <>
                 <Link to="/login">
-                  <Button variant="outline" size="sm" className="rounded-full" data-testid="login-nav-btn">
+                  <Button variant="outline" size="sm" className="rounded-full border-slate-700 hover:bg-slate-800" data-testid="login-nav-btn">
                     Login
                   </Button>
                 </Link>
                 <Link to="/signup">
-                  <Button size="sm" className="rounded-full bg-orange-500 hover:bg-orange-600" data-testid="signup-nav-btn">
+                  <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="signup-nav-btn">
                     Sign Up
                   </Button>
                 </Link>

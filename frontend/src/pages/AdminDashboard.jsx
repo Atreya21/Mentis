@@ -226,8 +226,96 @@ const AdminDashboard = () => {
       setResourceDialogOpen(false);
       setResourceForm({ title: '', description: '', content_type: 'notes', url: '', topic: '' });
       fetchStats();
+      fetchAllResources();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to create resource');
+    }
+  };
+
+  const handleDeleteResource = async (resourceId) => {
+    if (!window.confirm('Are you sure you want to delete this resource?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/delete-resource/${resourceId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Resource deleted successfully');
+      fetchAllResources();
+      fetchStats();
+    } catch (err) {
+      toast.error('Failed to delete resource');
+    }
+  };
+
+  const handleDeleteGame = async (gameId) => {
+    if (!window.confirm('Are you sure you want to delete this game?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/delete-game/${gameId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Game deleted successfully');
+      fetchAllGames();
+      fetchStats();
+    } catch (err) {
+      toast.error('Failed to delete game');
+    }
+  };
+
+  const handleDeleteFact = async (factId) => {
+    if (!window.confirm('Are you sure you want to delete this curiofact?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/delete-curiofact/${factId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Curiofact deleted successfully');
+      fetchAllFacts();
+      fetchStats();
+    } catch (err) {
+      toast.error('Failed to delete curiofact');
+    }
+  };
+
+  const handleExportUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/admin/export-users-csv`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'mentis_users.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Users exported successfully!');
+    } catch (err) {
+      toast.error('Failed to export users');
+    }
+  };
+
+  const handleExportMatrix = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/admin/export-matrix-csv`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'mentis_matrix_members.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Matrix members exported successfully!');
+    } catch (err) {
+      toast.error('Failed to export matrix members');
     }
   };
 

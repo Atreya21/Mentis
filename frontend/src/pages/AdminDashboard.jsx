@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Check, X, Plus, Shield, Users, BookOpen, Sparkles, Gamepad2, Crown } from 'lucide-react';
+import { Check, X, Plus, Shield, Users, BookOpen, Sparkles, Gamepad2, Crown, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

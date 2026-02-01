@@ -29,8 +29,8 @@ const Navigation = () => {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`font-body text-sm font-medium transition-colors hover:text-orange-500 ${
-                  location.pathname === link.path ? 'text-orange-500' : 'text-slate-600'
+                className={`font-body text-sm font-medium transition-all hover:text-orange-400 hover:scale-105 ${
+                  location.pathname === link.path ? 'text-orange-500' : 'text-slate-300'
                 }`}
               >
                 {link.name}

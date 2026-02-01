@@ -92,6 +92,30 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAllUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/admin/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAllUsers(res.data);
+    } catch (err) {
+      toast.error('Failed to fetch users');
+    }
+  };
+
+  const fetchMatrixMembers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/admin/matrix-members`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMatrixMembers(res.data);
+    } catch (err) {
+      toast.error('Failed to fetch Matrix members');
+    }
+  };
+
   const handleApproval = async (resourceId, status) => {
     try {
       const token = localStorage.getItem('token');

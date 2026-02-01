@@ -284,8 +284,12 @@ const ResourceHub = () => {
                     href={resource.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-orange-400 hover:text-orange-300 font-medium transition-colors"
+                    className="relative z-10 text-sm text-orange-400 hover:text-orange-300 font-medium transition-colors px-3 py-1 rounded-lg hover:bg-orange-500/10"
                     data-testid="resource-view-link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(resource.url, '_blank', 'noopener,noreferrer');
+                    }}
                   >
                     View →
                   </a>

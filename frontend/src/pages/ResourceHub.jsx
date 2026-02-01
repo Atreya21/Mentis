@@ -76,7 +76,12 @@ const ResourceHub = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/resources`, formData, {
+      // Convert Google Drive URLs for resources
+      const processedFormData = {
+        ...formData,
+        url: convertGoogleDriveUrl(formData.url, true)
+      };
+      await axios.post(`${API}/resources`, processedFormData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Resource submitted for approval!');

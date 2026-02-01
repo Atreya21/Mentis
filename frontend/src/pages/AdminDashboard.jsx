@@ -1139,7 +1139,7 @@ const AdminDashboard = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <CardTitle className="text-white">Matrix Community Members</CardTitle>
-                    <CardDescription className="text-slate-400">View all community registrations</CardDescription>
+                    <CardDescription className="text-slate-400">View and manage community registrations</CardDescription>
                   </div>
                   <Button
                     onClick={handleExportMatrix}
@@ -1160,6 +1160,7 @@ const AdminDashboard = () => {
                         <TableHead className="text-slate-300">College</TableHead>
                         <TableHead className="text-slate-300">Interests</TableHead>
                         <TableHead className="text-slate-300">Joined</TableHead>
+                        <TableHead className="text-slate-300">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1171,6 +1172,17 @@ const AdminDashboard = () => {
                           <TableCell className="text-slate-400 max-w-xs truncate">{member.interests}</TableCell>
                           <TableCell className="text-slate-400">
                             {new Date(member.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteMatrixMember(member.id, member.email)}
+                              className="bg-red-600 hover:bg-red-700"
+                              data-testid="delete-matrix-member-btn"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}

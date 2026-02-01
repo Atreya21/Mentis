@@ -15,7 +15,6 @@ const API = `${BACKEND_URL}/api`;
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [resetLink, setResetLink] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e) => {

@@ -126,8 +126,24 @@ const AdminDashboard = () => {
       );
       toast.success(`Resource ${status}!`);
       fetchPendingResources();
+      fetchStats();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Action failed');
+    }
+  };
+
+  const handlePromoteToAdmin = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        `${API}/admin/promote-user/${userId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('User promoted to admin successfully!');
+      fetchAllUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to promote user');
     }
   };
 
@@ -141,6 +157,7 @@ const AdminDashboard = () => {
       toast.success('Game created successfully!');
       setGameDialogOpen(false);
       setGameForm({ title: '', description: '', url: '', thumbnail: '', difficulty: 'easy' });
+      fetchStats();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to create game');
     }
@@ -156,8 +173,25 @@ const AdminDashboard = () => {
       toast.success('Curiofact published successfully!');
       setFactDialogOpen(false);
       setFactForm({ title: '', content: '', image_url: '' });
+      fetchStats();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to publish curiofact');
+    }
+  };
+
+  const handleCreateResource = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/admin/create-resource`, resourceForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Resource created and approved!');
+      setResourceDialogOpen(false);
+      setResourceForm({ title: '', description: '', content_type: 'notes', url: '', topic: '' });
+      fetchStats();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to create resource');
     }
   };
 

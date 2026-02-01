@@ -271,6 +271,40 @@ async def get_matrix_stats():
     colleges = await db.matrix_registrations.distinct("college")
     return Stats(total_members=total_members, total_colleges=len(colleges))
 
+@api_router.get("/admin/users", response_model=List[User])
+async def get_all_users(admin: User = Depends(get_admin_user)):
+    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    for user in users:
+        if isinstance(user['created_at'], str):
+            user['created_at'] = datetime.fromisoformat(user['created_at'])
+    return users
+
+@api_router.get("/admin/matrix-members", response_model=List[MatrixRegistration])
+async def get_all_matrix_members(admin: User = Depends(get_admin_user)):
+    members = await db.matrix_registrations.find({}, {"_id": 0}).to_list(1000)
+    for member in members:
+        if isinstance(member['created_at'], str):
+            member['created_at'] = datetime.fromisoformat(member['created_at'])
+    return members
+
+@api_router.patch("/admin/promote-user/{user_id}")
+async def promote_user_to_admin(user_id: str, admin: User = Depends(get_admin_user)):
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"role": "admin"}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User not found or already admin")
+    return {"message": "User promoted to admin successfully"}
+
+@api_router.post("/admin/create-resource", response_model=Resource)
+async def admin_create_resource(resource_data: ResourceCreate, admin: User = Depends(get_admin_user)):
+    resource = Resource(**resource_data.model_dump(), submitted_by=admin.id, status="approved")
+    doc = resource.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.resources.insert_one(doc)
+    return resource
+
 app.include_router(api_router)
 
 app.add_middleware(

@@ -24,6 +24,8 @@ const convertGoogleDriveUrl = (url, forceDownload = false) => {
     /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
     /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
     /drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/thumbnail\?.*id=([a-zA-Z0-9_-]+)/,
+    /lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/,
   ];
   
   for (const pattern of patterns) {
@@ -35,8 +37,12 @@ const convertGoogleDriveUrl = (url, forceDownload = false) => {
   }
   
   if (fileId) {
-    const exportType = forceDownload ? 'download' : 'view';
-    return `https://drive.google.com/uc?export=${exportType}&id=${fileId}`;
+    if (forceDownload) {
+      return `https://drive.google.com/uc?export=download&id=${fileId}`;
+    } else {
+      // Use lh3.googleusercontent.com for better image embedding
+      return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
   }
   
   return url;

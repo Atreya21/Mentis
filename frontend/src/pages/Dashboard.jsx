@@ -31,20 +31,20 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 bg-slate-50">
+    <div className="min-h-screen pt-20 bg-slate-950">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
         <div className="mb-12">
-          <h1 className="font-heading text-5xl font-bold text-slate-900 mb-4">
+          <h1 className="font-heading text-5xl font-bold text-white mb-4">
             Welcome, {user?.name}!
           </h1>
-          <p className="text-lg text-slate-600">Manage your account and contributions</p>
+          <p className="text-lg text-slate-400">Manage your account and contributions</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <Card>
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-white">
+                <User className="w-5 h-5 text-orange-400" />
                 Profile
               </CardTitle>
             </CardHeader>
@@ -52,43 +52,43 @@ const Dashboard = () => {
               <div className="space-y-2">
                 <div>
                   <p className="text-sm text-slate-500">Name</p>
-                  <p className="font-medium">{user?.name}</p>
+                  <p className="font-medium text-white">{user?.name}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Email</p>
-                  <p className="font-medium">{user?.email}</p>
+                  <p className="font-medium text-white">{user?.email}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Role</p>
-                  <p className="font-medium capitalize">{user?.role}</p>
+                  <p className="font-medium capitalize text-white">{user?.role}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-white">
+                <BookOpen className="w-5 h-5 text-orange-400" />
                 Resources
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-slate-900">{myResources.length}</p>
-              <p className="text-sm text-slate-600 mt-2">Submitted resources</p>
+              <p className="text-3xl font-bold text-white">{myResources.length}</p>
+              <p className="text-sm text-slate-400 mt-2">Submitted resources</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="w-5 h-5 text-orange-400" />
                 Activity
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600">Member since</p>
-              <p className="font-medium">
+              <p className="text-sm text-slate-400">Member since</p>
+              <p className="font-medium text-white">
                 {new Date(user?.created_at).toLocaleDateString()}
               </p>
             </CardContent>
@@ -96,7 +96,7 @@ const Dashboard = () => {
         </div>
 
         <div>
-          <h2 className="font-heading text-3xl font-semibold text-slate-900 mb-6">
+          <h2 className="font-heading text-3xl font-semibold text-white mb-6">
             Your Submitted Resources
           </h2>
           {myResources.length > 0 ? (
@@ -104,29 +104,29 @@ const Dashboard = () => {
               {myResources.map((resource) => (
                 <div
                   key={resource.id}
-                  className="bg-white border border-slate-100 p-6 rounded-xl"
+                  className="bg-slate-800/50 border border-slate-700 p-6 rounded-xl"
                   data-testid="user-resource-card"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-medium px-3 py-1 bg-slate-100 text-slate-600 rounded-full">
+                    <span className="text-xs font-medium px-3 py-1 bg-slate-700 text-slate-300 rounded-full">
                       {resource.content_type}
                     </span>
                     <span
                       className={`text-xs font-medium px-3 py-1 rounded-full ${
                         resource.status === 'approved'
-                          ? 'bg-green-100 text-green-600'
+                          ? 'bg-green-500/20 text-green-400'
                           : resource.status === 'rejected'
-                          ? 'bg-red-100 text-red-600'
-                          : 'bg-yellow-100 text-yellow-600'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-yellow-500/20 text-yellow-400'
                       }`}
                     >
                       {resource.status}
                     </span>
                   </div>
-                  <h3 className="font-heading text-lg font-semibold text-slate-900 mb-2">
+                  <h3 className="font-heading text-lg font-semibold text-white mb-2">
                     {resource.title}
                   </h3>
-                  <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+                  <p className="text-sm text-slate-400 mb-3 line-clamp-2">
                     {resource.description}
                   </p>
                   <span className="text-xs text-slate-500 font-medium">{resource.topic}</span>
@@ -134,9 +134,9 @@ const Dashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center">
-              <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-600">You haven't submitted any resources yet</p>
+            <div className="bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-2xl p-12 text-center">
+              <BookOpen className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+              <p className="text-slate-400">You haven&apos;t submitted any resources yet</p>
             </div>
           )}
         </div>

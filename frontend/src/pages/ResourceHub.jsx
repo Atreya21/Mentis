@@ -91,39 +91,39 @@ const ResourceHub = () => {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                   <div>
-                    <Label htmlFor="title">Title</Label>
+                    <Label htmlFor="title" className="text-slate-300">Title</Label>
                     <Input
                       id="title"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       required
-                      className="mt-2"
+                      className="mt-2 bg-slate-900 border-slate-700 text-white"
                       data-testid="resource-title-input"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description" className="text-slate-300">Description</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       required
-                      className="mt-2"
+                      className="mt-2 bg-slate-900 border-slate-700 text-white"
                       rows={3}
                       data-testid="resource-description-input"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="content_type">Type</Label>
+                      <Label htmlFor="content_type" className="text-slate-300">Type</Label>
                       <Select
                         value={formData.content_type}
                         onValueChange={(value) => setFormData({ ...formData, content_type: value })}
                       >
-                        <SelectTrigger className="mt-2" data-testid="resource-type-select">
+                        <SelectTrigger className="mt-2 bg-slate-900 border-slate-700 text-white" data-testid="resource-type-select">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-slate-900 border-slate-700">
                           <SelectItem value="notes">Notes</SelectItem>
                           <SelectItem value="playlist">Playlist</SelectItem>
                           <SelectItem value="book">Book</SelectItem>
@@ -132,32 +132,32 @@ const ResourceHub = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="topic">Topic</Label>
+                      <Label htmlFor="topic" className="text-slate-300">Topic</Label>
                       <Input
                         id="topic"
                         value={formData.topic}
                         onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
                         required
-                        className="mt-2"
+                        className="mt-2 bg-slate-900 border-slate-700 text-white"
                         placeholder="e.g., Calculus"
                         data-testid="resource-topic-input"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="url">URL</Label>
+                    <Label htmlFor="url" className="text-slate-300">URL</Label>
                     <Input
                       id="url"
                       type="url"
                       value={formData.url}
                       onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                       required
-                      className="mt-2"
+                      className="mt-2 bg-slate-900 border-slate-700 text-white"
                       placeholder="https://..."
                       data-testid="resource-url-input"
                     />
                   </div>
-                  <Button type="submit" className="w-full rounded-full bg-slate-900 hover:bg-slate-800" data-testid="resource-submit-btn">
+                  <Button type="submit" className="w-full rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="resource-submit-btn">
                     Submit
                   </Button>
                 </form>

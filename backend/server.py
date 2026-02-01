@@ -394,6 +394,39 @@ async def export_matrix_csv(admin: User = Depends(get_admin_user)):
         headers={"Content-Disposition": "attachment; filename=mentis_matrix_members.csv"}
     )
 
+@api_router.get("/site-settings", response_model=SiteSettings)
+async def get_site_settings():
+    settings = await db.site_settings.find_one({"id": "site_settings"}, {"_id": 0})
+    if not settings:
+        # Create default settings if not exist
+        default_settings = SiteSettings()
+        doc = default_settings.model_dump()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        await db.site_settings.insert_one(doc)
+        return default_settings
+    
+    if isinstance(settings['updated_at'], str):
+        settings['updated_at'] = datetime.fromisoformat(settings['updated_at'])
+    return SiteSettings(**settings)
+
+@api_router.patch("/admin/site-settings", response_model=SiteSettings)
+async def update_site_settings(settings_update: SiteSettingsUpdate, admin: User = Depends(get_admin_user)):
+    update_data = {
+        "hero_image_url": settings_update.hero_image_url,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = await db.site_settings.update_one(
+        {"id": "site_settings"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    settings = await db.site_settings.find_one({"id": "site_settings"}, {"_id": 0})
+    if isinstance(settings['updated_at'], str):
+        settings['updated_at'] = datetime.fromisoformat(settings['updated_at'])
+    return SiteSettings(**settings)
+
 app.include_router(api_router)
 
 app.add_middleware(

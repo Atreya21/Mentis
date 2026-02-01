@@ -384,10 +384,14 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
+      // Convert Google Drive URLs to direct image URLs
+      const directImageUrl = convertToDirectImageUrl(siteSettings.hero_image_url);
       await axios.patch(`${API}/admin/site-settings`, 
-        { hero_image_url: siteSettings.hero_image_url },
+        { hero_image_url: directImageUrl },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      // Update local state with the converted URL
+      setSiteSettings({ ...siteSettings, hero_image_url: directImageUrl });
       toast.success('Hero image updated successfully!');
       fetchSiteSettings();
     } catch (err) {

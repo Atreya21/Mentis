@@ -390,10 +390,11 @@ const AdminDashboard = () => {
             <TabsTrigger value="matrix" data-testid="admin-tab-matrix">Matrix Members</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="resources">
-            <Card>
+          <TabsContent value="pending">
+            <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
-                <CardTitle>Pending Resource Approvals</CardTitle>
+                <CardTitle className="text-white">Pending Resource Approvals</CardTitle>
+                <CardDescription className="text-slate-400">Review and approve community submissions</CardDescription>
               </CardHeader>
               <CardContent>
                 {pendingResources.length > 0 ? (
@@ -401,32 +402,32 @@ const AdminDashboard = () => {
                     {pendingResources.map((resource) => (
                       <div
                         key={resource.id}
-                        className="border border-slate-200 rounded-lg p-6 bg-white"
+                        className="border border-slate-700 rounded-lg p-6 bg-slate-900/50"
                         data-testid="pending-resource-card"
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="font-heading text-xl font-semibold text-slate-900 mb-2">
+                            <h3 className="font-heading text-xl font-semibold text-white mb-2">
                               {resource.title}
                             </h3>
-                            <p className="text-slate-600 mb-3">{resource.description}</p>
-                            <div className="flex gap-4 text-sm text-slate-500">
-                              <span>Type: {resource.content_type}</span>
-                              <span>Topic: {resource.topic}</span>
+                            <p className="text-slate-400 mb-3">{resource.description}</p>
+                            <div className="flex gap-4 text-sm text-slate-500 mb-2">
+                              <span>Type: <span className="text-orange-400">{resource.content_type}</span></span>
+                              <span>Topic: <span className="text-orange-400">{resource.topic}</span></span>
                             </div>
                             <a
                               href={resource.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-orange-500 hover:text-orange-600 mt-2 inline-block"
+                              className="text-sm text-orange-400 hover:text-orange-300 inline-block"
                             >
                               View Resource →
                             </a>
                           </div>
                           <div className="flex gap-2">
                             <Button
-                              size="sm"
-                              className="bg-green-500 hover:bg-green-600"
+                              size="sm\"
+                              className="bg-green-600 hover:bg-green-700"
                               onClick={() => handleApproval(resource.id, 'approved')}
                               data-testid="approve-resource-btn"
                             >
@@ -448,6 +449,172 @@ const AdminDashboard = () => {
                 ) : (
                   <p className="text-slate-500 text-center py-8">No pending resources</p>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* User Management Tab */}
+          <TabsContent value="users">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-white">Registered Users</CardTitle>
+                    <CardDescription className="text-slate-400">View all users and promote to admin</CardDescription>
+                  </div>
+                  <Button
+                    onClick={handleExportUsers}
+                    className="bg-green-600 hover:bg-green-700"
+                    data-testid="export-users-btn"
+                  >
+                    Export CSV
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-700">
+                        <TableHead className="text-slate-300">Name</TableHead>
+                        <TableHead className="text-slate-300">Email</TableHead>
+                        <TableHead className="text-slate-300">Role</TableHead>
+                        <TableHead className="text-slate-300">Joined</TableHead>
+                        <TableHead className="text-slate-300">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allUsers.map((user) => (
+                        <TableRow key={user.id} className="border-slate-700" data-testid="user-row">
+                          <TableCell className="text-white font-medium">{user.name}</TableCell>
+                          <TableCell className="text-slate-400">{user.email}</TableCell>
+                          <TableCell>
+                            <Badge className={user.role === 'admin' ? 'bg-orange-500' : 'bg-slate-600'}>
+                              {user.role === 'admin' && <Crown className="w-3 h-3 mr-1" />}
+                              {user.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-slate-400">
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {user.role !== 'admin' && (
+                              <Button
+                                size="sm"
+                                onClick={() => handlePromoteToAdmin(user.id)}
+                                className="bg-orange-600 hover:bg-orange-700"
+                                data-testid="promote-admin-btn"
+                              >
+                                <Shield className="w-3 h-3 mr-1" />
+                                Promote
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Manage Content Tab */}
+          <TabsContent value="content" className="space-y-6">{/* Existing Resources */}
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Manage Resources</CardTitle>
+                <CardDescription className="text-slate-400">View and delete approved resources</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {allResources.map((resource) => (
+                    <div key={resource.id} className="bg-slate-900/50 border border-slate-700 p-4 rounded-lg" data-testid="resource-manage-card">
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge className="bg-slate-600">{resource.content_type}</Badge>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteResource(resource.id)}
+                          data-testid="delete-resource-btn"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <h4 className="font-semibold text-white text-sm mb-1">{resource.title}</h4>
+                      <p className="text-xs text-slate-400 mb-2 line-clamp-2">{resource.description}</p>
+                      <p className="text-xs text-slate-500">{resource.topic}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Existing Games */}
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Manage Games</CardTitle>
+                <CardDescription className="text-slate-400">View and delete games</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {allGames.map((game) => (
+                    <div key={game.id} className="bg-slate-900/50 border border-slate-700 p-4 rounded-lg" data-testid="game-manage-card">
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge className={game.difficulty === 'easy' ? 'bg-green-600' : game.difficulty === 'medium' ? 'bg-orange-600' : 'bg-red-600'}>
+                          {game.difficulty}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteGame(game.id)}
+                          data-testid="delete-game-btn"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <h4 className="font-semibold text-white text-sm mb-1">{game.title}</h4>
+                      <p className="text-xs text-slate-400 line-clamp-2">{game.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Existing Curiofacts */}
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Manage Curiofacts</CardTitle>
+                <CardDescription className="text-slate-400">View and delete curiofacts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {allFacts.map((fact) => (
+                    <div key={fact.id} className="bg-slate-900/50 border border-slate-700 p-4 rounded-lg" data-testid="fact-manage-card">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-white mb-2">{fact.title}</h4>
+                          <p className="text-sm text-slate-400 line-clamp-3">{fact.content}</p>
+                          <p className="text-xs text-slate-500 mt-2">{new Date(fact.published_at).toLocaleDateString()}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteFact(fact.id)}
+                          data-testid="delete-fact-btn"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Upload New Content Tab */}
+          <TabsContent value="upload" className="space-y-6">
               </CardContent>
             </Card>
           </TabsContent>

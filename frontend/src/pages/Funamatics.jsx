@@ -70,7 +70,7 @@ const Funamatics = () => {
               >
                 {game.thumbnail && (
                   <div className="h-48 overflow-hidden relative">
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-800 to-transparent z-10"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-800 to-transparent z-[1] pointer-events-none"></div>
                     <img
                       src={game.thumbnail}
                       alt={game.title}
@@ -78,7 +78,7 @@ const Funamatics = () => {
                     />
                   </div>
                 )}
-                <div className="p-6">
+                <div className="p-6 relative z-[2]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
                       game.difficulty === 'easy' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
@@ -98,6 +98,7 @@ const Funamatics = () => {
                     href={game.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="relative z-[3] block"
                   >
                     <Button className="w-full rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect" data-testid="game-play-btn">
                       Play Now

@@ -413,6 +413,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="users" data-testid="admin-tab-users">User Management</TabsTrigger>
             <TabsTrigger value="content" data-testid="admin-tab-content">Manage Content</TabsTrigger>
             <TabsTrigger value="upload" data-testid="admin-tab-upload">Upload New</TabsTrigger>
+            <TabsTrigger value="settings" data-testid="admin-tab-settings">Site Settings</TabsTrigger>
             <TabsTrigger value="matrix" data-testid="admin-tab-matrix">Matrix Members</TabsTrigger>
           </TabsList>
 

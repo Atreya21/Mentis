@@ -767,6 +767,58 @@ async def get_colleges(current_user: User = Depends(get_current_user)):
     colleges = await db.users.distinct("college")
     return [c for c in colleges if c]  # Filter out None/empty
 
+@api_router.get("/users/{user_id}/profile")
+async def get_user_profile(user_id: str, current_user: User = Depends(get_current_user)):
+    """Get detailed profile of a user including stats"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if isinstance(user.get('created_at'), str):
+        user['created_at'] = datetime.fromisoformat(user['created_at'])
+    
+    # Count approved resources submitted by this user
+    resources_count = await db.resources.count_documents({
+        "submitted_by": user_id,
+        "status": "approved"
+    })
+    user['resources_count'] = resources_count
+    
+    # Count total resources (including pending)
+    total_resources = await db.resources.count_documents({
+        "submitted_by": user_id
+    })
+    user['total_resources'] = total_resources
+    
+    # Count connections
+    connections_count = await db.connections.count_documents({
+        "$or": [
+            {"requester_id": user_id},
+            {"receiver_id": user_id}
+        ],
+        "status": "accepted"
+    })
+    user['connections_count'] = connections_count
+    
+    # Check connection status with current user
+    connection = await db.connections.find_one({
+        "$or": [
+            {"requester_id": current_user.id, "receiver_id": user_id},
+            {"requester_id": user_id, "receiver_id": current_user.id}
+        ]
+    }, {"_id": 0})
+    
+    if connection:
+        user['connection_status'] = connection['status']
+        user['connection_id'] = connection['id']
+        user['is_requester'] = connection['requester_id'] == current_user.id
+    else:
+        user['connection_status'] = None
+        user['connection_id'] = None
+        user['is_requester'] = None
+    
+    return user
+
 @api_router.post("/connections/request")
 async def send_connection_request(request: ConnectionRequest, current_user: User = Depends(get_current_user)):
     """Send a connection request to another user"""

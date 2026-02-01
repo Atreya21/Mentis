@@ -1037,7 +1037,7 @@ const AdminDashboard = () => {
                     </li>
                     <li>Copy the direct image URL (should end with .jpg, .png, .webp, etc.)</li>
                     <li>Paste the URL in the field above</li>
-                    <li>Preview the image and click "Save Changes"</li>
+                    <li>Preview the image and click &quot;Save Changes&quot;</li>
                     <li>Visit your homepage to see the updated image</li>
                   </ol>
                 </div>

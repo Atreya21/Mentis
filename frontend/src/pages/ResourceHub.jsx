@@ -53,6 +53,7 @@ const ResourceHub = () => {
   const { user } = useContext(AuthContext);
   const [resources, setResources] = useState([]);
   const [filter, setFilter] = useState('approved');
+  const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -61,6 +62,18 @@ const ResourceHub = () => {
     url: '',
     topic: ''
   });
+
+  // Filter resources based on search query
+  const filteredResources = useMemo(() => {
+    if (!searchQuery.trim()) return resources;
+    const query = searchQuery.toLowerCase();
+    return resources.filter(r => 
+      r.title?.toLowerCase().includes(query) ||
+      r.description?.toLowerCase().includes(query) ||
+      r.topic?.toLowerCase().includes(query) ||
+      r.uploader_name?.toLowerCase().includes(query)
+    );
+  }, [resources, searchQuery]);
 
   useEffect(() => {
     fetchResources();

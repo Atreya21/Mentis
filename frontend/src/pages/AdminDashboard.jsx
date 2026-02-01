@@ -785,13 +785,13 @@ const AdminDashboard = () => {
                       />
                     </div>
                     <div>
-                      <Label className="text-slate-300">Thumbnail URL</Label>
+                      <Label className="text-slate-300">Thumbnail URL <span className="text-orange-400 text-xs">(Google Drive supported)</span></Label>
                       <Input
                         type="url"
                         value={gameForm.thumbnail}
                         onChange={(e) => setGameForm({ ...gameForm, thumbnail: e.target.value })}
                         className="bg-slate-900 border-slate-700 text-white"
-                        placeholder="https://example.com/image.jpg"
+                        placeholder="https://drive.google.com/file/d/... or direct image URL"
                         data-testid="game-thumbnail-input"
                       />
                     </div>
@@ -799,7 +799,7 @@ const AdminDashboard = () => {
                   {gameForm.thumbnail && (
                     <div>
                       <Label className="text-slate-300 mb-2 block">Thumbnail Preview:</Label>
-                      <img src={gameForm.thumbnail} alt="Preview" className="max-w-xs h-32 object-cover rounded-lg border border-slate-700" onError={(e) => e.target.style.display='none'} />
+                      <img src={convertGoogleDriveUrl(gameForm.thumbnail)} alt="Preview" className="max-w-xs h-32 object-cover rounded-lg border border-slate-700" onError={(e) => e.target.style.display='none'} />
                     </div>
                   )}
                   <Button type="submit" className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="submit-game-btn">

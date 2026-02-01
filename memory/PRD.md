@@ -68,13 +68,14 @@ All requested features have been implemented and tested:
 - Comprehensive admin dashboard
 - Dark theme with animations
 - Footer on all pages
+- Email notifications when user resources are approved
 
 ## Test Credentials
 - **Admin Email:** atreyaghoshal.68@gmail.com
 - **Admin Password:** 4tr3y4@54N14
 
 ## Third-Party Integrations
-- **SendGrid:** Password reset emails (API key configured)
+- **SendGrid:** Password reset emails & resource approval notifications (API key configured)
 
 ## Files of Reference
 - `/app/backend/server.py` - Main API server

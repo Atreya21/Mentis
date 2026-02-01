@@ -846,20 +846,20 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-300">Image URL (optional)</Label>
+                    <Label className="text-slate-300">Image URL <span className="text-orange-400 text-xs">(Google Drive supported)</span></Label>
                     <Input
                       type="url"
                       value={factForm.image_url}
                       onChange={(e) => setFactForm({ ...factForm, image_url: e.target.value })}
                       className="bg-slate-900 border-slate-700 text-white"
-                      placeholder="https://example.com/fact-image.jpg"
+                      placeholder="https://drive.google.com/file/d/... or direct image URL"
                       data-testid="fact-image-input"
                     />
                   </div>
                   {factForm.image_url && (
                     <div>
                       <Label className="text-slate-300 mb-2 block">Image Preview:</Label>
-                      <img src={factForm.image_url} alt="Preview" className="max-w-xs h-32 object-cover rounded-lg border border-slate-700" onError={(e) => e.target.style.display='none'} />
+                      <img src={convertGoogleDriveUrl(factForm.image_url)} alt="Preview" className="max-w-xs h-32 object-cover rounded-lg border border-slate-700" onError={(e) => e.target.style.display='none'} />
                     </div>
                   )}
                   <Button type="submit" className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600" data-testid="submit-fact-btn">

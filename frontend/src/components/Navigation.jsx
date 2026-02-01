@@ -27,15 +27,18 @@ const Navigation = () => {
           
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`font-body text-sm font-medium transition-all hover:text-orange-400 hover:scale-105 ${
-                  location.pathname === link.path ? 'text-orange-500' : 'text-slate-300'
-                }`}
-              >
-                {link.name}
-              </Link>
+              // Hide auth-required links for non-logged-in users
+              (!link.requiresAuth || user) && (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`font-body text-sm font-medium transition-all hover:text-orange-400 hover:scale-105 ${
+                    location.pathname === link.path ? 'text-orange-500' : 'text-slate-300'
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              )
             ))}
           </div>
 

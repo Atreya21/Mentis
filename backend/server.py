@@ -170,11 +170,17 @@ async def signup(user_data: UserCreate):
 @api_router.post("/auth/login", response_model=Token)
 async def login(login_data: UserLogin):
     user_doc = await db.users.find_one({"email": login_data.email}, {"_id": 0})
-    if not user_doc or not pwd_context.verify(login_data.password, user_doc['password']):
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    stored_password = user_doc.get('password')
+    if not stored_password or not pwd_context.verify(login_data.password, stored_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     if isinstance(user_doc['created_at'], str):
         user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
+    
+    user_doc.pop('password', None)
     user = User(**user_doc)
     token = create_access_token({"sub": user.id})
     return Token(access_token=token, user=user)

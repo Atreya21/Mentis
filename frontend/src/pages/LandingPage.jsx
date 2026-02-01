@@ -10,69 +10,105 @@ const LandingPage = () => {
       icon: BookOpen,
       title: 'Resource Hub',
       description: 'Access curated notes, playlists, and resources on diverse mathematical topics.',
-      link: '/resources'
+      link: '/resources',
+      color: 'from-blue-500 to-cyan-500'
     },
     {
       icon: Gamepad2,
       title: 'Funamatics',
       description: 'Learn mathematics through engaging games and interactive challenges.',
-      link: '/funamatics'
+      link: '/funamatics',
+      color: 'from-orange-500 to-pink-500'
     },
     {
       icon: Sparkles,
       title: 'Curiofacts',
       description: 'Discover fascinating facts and weekly updates from the world of mathematics.',
-      link: '/curiofacts'
+      link: '/curiofacts',
+      color: 'from-purple-500 to-indigo-500'
     },
     {
       icon: Network,
       title: 'Matrix',
       description: 'Join our growing community of mathematics enthusiasts and professionals.',
-      link: '/matrix'
+      link: '/matrix',
+      color: 'from-green-500 to-emerald-500'
     }
   ];
 
   return (
-    <div className="min-h-screen pt-20">
-      <section className="relative min-h-screen flex items-center bg-gradient-to-br from-slate-50 to-slate-100 noise-texture overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 grid md:grid-cols-2 gap-12 items-center">
+    <div className="min-h-screen pt-20 bg-slate-950">
+      <section className="relative min-h-screen flex items-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 noise-texture overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 grid md:grid-cols-2 gap-12 items-center relative z-10">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="font-heading text-5xl md:text-7xl font-bold tracking-tight leading-none text-slate-900 mb-6">
-              Where Mathematics
-              <span className="block text-orange-500">Minds Connect</span>
-            </h1>
-            <p className="text-lg md:text-xl leading-relaxed text-slate-600 mb-8">
+            <motion.h1 
+              className="font-heading text-5xl md:text-7xl font-bold tracking-tight leading-none text-white mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              Mathematics is the
+              <span className="block text-gradient mt-2">Language of Logic</span>
+            </motion.h1>
+            <motion.p 
+              className="text-lg md:text-xl leading-relaxed text-slate-300 mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+            >
               Join Mentis, the premier platform for mathematics enthusiasts. Learn, share, and grow with a community that speaks your language.
-            </p>
-            <div className="flex gap-4">
+            </motion.p>
+            <motion.p 
+              className="text-base md:text-lg leading-relaxed text-slate-400 mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+            >
+              Be a part of the world where minds meet mathematics.
+            </motion.p>
+            <motion.div 
+              className="flex gap-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+            >
               <Link to="/signup">
-                <Button size="lg" className="rounded-full h-12 px-8 bg-slate-900 hover:bg-slate-800" data-testid="hero-get-started-btn">
+                <Button size="lg" className="rounded-full h-14 px-10 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect glow-on-hover" data-testid="hero-get-started-btn">
                   Get Started
                 </Button>
               </Link>
               <Link to="/matrix">
-                <Button size="lg" variant="outline" className="rounded-full h-12 px-8" data-testid="hero-join-community-btn">
+                <Button size="lg" variant="outline" className="rounded-full h-14 px-10 border-slate-700 hover:bg-slate-800 hover:border-orange-500 transition-all hover:scale-105" data-testid="hero-join-community-btn">
                   Join Community
                 </Button>
               </Link>
-            </div>
+            </motion.div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
+            className="relative animate-float"
           >
-            <img
-              src="https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85"
-              alt="Abstract mathematics geometry"
-              className="rounded-2xl shadow-2xl"
-            />
+            <div className="gradient-border glow-on-hover">
+              <div className="gradient-border-inner p-2">
+                <img
+                  src="https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85"
+                  alt="Abstract mathematics geometry"
+                  className="rounded-2xl"
+                />
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>

@@ -86,21 +86,24 @@ function App() {
   return (
     <AuthContext.Provider value={{ user, login, signup, logout }}>
       <BrowserRouter>
-        <div className="App">
+        <div className="App min-h-screen flex flex-col bg-slate-950">
           <Navigation />
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
-            <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/resources" element={<ResourceHub />} />
-            <Route path="/funamatics" element={<Funamatics />} />
-            <Route path="/curiofacts" element={<Curiofacts />} />
-            <Route path="/matrix" element={<Matrix />} />
-            <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} />
-          </Routes>
+          <div className="flex-grow">
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
+              <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/resources" element={<ResourceHub />} />
+              <Route path="/funamatics" element={<Funamatics />} />
+              <Route path="/curiofacts" element={<Curiofacts />} />
+              <Route path="/matrix" element={<Matrix />} />
+              <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+              <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} />
+            </Routes>
+          </div>
+          <Footer />
           <Toaster position="top-right" />
         </div>
       </BrowserRouter>

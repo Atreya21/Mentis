@@ -305,6 +305,86 @@ async def admin_create_resource(resource_data: ResourceCreate, admin: User = Dep
     await db.resources.insert_one(doc)
     return resource
 
+@api_router.delete("/admin/delete-resource/{resource_id}")
+async def delete_resource(resource_id: str, admin: User = Depends(get_admin_user)):
+    result = await db.resources.delete_one({"id": resource_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    return {"message": "Resource deleted successfully"}
+
+@api_router.delete("/admin/delete-game/{game_id}")
+async def delete_game(game_id: str, admin: User = Depends(get_admin_user)):
+    result = await db.games.delete_one({"id": game_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Game not found")
+    return {"message": "Game deleted successfully"}
+
+@api_router.delete("/admin/delete-curiofact/{fact_id}")
+async def delete_curiofact(fact_id: str, admin: User = Depends(get_admin_user)):
+    result = await db.curiofacts.delete_one({"id": fact_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Curiofact not found")
+    return {"message": "Curiofact deleted successfully"}
+
+@api_router.get("/admin/export-users-csv")
+async def export_users_csv(admin: User = Depends(get_admin_user)):
+    from fastapi.responses import StreamingResponse
+    import io
+    import csv
+    
+    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=['id', 'name', 'email', 'role', 'created_at'])
+    writer.writeheader()
+    
+    for user in users:
+        writer.writerow({
+            'id': user.get('id', ''),
+            'name': user.get('name', ''),
+            'email': user.get('email', ''),
+            'role': user.get('role', ''),
+            'created_at': user.get('created_at', '')
+        })
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=mentis_users.csv"}
+    )
+
+@api_router.get("/admin/export-matrix-csv")
+async def export_matrix_csv(admin: User = Depends(get_admin_user)):
+    from fastapi.responses import StreamingResponse
+    import io
+    import csv
+    
+    members = await db.matrix_registrations.find({}, {"_id": 0}).to_list(1000)
+    
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=['id', 'name', 'email', 'college', 'interests', 'created_at'])
+    writer.writeheader()
+    
+    for member in members:
+        writer.writerow({
+            'id': member.get('id', ''),
+            'name': member.get('name', ''),
+            'email': member.get('email', ''),
+            'college': member.get('college', ''),
+            'interests': member.get('interests', ''),
+            'created_at': member.get('created_at', '')
+        })
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=mentis_matrix_members.csv"}
+    )
+
 app.include_router(api_router)
 
 app.add_middleware(

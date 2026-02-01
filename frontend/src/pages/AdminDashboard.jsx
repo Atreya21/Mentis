@@ -255,6 +255,7 @@ const AdminDashboard = () => {
       setGameDialogOpen(false);
       setGameForm({ title: '', description: '', url: '', thumbnail: '', difficulty: 'easy' });
       fetchStats();
+      fetchAllGames();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to create game');
     }
@@ -271,6 +272,7 @@ const AdminDashboard = () => {
       setFactDialogOpen(false);
       setFactForm({ title: '', content: '', image_url: '' });
       fetchStats();
+      fetchAllFacts();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to publish curiofact');
     }

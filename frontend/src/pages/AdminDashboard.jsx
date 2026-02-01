@@ -19,6 +19,9 @@ const API = `${BACKEND_URL}/api`;
 
 const AdminDashboard = () => {
   const [pendingResources, setPendingResources] = useState([]);
+  const [allResources, setAllResources] = useState([]);
+  const [allGames, setAllGames] = useState([]);
+  const [allFacts, setAllFacts] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [matrixMembers, setMatrixMembers] = useState([]);
   const [stats, setStats] = useState({ users: 0, resources: 0, games: 0, facts: 0, matrixMembers: 0 });

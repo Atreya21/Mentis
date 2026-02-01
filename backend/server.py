@@ -140,6 +140,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             raise HTTPException(status_code=401, detail="User not found")
         if isinstance(user_doc['created_at'], str):
             user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
+        user_doc.pop('password', None)
         return User(**user_doc)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")

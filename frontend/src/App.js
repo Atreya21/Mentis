@@ -16,6 +16,7 @@ import Curiofacts from '@/pages/Curiofacts';
 import Matrix from '@/pages/Matrix';
 import Dashboard from '@/pages/Dashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
+import ConnectPage from '@/pages/ConnectPage';
 import '@/App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

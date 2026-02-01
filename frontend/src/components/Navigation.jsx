@@ -1,0 +1,81 @@
+import React, { useContext } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { AuthContext } from '@/App';
+import { Button } from '@/components/ui/button';
+import { LogOut, User } from 'lucide-react';
+
+const Navigation = () => {
+  const { user, logout } = useContext(AuthContext);
+  const location = useLocation();
+
+  const navLinks = [
+    { name: 'Home', path: '/' },
+    { name: 'Resource Hub', path: '/resources' },
+    { name: 'Funamatics', path: '/funamatics' },
+    { name: 'Curiofacts', path: '/curiofacts' },
+    { name: 'Matrix', path: '/matrix' },
+  ];
+
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+      <div className="max-w-7xl mx-auto px-6 md:px-12">
+        <div className="flex items-center justify-between h-20">
+          <Link to="/" className="font-heading text-3xl font-bold text-slate-900">
+            Mentis
+          </Link>
+          
+          <div className="hidden md:flex items-center gap-8">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`font-body text-sm font-medium transition-colors hover:text-orange-500 ${
+                  location.pathname === link.path ? 'text-orange-500' : 'text-slate-600'
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                <Link to="/dashboard">
+                  <Button variant="outline" size="sm" className="rounded-full" data-testid="dashboard-btn">
+                    <User className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button
+                  onClick={logout}
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full"
+                  data-testid="logout-btn"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" size="sm" className="rounded-full" data-testid="login-nav-btn">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/signup">
+                  <Button size="sm" className="rounded-full bg-orange-500 hover:bg-orange-600" data-testid="signup-nav-btn">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navigation;

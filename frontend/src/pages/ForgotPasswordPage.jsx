@@ -90,38 +90,36 @@ const ForgotPasswordPage = () => {
                     <CheckCircle className="w-8 h-8 text-green-500" />
                   </div>
                   
+                  <h3 className="text-xl font-semibold text-white text-center mb-2">
+                    Check Your Email
+                  </h3>
+                  
                   <p className="text-slate-300 text-center mb-4">
-                    Password reset link has been generated. Copy and use the link below:
+                    If an account exists with <strong>{email}</strong>, you will receive a password reset link shortly.
                   </p>
 
                   <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
-                    <p className="text-xs text-slate-500 mb-2">Reset Link:</p>
-                    <code className="text-sm text-orange-400 break-all">{resetLink}</code>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => {
-                        navigator.clipboard.writeText(resetLink);
-                        toast.success('Link copied to clipboard!');
-                      }}
-                      className="flex-1 bg-slate-700 hover:bg-slate-600"
-                      data-testid="copy-reset-link-btn"
-                    >
-                      Copy Link
-                    </Button>
-                    <Button
-                      onClick={() => window.location.href = resetLink}
-                      className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
-                      data-testid="use-reset-link-btn"
-                    >
-                      Use Link Now
-                    </Button>
+                    <p className="text-sm text-slate-400 text-center">
+                      📧 Check your inbox (and spam folder) for an email from Mentis with instructions to reset your password.
+                    </p>
                   </div>
 
                   <p className="text-xs text-slate-500 text-center mt-4">
-                    Note: This link expires in 1 hour
+                    Note: The reset link will expire in 1 hour
                   </p>
+
+                  <div className="pt-4">
+                    <Button
+                      onClick={() => {
+                        setSubmitted(false);
+                        setEmail('');
+                      }}
+                      variant="outline"
+                      className="w-full border-slate-700 hover:bg-slate-800"
+                    >
+                      Send Another Link
+                    </Button>
+                  </div>
                 </div>
               )}
 

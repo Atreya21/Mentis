@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';

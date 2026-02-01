@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/App';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Shield } from 'lucide-react';
+import { LogOut, User, Shield, Users } from 'lucide-react';
 
 const Navigation = () => {
   const { user, logout } = useContext(AuthContext);
@@ -14,6 +14,7 @@ const Navigation = () => {
     { name: 'Funamatics', path: '/funamatics' },
     { name: 'Curiofacts', path: '/curiofacts' },
     { name: 'Matrix', path: '/matrix' },
+    { name: 'Connect', path: '/connect', requiresAuth: true },
   ];
 
   return (

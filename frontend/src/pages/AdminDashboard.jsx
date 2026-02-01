@@ -778,13 +778,13 @@ const AdminDashboard = () => {
                           <div className="mt-2">
                             <p className="text-xs text-slate-500 mb-1">Reset Link:</p>
                             <code className="text-xs text-orange-400 break-all block bg-slate-950 p-2 rounded">
-                              https://mentismath.preview.emergentagent.com/reset-password?token={tokenData.token}
+                              {window.location.origin}/reset-password?token={tokenData.token}
                             </code>
                             <Button
                               size="sm"
                               className="mt-2 bg-slate-700 hover:bg-slate-600"
                               onClick={() => {
-                                const link = `https://mentismath.preview.emergentagent.com/reset-password?token=${tokenData.token}`;
+                                const link = `${window.location.origin}/reset-password?token=${tokenData.token}`;
                                 navigator.clipboard.writeText(link);
                                 toast.success('Reset link copied!');
                               }}

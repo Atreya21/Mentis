@@ -154,6 +154,15 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchSiteSettings = async () => {
+    try {
+      const res = await axios.get(`${API}/site-settings`);
+      setSiteSettings(res.data);
+    } catch (err) {
+      toast.error('Failed to fetch site settings');
+    }
+  };
+
   const handleApproval = async (resourceId, status) => {
     try {
       const token = localStorage.getItem('token');

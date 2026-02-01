@@ -176,23 +176,26 @@ const ResourceHub = () => {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {resources.map((resource) => (
-            <div
+            <motion.div
               key={resource.id}
-              className="bg-white border border-slate-100 p-6 rounded-xl hover:-translate-y-1 transition-all duration-300 hover:shadow-lg"
+              className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-6 rounded-xl hover-lift card-hover shine-effect group"
               data-testid="resource-card"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.02 }}
             >
               <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-slate-600" />
+                <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-orange-400" />
                 </div>
-                <span className="text-xs font-medium px-3 py-1 bg-orange-100 text-orange-600 rounded-full">
+                <span className="text-xs font-medium px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full border border-orange-500/30">
                   {resource.content_type}
                 </span>
               </div>
-              <h3 className="font-heading text-xl font-semibold text-slate-900 mb-2">
+              <h3 className="font-heading text-xl font-semibold text-white mb-2">
                 {resource.title}
               </h3>
-              <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+              <p className="text-sm text-slate-400 mb-3 line-clamp-2">
                 {resource.description}
               </p>
               <div className="flex items-center justify-between">
@@ -201,13 +204,13 @@ const ResourceHub = () => {
                   href={resource.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-orange-500 hover:text-orange-600 font-medium"
+                  className="text-sm text-orange-400 hover:text-orange-300 font-medium transition-colors"
                   data-testid="resource-view-link"
                 >
                   View →
                 </a>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 

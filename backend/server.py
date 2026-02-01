@@ -178,6 +178,62 @@ class PasswordResetToken(BaseModel):
     expires_at: datetime
     used: bool = False
 
+# Connection/Chat Models
+class Connection(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    requester_id: str
+    receiver_id: str
+    status: str = "pending"  # pending, accepted, rejected
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ConnectionRequest(BaseModel):
+    receiver_id: str
+
+class Message(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    connection_id: str
+    sender_id: str
+    content: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    read: bool = False
+
+class MessageCreate(BaseModel):
+    content: str
+
+class UserPublic(BaseModel):
+    id: str
+    name: str
+    email: str
+    college: Optional[str] = None
+    created_at: datetime
+
+# WebSocket Connection Manager for real-time chat
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+    
+    async def connect(self, websocket: WebSocket, user_id: str):
+        await websocket.accept()
+        self.active_connections[user_id] = websocket
+    
+    def disconnect(self, user_id: str):
+        if user_id in self.active_connections:
+            del self.active_connections[user_id]
+    
+    async def send_personal_message(self, message: dict, user_id: str):
+        if user_id in self.active_connections:
+            await self.active_connections[user_id].send_json(message)
+    
+    async def broadcast_to_users(self, message: dict, user_ids: List[str]):
+        for user_id in user_ids:
+            if user_id in self.active_connections:
+                await self.active_connections[user_id].send_json(message)
+
+manager = ConnectionManager()
+
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=7)

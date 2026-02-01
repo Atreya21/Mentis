@@ -726,7 +726,7 @@ const AdminDashboard = () => {
                       Home Page Hero Image
                     </Label>
                     <p className="text-sm text-slate-400 mb-4">
-                      Upload your company logo or hero image to an image hosting service (Imgur, Google Drive, Cloudinary, etc.) and paste the direct image URL below.
+                      Upload your image to an image hosting service and paste the URL below. <span className="text-orange-400">Google Drive links are automatically converted!</span>
                     </p>
                     <Input
                       id="hero-image"
@@ -734,7 +734,7 @@ const AdminDashboard = () => {
                       value={siteSettings.hero_image_url}
                       onChange={(e) => setSiteSettings({ ...siteSettings, hero_image_url: e.target.value })}
                       className="bg-slate-900 border-slate-700 text-white"
-                      placeholder="https://example.com/your-logo.png"
+                      placeholder="https://drive.google.com/file/d/YOUR_FILE_ID/view or direct image URL"
                       data-testid="hero-image-input"
                     />
                     <p className="text-xs text-slate-500 mt-2">

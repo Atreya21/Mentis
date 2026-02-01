@@ -178,7 +178,7 @@ const ResourceHub = () => {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="url" className="text-slate-300">URL</Label>
+                    <Label htmlFor="url" className="text-slate-300">URL <span className="text-orange-400 text-xs">(Google Drive links supported)</span></Label>
                     <Input
                       id="url"
                       type="url"
@@ -186,9 +186,10 @@ const ResourceHub = () => {
                       onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                       required
                       className="mt-2 bg-slate-900 border-slate-700 text-white"
-                      placeholder="https://..."
+                      placeholder="https://drive.google.com/file/d/... or direct URL"
                       data-testid="resource-url-input"
                     />
+                    <p className="text-xs text-slate-500 mt-1">For Google Drive, set sharing to "Anyone with the link"</p>
                   </div>
                   <Button type="submit" className="w-full rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="resource-submit-btn">
                     Submit

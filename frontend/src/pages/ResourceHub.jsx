@@ -297,7 +297,16 @@ const ResourceHub = () => {
 
         {filteredResources.length === 0 && searchQuery && (
           <div className="text-center py-20">
-            <p className="text-slate-500 text-lg">No resources found</p>
+            <Search className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-400 text-lg">No resources found for &quot;{searchQuery}&quot;</p>
+            <p className="text-slate-500 text-sm mt-2">Try a different search term</p>
+          </div>
+        )}
+
+        {filteredResources.length === 0 && !searchQuery && resources.length === 0 && (
+          <div className="text-center py-20">
+            <BookOpen className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-400 text-lg">No resources available yet</p>
           </div>
         )}
       </div>

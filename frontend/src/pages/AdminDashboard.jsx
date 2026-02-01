@@ -17,8 +17,8 @@ import { motion } from 'framer-motion';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Utility function to convert Google Drive URLs to direct image URLs
-const convertToDirectImageUrl = (url) => {
+// Utility function to convert Google Drive URLs to direct/viewable URLs
+const convertGoogleDriveUrl = (url, forceDownload = false) => {
   if (!url) return url;
   
   // Google Drive file link patterns
@@ -34,6 +34,7 @@ const convertToDirectImageUrl = (url) => {
     /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
     /drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/,
     /drive\.google\.com\/uc\?export=view&id=([a-zA-Z0-9_-]+)/,
+    /drive\.google\.com\/uc\?export=download&id=([a-zA-Z0-9_-]+)/,
   ];
   
   for (const pattern of patterns) {
@@ -44,14 +45,20 @@ const convertToDirectImageUrl = (url) => {
     }
   }
   
-  // If we found a Google Drive file ID, convert to direct URL
+  // If we found a Google Drive file ID, convert to appropriate URL
   if (fileId) {
-    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    // For downloads (PDFs, documents), use export=download
+    // For images/viewing, use export=view
+    const exportType = forceDownload ? 'download' : 'view';
+    return `https://drive.google.com/uc?export=${exportType}&id=${fileId}`;
   }
   
   // Return original URL if not a Google Drive link
   return url;
 };
+
+// Alias for backward compatibility
+const convertToDirectImageUrl = (url) => convertGoogleDriveUrl(url, false);
 
 const AdminDashboard = () => {
   const [pendingResources, setPendingResources] = useState([]);

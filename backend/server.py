@@ -444,6 +444,88 @@ async def update_site_settings(settings_update: SiteSettingsUpdate, admin: User 
         settings['updated_at'] = datetime.fromisoformat(settings['updated_at'])
     return SiteSettings(**settings)
 
+@api_router.post("/auth/forgot-password")
+async def forgot_password(request: PasswordResetRequest):
+    user = await db.users.find_one({"email": request.email}, {"_id": 0})
+    if not user:
+        # Don't reveal if email exists or not for security
+        return {"message": "If your email is registered, you will receive a password reset link"}
+    
+    # Generate secure token
+    reset_token = secrets.token_urlsafe(32)
+    
+    # Create reset token document
+    token_doc = {
+        "id": str(uuid.uuid4()),
+        "email": request.email,
+        "token": reset_token,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+        "used": False
+    }
+    
+    await db.password_reset_tokens.insert_one(token_doc)
+    
+    # In production, send email here
+    # For now, return the token (admins can share this manually)
+    reset_link = f"https://mathnet-social.preview.emergentagent.com/reset-password?token={reset_token}"
+    
+    return {
+        "message": "If your email is registered, you will receive a password reset link",
+        "reset_link": reset_link,
+        "token": reset_token,
+        "note": "Share this link with the user manually or via email"
+    }
+
+@api_router.post("/auth/reset-password")
+async def reset_password(reset_data: PasswordReset):
+    # Find valid token
+    token_doc = await db.password_reset_tokens.find_one({
+        "token": reset_data.token,
+        "used": False
+    }, {"_id": 0})
+    
+    if not token_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    # Check if token is expired
+    expires_at = datetime.fromisoformat(token_doc['expires_at']) if isinstance(token_doc['expires_at'], str) else token_doc['expires_at']
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+    
+    # Update user password
+    hashed_password = pwd_context.hash(reset_data.new_password)
+    result = await db.users.update_one(
+        {"email": token_doc['email']},
+        {"$set": {"password": hashed_password}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Mark token as used
+    await db.password_reset_tokens.update_one(
+        {"token": reset_data.token},
+        {"$set": {"used": True}}
+    )
+    
+    return {"message": "Password reset successfully"}
+
+@api_router.get("/admin/password-reset-tokens")
+async def get_password_reset_tokens(admin: User = Depends(get_admin_user)):
+    tokens = await db.password_reset_tokens.find(
+        {"used": False},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(50).to_list(50)
+    
+    for token in tokens:
+        if isinstance(token.get('created_at'), str):
+            token['created_at'] = datetime.fromisoformat(token['created_at'])
+        if isinstance(token.get('expires_at'), str):
+            token['expires_at'] = datetime.fromisoformat(token['expires_at'])
+    
+    return tokens
+
 app.include_router(api_router)
 
 app.add_middleware(

@@ -3,7 +3,7 @@ import { AuthContext } from '@/App';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, Gamepad2, Sparkles, User } from 'lucide-react';
+import { BookOpen, Gamepad2, Sparkles, User, Award } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

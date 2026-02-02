@@ -713,16 +713,21 @@ const ConnectPage = () => {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                    <BookOpen className="w-5 h-5 text-orange-400 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-white">{selectedUserProfile.resources_count || 0}</p>
-                    <p className="text-xs text-slate-400">Approved Resources</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-lg p-4 text-center border border-yellow-500/30">
+                    <Award className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-gradient">{selectedUserProfile.total_resources || 0}</p>
+                    <p className="text-xs text-slate-300">Mentis Score</p>
                   </div>
                   <div className="bg-slate-800/50 rounded-lg p-4 text-center">
                     <Link2 className="w-5 h-5 text-green-400 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-white">{selectedUserProfile.connections_count || 0}</p>
                     <p className="text-xs text-slate-400">Connections</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                    <BookOpen className="w-5 h-5 text-orange-400 mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-white">{selectedUserProfile.resources_count || 0}</p>
+                    <p className="text-xs text-slate-400">Approved Resources</p>
                   </div>
                   <div className="bg-slate-800/50 rounded-lg p-4 text-center">
                     <Calendar className="w-5 h-5 text-blue-400 mx-auto mb-2" />

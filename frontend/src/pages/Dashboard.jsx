@@ -69,6 +69,19 @@ const Dashboard = () => {
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
+                <Award className="w-5 h-5 text-yellow-400" />
+                Mentis Score
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-gradient">{myResources.length}</p>
+              <p className="text-sm text-slate-400 mt-2">Resources contributed</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
                 <BookOpen className="w-5 h-5 text-orange-400" />
                 Resources
               </CardTitle>

@@ -14,7 +14,7 @@ const Navigation = () => {
     { name: 'Funamatics', path: '/funamatics' },
     { name: 'Curiofacts', path: '/curiofacts' },
     { name: 'Matrix', path: '/matrix' },
-    { name: 'Connect', path: '/connect', requiresAuth: true },
+    { name: 'Mathmate', path: '/connect', requiresAuth: true },
   ];
 
   return (

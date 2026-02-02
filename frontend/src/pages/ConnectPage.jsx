@@ -317,7 +317,7 @@ const ConnectPage = () => {
           className="mb-8"
         >
           <h1 className="font-heading text-4xl md:text-5xl font-bold text-gradient mb-4">
-            Connect
+            Mathmate
           </h1>
           <p className="text-slate-400 text-lg">
             Find and connect with fellow mathematics enthusiasts

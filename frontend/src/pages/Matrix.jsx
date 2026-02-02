@@ -108,9 +108,12 @@ const Matrix = () => {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="max-w-2xl mx-auto bg-black border-2 border-green-900 rounded-2xl p-8 md:p-12"
         >
-          <h2 className="font-mono text-3xl font-bold text-green-500 mb-8 text-center uppercase tracking-wider">
+          <h2 className="font-mono text-3xl font-bold text-green-500 mb-4 text-center uppercase tracking-wider">
             Join the Network
           </h2>
+          <p className="font-mono text-sm text-yellow-400 text-center mb-8 border border-yellow-500/30 bg-yellow-500/10 rounded-lg py-2 px-4">
+            ⚠️ All details must be filled in CAPITAL LETTERS
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -118,9 +121,10 @@ const Matrix = () => {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
                 required
-                className="mt-2 bg-black border-green-900 text-green-500 font-mono focus:border-green-500 focus:ring-green-500"
+                className="mt-2 bg-black border-green-900 text-green-500 font-mono focus:border-green-500 focus:ring-green-500 uppercase"
+                placeholder="ENTER YOUR NAME"
                 data-testid="matrix-name-input"
               />
             </div>
@@ -134,6 +138,7 @@ const Matrix = () => {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
                 className="mt-2 bg-black border-green-900 text-green-500 font-mono focus:border-green-500 focus:ring-green-500"
+                placeholder="your.email@example.com"
                 data-testid="matrix-email-input"
               />
             </div>
@@ -143,9 +148,10 @@ const Matrix = () => {
               <Input
                 id="college"
                 value={formData.college}
-                onChange={(e) => setFormData({ ...formData, college: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, college: e.target.value.toUpperCase() })}
                 required
-                className="mt-2 bg-black border-green-900 text-green-500 font-mono focus:border-green-500 focus:ring-green-500"
+                className="mt-2 bg-black border-green-900 text-green-500 font-mono focus:border-green-500 focus:ring-green-500 uppercase"
+                placeholder="ENTER YOUR COLLEGE NAME"
                 data-testid="matrix-college-input"
               />
             </div>

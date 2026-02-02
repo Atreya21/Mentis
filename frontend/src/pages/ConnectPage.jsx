@@ -14,7 +14,7 @@ import axios from 'axios';
 import { 
   Search, UserPlus, Check, X, MessageCircle, Send, 
   Users, Bell, Clock, UserCheck, Filter, Loader2,
-  ArrowLeft, Circle, BookOpen, Calendar, Link2, Eye
+  ArrowLeft, Circle, BookOpen, Calendar, Link2, Eye, Award
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

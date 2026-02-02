@@ -40,7 +40,7 @@ const Dashboard = () => {
           <p className="text-lg text-slate-400">Manage your account and contributions</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">

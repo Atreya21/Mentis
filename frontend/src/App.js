@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Keyboard } from '@capacitor/keyboard';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
@@ -26,6 +29,34 @@ const API = `${BACKEND_URL}/api`;
 
 export const AuthContext = React.createContext(null);
 
+// Initialize Capacitor plugins
+const initCapacitor = async () => {
+  if (Capacitor.isNativePlatform()) {
+    // Add capacitor class to body for CSS targeting
+    document.body.classList.add('capacitor');
+    
+    try {
+      // Configure status bar for dark theme
+      await StatusBar.setStyle({ style: Style.Dark });
+      await StatusBar.setBackgroundColor({ color: '#0f172a' });
+    } catch (e) {
+      console.log('StatusBar plugin not available');
+    }
+    
+    try {
+      // Configure keyboard behavior
+      Keyboard.addListener('keyboardWillShow', () => {
+        document.body.classList.add('keyboard-open');
+      });
+      Keyboard.addListener('keyboardWillHide', () => {
+        document.body.classList.remove('keyboard-open');
+      });
+    } catch (e) {
+      console.log('Keyboard plugin not available');
+    }
+  }
+};
+
 // Conditional Footer component that only shows on specific pages
 const ConditionalFooter = () => {
   const location = useLocation();
@@ -43,6 +74,9 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Initialize Capacitor plugins
+    initCapacitor();
+    
     const token = localStorage.getItem('token');
     if (token) {
       axios.get(`${API}/auth/me`, {

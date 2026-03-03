@@ -7,14 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Sparkles, User, Award, Edit, Video, Mail, Check, X, Clock } from 'lucide-react';
+import { BookOpen, Sparkles, User, Award, Edit, Video, Mail, Check, X, Clock, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const Dashboard = () => {
-  const { user, setUser } = useContext(AuthContext);
+  const { user, logout, setUser } = useContext(AuthContext);
   const [myResources, setMyResources] = useState([]);
   const [pendingResources, setPendingResources] = useState([]);
   const [pendingReels, setPendingReels] = useState([]);
@@ -96,11 +96,22 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen pt-20 bg-slate-950">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
-        <div className="mb-12">
-          <h1 className="font-heading text-5xl font-bold text-white mb-4">
-            Welcome, {user?.name}!
-          </h1>
-          <p className="text-lg text-slate-400">Manage your account and contributions</p>
+        <div className="mb-12 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-5xl font-bold text-white mb-4">
+              Welcome, {user?.name}!
+            </h1>
+            <p className="text-lg text-slate-400">Manage your account and contributions</p>
+          </div>
+          <Button
+            onClick={logout}
+            variant="outline"
+            className="rounded-full border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 w-fit"
+            data-testid="logout-btn"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Log Out
+          </Button>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

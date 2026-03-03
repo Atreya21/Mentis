@@ -2,14 +2,14 @@ import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/App';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Shield, MessageCircle } from 'lucide-react';
+import { User, Shield } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const Navigation = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const location = useLocation();
   const [logoUrl, setLogoUrl] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -137,15 +137,6 @@ const Navigation = () => {
                     </Button>
                   </Link>
                 )}
-                <Button
-                  onClick={logout}
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-full hover:bg-slate-800"
-                  data-testid="logout-btn"
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
               </>
             ) : (
               <>

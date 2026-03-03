@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { 
   Play, Plus, Heart, MessageCircle, Share2, 
@@ -108,6 +109,7 @@ const ReelsPage = () => {
   };
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen pt-20 bg-slate-950">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
@@ -276,9 +278,16 @@ const ReelsPage = () => {
                       </div>
                     </div>
 
-                    <p className="text-slate-300 text-sm mb-4 line-clamp-3">
-                      {reel.caption}
-                    </p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-slate-300 text-sm mb-4 line-clamp-3 cursor-help">
+                          {reel.caption}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-sm bg-slate-900 border-slate-700 text-slate-200 p-3">
+                        <p className="text-sm">{reel.caption}</p>
+                      </TooltipContent>
+                    </Tooltip>
 
                     <div className="flex items-center gap-3 relative z-20">
                       <Button
@@ -333,6 +342,7 @@ const ReelsPage = () => {
         )}
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 

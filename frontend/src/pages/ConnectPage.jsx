@@ -987,8 +987,9 @@ const ConnectPage = () => {
                         </div>
 
                         {/* Messages */}
-                        <ScrollArea className="flex-1 py-4 h-[350px]">
-                          <div className="space-y-3 pr-4">
+                        <div className="flex-1 overflow-hidden relative">
+                          <ScrollArea className="absolute inset-0">
+                            <div className="space-y-3 pr-4 py-4">
                             {messages.map((msg) => (
                               <div
                                 key={msg.id}
@@ -1058,6 +1059,7 @@ const ConnectPage = () => {
                             <div ref={messagesEndRef} />
                           </div>
                         </ScrollArea>
+                        </div>
 
                         {/* Reply indicator */}
                         {replyingTo && (

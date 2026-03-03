@@ -113,8 +113,8 @@ function App() {
               <Route path="/about" element={<AboutUs />} />
               <Route path="/resources" element={user ? <ResourceHub /> : <Navigate to="/login" />} />
               <Route path="/funamatics" element={user ? <Funamatics /> : <Navigate to="/login" />} />
-              <Route path="/curiofacts" element={<Curiofacts />} />
-              <Route path="/matrix" element={<Matrix />} />
+              <Route path="/curiofacts" element={user ? <Curiofacts /> : <Navigate to="/login" />} />
+              <Route path="/matrix" element={user ? <Matrix /> : <Navigate to="/login" />} />
               <Route path="/connect" element={user ? <ConnectPage /> : <Navigate to="/login" />} />
               <Route path="/reels" element={user ? <ReelsPage /> : <Navigate to="/login" />} />
               <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />

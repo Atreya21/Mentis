@@ -10,6 +10,7 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - **Role-based access**: user, admin, master_admin
 - **Forgot Password**: Secure password reset via SendGrid email
 - **Master Admin**: Specific user (atreyaghoshal.68@gmail.com) has elevated privileges to demote/remove admins
+- **Edit Profile**: Users can update their name and email from dashboard
 
 ### Protected Routes (Require Login)
 - Resource Hub
@@ -24,7 +25,9 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - Resources require admin approval
 - Uploader's name displayed on each resource
 - Search functionality
-- **Like and Comment features** for user engagement
+- **Like and Comment features** (outline button style)
+- **Save/Bookmark resources** - personal saved resources section
+- **Share resources** with promotional message
 - Description tooltips on hover
 
 #### 2. Funamatics
@@ -34,7 +37,9 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 
 #### 3. Curiofacts
 - Weekly math facts and interesting content
-- **Like and Comment features** for user engagement
+- **Like and Comment features** (outline button style)
+- **Share facts** with promotional message
+- **User submissions** - users can submit curiofacts for admin approval
 
 #### 4. Matrix
 - Community joining section
@@ -50,10 +55,12 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - Direct video upload option
 - Caption with creator acknowledgment requirement
 - Admin approval workflow
-- Like functionality
+- **Like and Share** functionality
+- **Contributes to Mentis Score** when approved
 
 #### 6. Mathmate (formerly Connect)
-- User discovery and search
+- User discovery and search (no filters, search only)
+- **Email privacy** - emails hidden by default, users can request email access
 - Connection requests (send, accept, reject)
 - Real-time chat with WebSockets
 - **Enhanced Chat Features**:
@@ -63,19 +70,35 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
   - Pinned chats
   - Refresh chat button
   - Clear chat history
+  - **Shows last message** in connection list (not first)
 - User profile view with Mentis Score
 - **User Report feature** for misconduct
-- Organization-based filtering (removed "All Colleges" option)
+- **Matrix Members subsection** - view registered members (name, org, interests)
+
+### User Dashboard
+- **Edit Profile button** - update name and email
+- **Pending Submissions section** - view pending resources, reels, curiofacts
+- **Email Requests section** - approve/reject email visibility requests
+- Mentis Score display
+- Approved resources list
 
 ### Admin Control Panel
-- **8 Tabs**: Pending Approvals, User Management, Manage Content, Upload New, Pending Reels, User Reports, Site Settings, Matrix Members
-- Approve/reject resources and reels
-- Manage users (promote to admin, delete users)
+- **9 Tabs**: 
+  1. Pending Approvals (resources)
+  2. User Management
+  3. Manage Content
+  4. Upload New
+  5. Pending Reels
+  6. Pending Curiofacts
+  7. User Reports
+  8. Site Settings
+  9. Matrix Members
 - **Master Admin features**: Demote admins
-- Manage games and curiofacts
-- Update site settings (hero image with Google Drive URL support)
 - Export users and matrix members as CSV
 - Review and resolve user reports
+
+### Homepage
+- **"Sign up to unlock all features"** message for non-logged-in users
 
 ### Footer
 - Contact email: mentis.mathematics@gmail.com
@@ -86,16 +109,14 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - **Frontend**: React, Tailwind CSS, shadcn/ui, Framer Motion
 - **Authentication**: JWT with Passlib
 - **Email**: SendGrid
-- **Architecture**: MERN-like (MongoDB, FastAPI, React)
 
 ## Database Schema
-- `users`: {id, name, email, hashed_password, role, college, created_at}
+- `users`: {id, name, email, hashed_password, role, college, total_resources, created_at}
 - `resources`: {id, title, url, status, submitted_by, uploader_name, created_at}
 - `games`: {id, title, url, thumbnail, difficulty, description}
-- `curiofacts`: {id, title, content, published_at}
+- `curiofacts`: {id, title, content, published_at, submitted_by, submitter_name}
+- `curiofact_submissions`: {id, user_id, user_name, title, content, status, created_at}
 - `matrix_registrations`: {id, name, email, college, interests}
-- `password_reset_tokens`: {email, token, expires_at}
-- `settings` & `site_settings`: {key/id, hero_image_url}
 - `connections`: {id, requester_id, receiver_id, status}
 - `messages`: {id, connection_id, sender_id, content, reply_to, unsent, created_at}
 - `likes`: {id, user_id, target_id, target_type, created_at}
@@ -103,41 +124,45 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - `reels`: {id, user_id, user_name, video_url, video_type, caption, status, created_at}
 - `user_reports`: {id, reporter_id, reported_user_id, reason, description, status, created_at}
 - `pinned_chats`: {id, user_id, connection_id, created_at}
+- `saved_resources`: {id, user_id, resource_id, created_at}
+- `email_requests`: {id, requester_id, target_user_id, status, created_at}
 
 ## Key API Endpoints
 - `/api/auth/{signup, login, forgot-password, reset-password}`
-- `/api/resources`, `/api/games`, `/api/curiofacts`
-- `/api/admin/{approve-resource, users, delete-user, promote-admin, site-settings}`
-- `/api/reels`, `/api/reels/pending`, `/api/admin/reels/{reel_id}`
+- `/api/users/me` (PATCH - update profile)
+- `/api/users/me/pending` (GET - pending items)
+- `/api/resources`, `/api/saved-resources`, `/api/resources/{id}/save`
+- `/api/reels`, `/api/reels/pending`
+- `/api/curiofacts`, `/api/curiofacts/submit`, `/api/curiofacts/pending`
 - `/api/{target_type}/{target_id}/like`, `/api/{target_type}/{target_id}/comment`
-- `/api/users/{user_id}/report`, `/api/admin/reports`
-- `/api/connections`, `/api/messages`, `/api/connections/{id}/pin`
-- `/api/messages/{id}/unsend`, `/api/messages/{id}/reply`
+- `/api/users/{user_id}/report`, `/api/users/{user_id}/request-email`
+- `/api/email-requests`
+- `/api/connections`, `/api/messages`
+- `/api/matrix-members-public`
 - `/api/master-admin/demote/{user_id}`
-- `WS /api/ws/{user_id}` (WebSocket for real-time chat)
 
 ## Implementation Status
 
-### Completed ✅
-- Full authentication system with password reset
-- Resource Hub with like/comment, search, tooltips
-- Funamatics with search, tooltips
-- Curiofacts with like/comment
-- Matrix with organization labels and CAPITAL letters enforcement
-- Mathmate with enhanced chat features (reply, unsend, delete, pin, refresh)
-- User reporting system
-- Reels section for educational videos
-- Admin dashboard with 8 management tabs
-- Master admin role with demote capability
-- Protected routes requiring authentication
-- Email notifications (password reset, resource approval)
-- Google Drive URL conversion for all media
+### Completed (Latest Session)
+1. ✅ Like/Comment buttons changed to outline style for better visibility
+2. ✅ Homepage shows "Sign up to unlock all features" message
+3. ✅ Removed assistance email from Mathmate section
+4. ✅ Removed all filters from Mathmate (search only)
+5. ✅ Pending items visible only in user dashboard
+6. ✅ Reels contribute to Mentis Score when approved
+7. ✅ Users can submit curiofacts
+8. ✅ Share content with promotional message (ResourceHub, Reels, Curiofacts)
+9. ✅ Saved resources section in ResourceHub
+10. ✅ Chat shows LAST message not first
+11. ✅ Email hidden - users can request email access
+12. ✅ Matrix Members subsection in Mathmate
+13. ✅ Edit profile in Dashboard
 
 ### Pending/Future Tasks
-1. **Refactor AdminDashboard.jsx** (P1) - Break into smaller components
-2. **Rejection Email Notifications** (P1) - Email users when resources are rejected
-3. **Email Verification for Signups** (P2) - Verify email addresses
-4. **Drag-and-Drop Uploads** (P2) - Enhanced admin UX
+1. **P1**: Refactor AdminDashboard.jsx into smaller components
+2. **P1**: Add rejection email notifications for resources
+3. **P2**: Implement email verification for new signups
+4. **P2**: Add drag-and-drop uploads in admin dashboard
 
 ## Master Admin Credentials
 - Email: atreyaghoshal.68@gmail.com

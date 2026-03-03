@@ -730,7 +730,6 @@ const ConnectPage = () => {
                                     {u.name}
                                     <Eye className="w-3 h-3 text-slate-500" />
                                   </p>
-                                  <p className="text-slate-400 text-sm">{u.email}</p>
                                   {u.college && (
                                     <Badge variant="outline" className="mt-1 text-xs border-slate-600 text-slate-400">
                                       {u.college}

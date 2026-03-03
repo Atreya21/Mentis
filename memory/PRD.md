@@ -1,105 +1,147 @@
 # Mentis - Mathematics Community Platform
 
 ## Product Overview
-A hybrid LinkedIn + Reddit style platform for mathematics enthusiasts, built for the mathematics community.
-
-## Original Problem Statement
-Build a website called "Mentis" for a mathematics community with user authentication, four core content sections, a comprehensive admin dashboard, and a modern dark academic theme.
+Mentis is a hybrid platform combining features of LinkedIn and Reddit for the mathematics community. It enables users to share resources, connect with peers, and engage with educational content.
 
 ## Core Requirements
 
 ### User Authentication
-- [x] Full registration and login system (JWT-based)
-- [x] Role-based access control (user, admin)
-- [x] Secure password reset via email (SendGrid)
+- **Full registration and login system** with JWT tokens
+- **Role-based access**: user, admin, master_admin
+- **Forgot Password**: Secure password reset via SendGrid email
+- **Master Admin**: Specific user (atreyaghoshal.68@gmail.com) has elevated privileges to demote/remove admins
 
-### Five Core Sections
-1. **Resource Hub** - [x] Students can find notes and playlists. Resources require admin approval.
-2. **Funamatics** - [x] Gaming section with links to external math-related games.
-3. **Curiofacts** - [x] Weekly updates of interesting math facts.
-4. **Matrix** - [x] Community joining section with live member/college counts and WhatsApp link.
-5. **Connect** - [x] User discovery, connection requests, and real-time chat.
+### Protected Routes (Require Login)
+- Resource Hub
+- Funamatics
+- Mathmate (Chat/Connect)
+- Reels
+
+### Core Sections
+
+#### 1. Resource Hub
+- Upload and share educational notes and playlists
+- Resources require admin approval
+- Uploader's name displayed on each resource
+- Search functionality
+- **Like and Comment features** for user engagement
+- Description tooltips on hover
+
+#### 2. Funamatics
+- Gaming section with math-related external game links
+- Search functionality
+- Description tooltips on hover
+
+#### 3. Curiofacts
+- Weekly math facts and interesting content
+- **Like and Comment features** for user engagement
+
+#### 4. Matrix
+- Community joining section
+- Live counts of registered members and organizations
+- WhatsApp community link
+- **"All details must be filled in CAPITAL LETTERS"** notice
+- **"Organization"** label (replaced "University/College")
+- Auto-uppercase input enforcement
+
+#### 5. Reels (NEW)
+- Educational short videos up to 2 minutes
+- Support for YouTube, Instagram, and Google Drive links
+- Direct video upload option
+- Caption with creator acknowledgment requirement
+- Admin approval workflow
+- Like functionality
+
+#### 6. Mathmate (formerly Connect)
+- User discovery and search
+- Connection requests (send, accept, reject)
+- Real-time chat with WebSockets
+- **Enhanced Chat Features**:
+  - Delete messages
+  - Unsend messages
+  - Reply to specific messages
+  - Pinned chats
+  - Refresh chat button
+  - Clear chat history
+- User profile view with Mentis Score
+- **User Report feature** for misconduct
+- Organization-based filtering (removed "All Colleges" option)
 
 ### Admin Control Panel
-- [x] Approve/reject pending resources
-- [x] Add/delete content in Resource Hub, Funamatics, Curiofacts
-- [x] View registered users and export as CSV
-- [x] Delete users and matrix members
-- [x] Promote users to admin status
-- [x] Update site-wide settings (hero image)
+- **8 Tabs**: Pending Approvals, User Management, Manage Content, Upload New, Pending Reels, User Reports, Site Settings, Matrix Members
+- Approve/reject resources and reels
+- Manage users (promote to admin, delete users)
+- **Master Admin features**: Demote admins
+- Manage games and curiofacts
+- Update site settings (hero image with Google Drive URL support)
+- Export users and matrix members as CSV
+- Review and resolve user reports
 
-### Design & UI
-- [x] Modern dark theme with academic elegance
-- [x] Interactive animations (Framer Motion)
-- [x] Footer on every page with contact email: mentis.mathematics@gmail.com
-- [x] Removed "Made with Emergent" branding
+### Footer
+- Contact email: mentis.mathematics@gmail.com
+- Present on every page
 
 ## Tech Stack
-- **Backend:** FastAPI, Python, MongoDB (Motor async driver), WebSockets
-- **Frontend:** React, Tailwind CSS, shadcn/ui, Framer Motion
-- **Authentication:** JWT with Passlib (bcrypt)
-- **Email:** SendGrid for transactional emails
-- **Real-time:** WebSocket for live chat
+- **Backend**: FastAPI, Python, MongoDB (Pymongo), WebSockets
+- **Frontend**: React, Tailwind CSS, shadcn/ui, Framer Motion
+- **Authentication**: JWT with Passlib
+- **Email**: SendGrid
+- **Architecture**: MERN-like (MongoDB, FastAPI, React)
 
 ## Database Schema
-- `users`: {id, name, email, hashed_password, role, college}
-- `resources`: {id, title, description, url, status, created_by, created_at}
-- `games`: {id, title, description, url, difficulty, thumbnail}
-- `curiofacts`: {id, title, content, image_url, published_at}
-- `matrix_registrations`: {id, name, email, college, created_at}
-- `password_reset_tokens`: {email, token, expires_at, used}
-- `site_settings`: {id, hero_image_url, updated_at}
-- `connections`: {id, requester_id, receiver_id, status, created_at, updated_at}
-- `messages`: {id, connection_id, sender_id, content, created_at, read}
+- `users`: {id, name, email, hashed_password, role, college, created_at}
+- `resources`: {id, title, url, status, submitted_by, uploader_name, created_at}
+- `games`: {id, title, url, thumbnail, difficulty, description}
+- `curiofacts`: {id, title, content, published_at}
+- `matrix_registrations`: {id, name, email, college, interests}
+- `password_reset_tokens`: {email, token, expires_at}
+- `settings` & `site_settings`: {key/id, hero_image_url}
+- `connections`: {id, requester_id, receiver_id, status}
+- `messages`: {id, connection_id, sender_id, content, reply_to, unsent, created_at}
+- `likes`: {id, user_id, target_id, target_type, created_at}
+- `comments`: {id, user_id, user_name, target_id, target_type, content, created_at}
+- `reels`: {id, user_id, user_name, video_url, video_type, caption, status, created_at}
+- `user_reports`: {id, reporter_id, reported_user_id, reason, description, status, created_at}
+- `pinned_chats`: {id, user_id, connection_id, created_at}
 
 ## Key API Endpoints
-- `POST /api/auth/signup` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/forgot-password` - Request password reset email
-- `POST /api/auth/reset-password` - Reset password with token
-- `GET /api/resources` - Get approved resources
-- `GET /api/games` - Get all games
-- `GET /api/curiofacts` - Get all facts
-- `GET /api/matrix/stats` - Get community statistics
-- `GET /api/admin/users` - Admin: get all users
-- `DELETE /api/admin/delete-user/{id}` - Admin: delete user
-- `DELETE /api/admin/delete-matrix-member/{id}` - Admin: delete matrix member
-- `POST /api/admin/promote-user/{user_id}` - Admin: promote to admin
-- `PATCH /api/admin/site-settings` - Admin: update hero image
-- `GET /api/users/search` - Search users by name/email/college
-- `POST /api/connections/request` - Send connection request
-- `POST /api/connections/{id}/accept` - Accept connection request
-- `POST /api/connections/{id}/reject` - Reject connection request
-- `GET /api/connections` - Get user's connections
-- `GET /api/messages/{connection_id}` - Get chat messages
-- `POST /api/messages/{connection_id}` - Send message
-- `WS /ws/{token}` - WebSocket for real-time chat
+- `/api/auth/{signup, login, forgot-password, reset-password}`
+- `/api/resources`, `/api/games`, `/api/curiofacts`
+- `/api/admin/{approve-resource, users, delete-user, promote-admin, site-settings}`
+- `/api/reels`, `/api/reels/pending`, `/api/admin/reels/{reel_id}`
+- `/api/{target_type}/{target_id}/like`, `/api/{target_type}/{target_id}/comment`
+- `/api/users/{user_id}/report`, `/api/admin/reports`
+- `/api/connections`, `/api/messages`, `/api/connections/{id}/pin`
+- `/api/messages/{id}/unsend`, `/api/messages/{id}/reply`
+- `/api/master-admin/demote/{user_id}`
+- `WS /api/ws/{user_id}` (WebSocket for real-time chat)
 
 ## Implementation Status
-**MVP COMPLETE** ✅ (as of February 2026)
 
-All requested features have been implemented and tested:
-- Full authentication flow with secure password reset
-- All five content sections (including Connect with real-time chat)
-- Comprehensive admin dashboard with user/member deletion
-- Dark theme with animations
-- Footer on all pages
-- Email notifications when user resources are approved
-- Google Drive URL support for images
+### Completed ✅
+- Full authentication system with password reset
+- Resource Hub with like/comment, search, tooltips
+- Funamatics with search, tooltips
+- Curiofacts with like/comment
+- Matrix with organization labels and CAPITAL letters enforcement
+- Mathmate with enhanced chat features (reply, unsend, delete, pin, refresh)
+- User reporting system
+- Reels section for educational videos
+- Admin dashboard with 8 management tabs
+- Master admin role with demote capability
+- Protected routes requiring authentication
+- Email notifications (password reset, resource approval)
+- Google Drive URL conversion for all media
 
-## Test Credentials
-- **Admin Email:** atreyaghoshal.68@gmail.com
-- **Admin Password:** 4tr3y4@54N14
+### Pending/Future Tasks
+1. **Refactor AdminDashboard.jsx** (P1) - Break into smaller components
+2. **Rejection Email Notifications** (P1) - Email users when resources are rejected
+3. **Email Verification for Signups** (P2) - Verify email addresses
+4. **Drag-and-Drop Uploads** (P2) - Enhanced admin UX
 
-## Third-Party Integrations
-- **SendGrid:** Password reset emails & resource approval notifications (API key configured)
+## Master Admin Credentials
+- Email: atreyaghoshal.68@gmail.com
+- Password: 4tr3y4@54N14
 
-## Files of Reference
-- `/app/backend/server.py` - Main API server with WebSocket support
-- `/app/frontend/src/pages/AdminDashboard.jsx` - Admin panel
-- `/app/frontend/src/pages/ConnectPage.jsx` - User discovery & chat
-- `/app/frontend/src/App.js` - Frontend routes
-- `/app/backend/.env` - Environment configuration
-
-## Known Technical Notes
-- `AdminDashboard.jsx` is a large monolithic file - consider refactoring into smaller components for future maintenance
+---
+Last Updated: March 3, 2026

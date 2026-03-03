@@ -181,6 +181,14 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 
 5. ✅ **"Ready to Begin" Section** - Hidden for logged-in users, only shows for visitors
 
+6. ✅ **Mathmate Notification System**:
+   - **Notification bubble** on Mathmate nav link when unread messages exist
+   - Red/pink pulsing badge with count (shows 99+ for >99 messages)
+   - **Auto-removal** when user views the chat (messages marked as read)
+   - **24-hour email notification** - Background task sends email for unseen messages older than 24 hours
+   - Navigation polls every 30 seconds for unread count
+   - API: `/api/messages/unread/count`, `/api/messages/{connection_id}/mark-read`
+
 ### Completed (Previous Session - Fixes)
 1. ✅ **Like/Comment/Save/Share buttons fixed** - Added z-index, preventDefault, stopPropagation for proper click handling
 2. ✅ **Sign up banner conditional** - Only shows for non-logged-in users

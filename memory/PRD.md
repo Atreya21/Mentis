@@ -83,7 +83,7 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - Approved resources list
 
 ### Admin Control Panel
-- **9 Tabs**: 
+- **10 Tabs**: 
   1. Pending Approvals (resources)
   2. User Management
   3. Manage Content
@@ -92,10 +92,20 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
   6. Pending Curiofacts
   7. User Reports
   8. Site Settings
-  9. Matrix Members
-- **Master Admin features**: Demote admins
+  9. **About Us** (Master Admin only) - Edit about page content and manage tutorial videos
+  10. Matrix Members
+- **Master Admin features**: Demote admins, manage About Us content and tutorials
 - Export users and matrix members as CSV
 - Review and resolve user reports
+
+#### 7. About Us (NEW)
+- Public page accessible to all visitors
+- Professional design with smooth Framer Motion animations
+- Sections: Hero, Our Community, Our Foundation (Vision/Mission/Values), How to Use, Tutorial Videos, Contact
+- **Master Admin Management**:
+  - Edit tagline, community info, vision, mission, values
+  - Add/delete YouTube tutorial videos
+  - Set display order for tutorials
 
 ### Homepage
 - **"Sign up to unlock all features"** message for non-logged-in users
@@ -126,6 +136,8 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - `pinned_chats`: {id, user_id, connection_id, created_at}
 - `saved_resources`: {id, user_id, resource_id, created_at}
 - `email_requests`: {id, requester_id, target_user_id, status, created_at}
+- `about_us`: {id, tagline, community_info, foundation_info, vision, mission, values, instructions, updated_at}
+- `tutorials`: {id, title, description, video_url, order, created_at, created_by}
 
 ## Key API Endpoints
 - `/api/auth/{signup, login, forgot-password, reset-password}`
@@ -140,10 +152,21 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - `/api/connections`, `/api/messages`
 - `/api/matrix-members-public`
 - `/api/master-admin/demote/{user_id}`
+- `/api/about-us` (GET - public), `/api/master-admin/about-us` (PATCH)
+- `/api/tutorials` (GET), `/api/master-admin/tutorials` (POST, DELETE)
 
 ## Implementation Status
 
-### Completed (Latest Session - Fixes)
+### Completed (Current Session - December 3, 2026)
+1. ✅ **About Us Section** - Complete implementation with:
+   - Professional page with Framer Motion animations
+   - Sections: Hero, Our Community, Foundation (Vision/Mission/Values), How to Use, Tutorial Videos, Contact
+   - Master Admin management panel in Admin Dashboard
+   - CRUD for tutorial videos
+   - Content editing for all text sections
+   - API: `/api/about-us`, `/api/master-admin/about-us`, `/api/tutorials`, `/api/master-admin/tutorials`
+
+### Completed (Previous Session - Fixes)
 1. ✅ **Like/Comment/Save/Share buttons fixed** - Added z-index, preventDefault, stopPropagation for proper click handling
 2. ✅ **Sign up banner conditional** - Only shows for non-logged-in users
 3. ✅ **Mathmate scrolling and pagination** - Added proper overflow handling and pagination controls (10 items per page)
@@ -163,14 +186,16 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - Protected routes requiring authentication
 
 ### Pending/Future Tasks
-1. **P1**: Refactor AdminDashboard.jsx into smaller components
-2. **P1**: Add rejection email notifications for resources
-3. **P2**: Implement email verification for new signups
-4. **P2**: Add drag-and-drop uploads in admin dashboard
+1. **P1**: Implement "Reply to Message" in Mathmate chat
+2. **P1**: Add promotional message when sharing content links
+3. **P1**: Refactor AdminDashboard.jsx into smaller components
+4. **P2**: Add rejection email notifications for resources
+5. **P2**: Implement email verification for new signups
+6. **P2**: Add drag-and-drop uploads in admin dashboard
 
 ## Master Admin Credentials
 - Email: atreyaghoshal.68@gmail.com
 - Password: 4tr3y4@54N14
 
 ---
-Last Updated: March 3, 2026
+Last Updated: December 3, 2026

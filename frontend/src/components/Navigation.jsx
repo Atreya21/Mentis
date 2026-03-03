@@ -73,6 +73,16 @@ const Navigation = () => {
     { name: 'About us', path: '/about' },
   ];
 
+  // Links shown for non-logged-in users
+  const publicNavLinks = [
+    { name: 'Home', path: '/' },
+    { name: 'Mathmate', path: '/connect' },
+    { name: 'Reels', path: '/reels' },
+    { name: 'About us', path: '/about' },
+  ];
+
+  const displayLinks = user ? navLinks : publicNavLinks;
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
@@ -92,7 +102,7 @@ const Navigation = () => {
           </Link>
           
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
+            {displayLinks.map((link) => (
               // Hide auth-required links for non-logged-in users
               (!link.requiresAuth || user) && (
                 <Link

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useRef, useCallback, useMemo } from 'react';
 import { AuthContext } from '@/App';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -51,6 +51,10 @@ const ConnectPage = () => {
   const [pinnedChats, setPinnedChats] = useState([]);
   const [replyingTo, setReplyingTo] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [matrixMembers, setMatrixMembers] = useState([]);
+  const [matrixSearch, setMatrixSearch] = useState('');
+  const [emailRequestDialogOpen, setEmailRequestDialogOpen] = useState(false);
+  const [emailRequests, setEmailRequests] = useState([]);
   
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -420,8 +424,66 @@ const ConnectPage = () => {
     fetchPendingRequests();
     fetchSentRequests();
     fetchPinnedChats();
+    fetchMatrixMembers();
+    fetchEmailRequests();
     searchUsers();
   }, []);
+
+  const fetchMatrixMembers = async () => {
+    try {
+      const res = await axios.get(`${API}/matrix-members-public`);
+      setMatrixMembers(res.data);
+    } catch (err) {
+      console.error('Failed to fetch matrix members');
+    }
+  };
+
+  const fetchEmailRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/email-requests`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEmailRequests(res.data);
+    } catch (err) {
+      console.error('Failed to fetch email requests');
+    }
+  };
+
+  const respondToEmailRequest = async (requestId, status) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/email-requests/${requestId}?status=${status}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`Email request ${status}`);
+      fetchEmailRequests();
+    } catch (err) {
+      toast.error('Failed to respond to request');
+    }
+  };
+
+  const requestUserEmail = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API}/users/${userId}/request-email`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(res.data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to send request');
+    }
+  };
+
+  const filteredMatrixMembers = useMemo(() => {
+    if (!matrixSearch.trim()) return matrixMembers;
+    const query = matrixSearch.toLowerCase();
+    return matrixMembers.filter(m => 
+      m.name?.toLowerCase().includes(query) ||
+      m.college?.toLowerCase().includes(query) ||
+      m.interests?.toLowerCase().includes(query)
+    );
+  }, [matrixMembers, matrixSearch]);
 
   // Search on filter change
   useEffect(() => {
@@ -607,6 +669,10 @@ const ConnectPage = () => {
                       <Search className="w-4 h-4 mr-2" />
                       Discover
                     </TabsTrigger>
+                    <TabsTrigger value="matrix" className="data-[state=active]:bg-orange-500" data-testid="matrix-tab">
+                      <Users className="w-4 h-4 mr-2" />
+                      Matrix Members
+                    </TabsTrigger>
                     <TabsTrigger value="chat" className="data-[state=active]:bg-orange-500" data-testid="chat-tab">
                       <MessageCircle className="w-4 h-4 mr-2" />
                       Chat
@@ -617,29 +683,18 @@ const ConnectPage = () => {
                 {/* Discover Tab */}
                 <TabsContent value="discover" className="flex-1 overflow-hidden m-0">
                   <CardContent className="h-full flex flex-col pt-4">
-                    {/* Search & Filter */}
-                    <div className="flex gap-3 mb-4">
-                      <div className="relative flex-1">
+                    {/* Search Only */}
+                    <div className="mb-4">
+                      <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <Input
-                          placeholder="Search by name or email..."
+                          placeholder="Search by name..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           className="pl-10 bg-slate-900 border-slate-700 text-white"
                           data-testid="user-search-input"
                         />
                       </div>
-                      <Select value={collegeFilter} onValueChange={setCollegeFilter}>
-                        <SelectTrigger className="w-[180px] bg-slate-900 border-slate-700 text-white">
-                          <Filter className="w-4 h-4 mr-2" />
-                          <SelectValue placeholder="Filter by organization" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {colleges.map((college) => (
-                            <SelectItem key={college} value={college}>{college}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     </div>
 
                     {/* User List */}
@@ -736,6 +791,59 @@ const ConnectPage = () => {
                                     <UserPlus className="w-4 h-4 mr-1" />
                                     Connect
                                   </Button>
+                                )}
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                </TabsContent>
+
+                {/* Matrix Members Tab */}
+                <TabsContent value="matrix" className="flex-1 overflow-hidden m-0">
+                  <CardContent className="h-full flex flex-col pt-4">
+                    {/* Search */}
+                    <div className="mb-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          placeholder="Search matrix members..."
+                          value={matrixSearch}
+                          onChange={(e) => setMatrixSearch(e.target.value)}
+                          className="pl-10 bg-slate-900 border-slate-700 text-white"
+                          data-testid="matrix-search-input"
+                        />
+                      </div>
+                    </div>
+
+                    <ScrollArea className="flex-1">
+                      {filteredMatrixMembers.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                          <p className="text-slate-400">No matrix members found</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {filteredMatrixMembers.map((member) => (
+                            <motion.div
+                              key={member.id}
+                              className="flex items-center gap-4 p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900 transition-colors"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              data-testid="matrix-member-card"
+                            >
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-lg">
+                                {member.name?.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-white font-medium">{member.name}</p>
+                                <p className="text-slate-400 text-sm">{member.college}</p>
+                                {member.interests && (
+                                  <p className="text-slate-500 text-xs mt-1 line-clamp-1">
+                                    Interests: {member.interests}
+                                  </p>
                                 )}
                               </div>
                             </motion.div>
@@ -950,7 +1058,18 @@ const ConnectPage = () => {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white">{selectedUserProfile.name}</h3>
-                    <p className="text-slate-400">{selectedUserProfile.email}</p>
+                    {selectedUserProfile.can_see_email ? (
+                      <p className="text-slate-400">{selectedUserProfile.email}</p>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => requestUserEmail(selectedUserProfile.id)}
+                        className="text-orange-400 hover:text-orange-300 p-0 h-auto"
+                      >
+                        Request Email
+                      </Button>
+                    )}
                     {selectedUserProfile.college && (
                       <Badge variant="outline" className="mt-2 border-slate-600 text-slate-300">
                         {selectedUserProfile.college}

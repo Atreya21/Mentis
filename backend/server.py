@@ -275,6 +275,38 @@ class PinnedChat(BaseModel):
     connection_id: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Saved Resource Model
+class SavedResource(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    resource_id: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Email Request Model
+class EmailRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    requester_id: str
+    target_user_id: str
+    status: str = "pending"  # pending, approved, rejected
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Curiofact Submission Model
+class CuriofactSubmission(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: Optional[str] = None
+    title: str
+    content: str
+    status: str = "pending"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CuriofactCreate(BaseModel):
+    title: str
+    content: str
+
 # WebSocket Connection Manager for real-time chat
 class ConnectionManager:
     def __init__(self):
@@ -887,6 +919,18 @@ async def get_user_profile(user_id: str, current_user: User = Depends(get_curren
         user['connection_id'] = None
         user['is_requester'] = None
     
+    # Check if current user can see email (email request approved)
+    email_approved = await db.email_requests.find_one({
+        "requester_id": current_user.id,
+        "target_user_id": user_id,
+        "status": "approved"
+    })
+    user['can_see_email'] = email_approved is not None
+    
+    # Hide email if not approved
+    if not user['can_see_email']:
+        user.pop('email', None)
+    
     return user
 
 @api_router.post("/connections/request")
@@ -1019,10 +1063,11 @@ async def get_connections(current_user: User = Depends(get_current_user)):
         other_user = await db.users.find_one({"id": other_user_id}, {"_id": 0, "password": 0})
         conn['other_user'] = other_user
         
-        # Get last message
+        # Get last message (sorted by created_at descending)
         last_message = await db.messages.find_one(
             {"connection_id": conn['id']},
-            {"_id": 0}
+            {"_id": 0},
+            sort=[("created_at", -1)]
         )
         if last_message:
             conn['last_message'] = last_message
@@ -1442,13 +1487,21 @@ async def update_reel_status(reel_id: str, status: str, admin: User = Depends(ge
     if status not in ['pending', 'approved', 'rejected']:
         raise HTTPException(status_code=400, detail="Invalid status")
     
+    reel = await db.reels.find_one({"id": reel_id}, {"_id": 0})
+    if not reel:
+        raise HTTPException(status_code=404, detail="Reel not found")
+    
     result = await db.reels.update_one(
         {"id": reel_id},
         {"$set": {"status": status}}
     )
     
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Reel not found")
+    # If approved, increment user's mentis score
+    if status == 'approved' and reel.get('status') != 'approved':
+        await db.users.update_one(
+            {"id": reel['user_id']},
+            {"$inc": {"total_resources": 1}}
+        )
     
     return {"message": f"Reel status updated to {status}"}
 
@@ -1664,6 +1717,234 @@ async def remove_admin(user_id: str, master_admin: User = Depends(get_master_adm
     )
     
     return {"message": f"Admin privileges removed from {user.get('email')}"}
+
+# ============== SAVED RESOURCES ==============
+
+@api_router.post("/resources/{resource_id}/save")
+async def save_resource(resource_id: str, current_user: User = Depends(get_current_user)):
+    """Save or unsave a resource"""
+    existing = await db.saved_resources.find_one({
+        "user_id": current_user.id,
+        "resource_id": resource_id
+    })
+    
+    if existing:
+        await db.saved_resources.delete_one({"id": existing['id']})
+        return {"message": "Resource unsaved", "saved": False}
+    
+    saved = SavedResource(
+        user_id=current_user.id,
+        resource_id=resource_id
+    )
+    doc = saved.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.saved_resources.insert_one(doc)
+    
+    return {"message": "Resource saved", "saved": True}
+
+@api_router.get("/saved-resources")
+async def get_saved_resources(current_user: User = Depends(get_current_user)):
+    """Get all saved resources for current user"""
+    saved = await db.saved_resources.find({"user_id": current_user.id}, {"_id": 0}).to_list(500)
+    return saved
+
+# ============== EMAIL REQUESTS ==============
+
+@api_router.post("/users/{user_id}/request-email")
+async def request_email(user_id: str, current_user: User = Depends(get_current_user)):
+    """Request to see another user's email"""
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot request your own email")
+    
+    # Check if already requested
+    existing = await db.email_requests.find_one({
+        "requester_id": current_user.id,
+        "target_user_id": user_id
+    })
+    
+    if existing:
+        return {"message": "Request already sent", "status": existing['status']}
+    
+    request = EmailRequest(
+        requester_id=current_user.id,
+        target_user_id=user_id
+    )
+    doc = request.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.email_requests.insert_one(doc)
+    
+    return {"message": "Email request sent", "request_id": request.id}
+
+@api_router.get("/email-requests")
+async def get_email_requests(current_user: User = Depends(get_current_user)):
+    """Get email requests sent to current user"""
+    requests = await db.email_requests.find({"target_user_id": current_user.id}, {"_id": 0}).to_list(100)
+    
+    for req in requests:
+        requester = await db.users.find_one({"id": req['requester_id']}, {"_id": 0, "password": 0, "email": 0})
+        req['requester'] = requester
+    
+    return requests
+
+@api_router.patch("/email-requests/{request_id}")
+async def respond_email_request(request_id: str, status: str, current_user: User = Depends(get_current_user)):
+    """Approve or reject an email request"""
+    if status not in ['approved', 'rejected']:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    request = await db.email_requests.find_one({"id": request_id}, {"_id": 0})
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    if request['target_user_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.email_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": status}}
+    )
+    
+    return {"message": f"Request {status}"}
+
+@api_router.get("/users/{user_id}/email-visibility")
+async def check_email_visibility(user_id: str, current_user: User = Depends(get_current_user)):
+    """Check if current user can see target user's email"""
+    if user_id == current_user.id:
+        return {"can_see_email": True}
+    
+    approved = await db.email_requests.find_one({
+        "requester_id": current_user.id,
+        "target_user_id": user_id,
+        "status": "approved"
+    })
+    
+    return {"can_see_email": approved is not None}
+
+# ============== CURIOFACT SUBMISSIONS ==============
+
+@api_router.post("/curiofacts/submit")
+async def submit_curiofact(fact_data: CuriofactCreate, current_user: User = Depends(get_current_user)):
+    """Submit a curiofact for approval"""
+    submission = CuriofactSubmission(
+        user_id=current_user.id,
+        user_name=current_user.name,
+        title=fact_data.title,
+        content=fact_data.content
+    )
+    doc = submission.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.curiofact_submissions.insert_one(doc)
+    
+    return {"message": "Curiofact submitted for approval", "id": submission.id}
+
+@api_router.get("/curiofacts/pending")
+async def get_pending_curiofacts(admin: User = Depends(get_admin_user)):
+    """Get pending curiofact submissions (admin only)"""
+    submissions = await db.curiofact_submissions.find({"status": "pending"}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return submissions
+
+@api_router.patch("/admin/curiofacts/{submission_id}")
+async def approve_curiofact(submission_id: str, status: str, admin: User = Depends(get_admin_user)):
+    """Approve or reject a curiofact submission"""
+    if status not in ['approved', 'rejected']:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    submission = await db.curiofact_submissions.find_one({"id": submission_id}, {"_id": 0})
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    
+    if status == 'approved':
+        # Create the actual curiofact
+        new_fact = {
+            "id": str(uuid.uuid4()),
+            "title": submission['title'],
+            "content": submission['content'],
+            "published_at": datetime.now(timezone.utc).isoformat(),
+            "submitted_by": submission['user_id'],
+            "submitter_name": submission['user_name']
+        }
+        await db.curiofacts.insert_one(new_fact)
+        
+        # Update user's mentis score
+        await db.users.update_one(
+            {"id": submission['user_id']},
+            {"$inc": {"total_resources": 1}}
+        )
+    
+    await db.curiofact_submissions.update_one(
+        {"id": submission_id},
+        {"$set": {"status": status}}
+    )
+    
+    return {"message": f"Curiofact {status}"}
+
+# ============== MATRIX MEMBERS (PUBLIC VIEW) ==============
+
+@api_router.get("/matrix-members-public")
+async def get_matrix_members_public():
+    """Get matrix members with public details only (no email)"""
+    members = await db.matrix_registrations.find({}, {"_id": 0, "email": 0}).to_list(500)
+    return members
+
+# ============== UPDATE USER PROFILE ==============
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+@api_router.patch("/users/me")
+async def update_profile(updates: UserUpdate, current_user: User = Depends(get_current_user)):
+    """Update current user's profile"""
+    update_data = {}
+    
+    if updates.name and updates.name.strip():
+        update_data['name'] = updates.name.strip()
+    
+    if updates.email and updates.email.strip():
+        # Check if email is already taken
+        existing = await db.users.find_one({"email": updates.email.strip(), "id": {"$ne": current_user.id}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        update_data['email'] = updates.email.strip()
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No updates provided")
+    
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": update_data}
+    )
+    
+    # Get updated user
+    updated_user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "password": 0})
+    
+    return {"message": "Profile updated", "user": updated_user}
+
+# ============== USER PENDING ITEMS ==============
+
+@api_router.get("/users/me/pending")
+async def get_user_pending_items(current_user: User = Depends(get_current_user)):
+    """Get current user's pending resources and reels"""
+    pending_resources = await db.resources.find({
+        "submitted_by": current_user.id,
+        "status": "pending"
+    }, {"_id": 0}).to_list(50)
+    
+    pending_reels = await db.reels.find({
+        "user_id": current_user.id,
+        "status": "pending"
+    }, {"_id": 0}).to_list(50)
+    
+    pending_curiofacts = await db.curiofact_submissions.find({
+        "user_id": current_user.id,
+        "status": "pending"
+    }, {"_id": 0}).to_list(50)
+    
+    return {
+        "pending_resources": pending_resources,
+        "pending_reels": pending_reels,
+        "pending_curiofacts": pending_curiofacts
+    }
 
 # Initialize Master Admin on startup
 @app.on_event("startup")

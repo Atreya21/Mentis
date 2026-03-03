@@ -84,6 +84,25 @@ const ReelsPage = () => {
     }
   };
 
+  const handleShareReel = (reel) => {
+    const shareUrl = `${window.location.origin}/reels?view=${reel.id}`;
+    const shareText = `🎬 Check out this educational reel on Mentis!\n\n"${reel.caption.substring(0, 100)}..."\n\n🔗 ${shareUrl}\n\n✨ Discover more at Mentis - The premier platform for mathematics enthusiasts!\n${window.location.origin}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Mentis Reel',
+        text: shareText,
+        url: shareUrl
+      }).catch(() => {
+        navigator.clipboard.writeText(shareText);
+        toast.success('Link copied to clipboard!');
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast.success('Link copied to clipboard!');
+    }
+  };
+
   const getEmbedUrl = (reel) => {
     return reel.video_url;
   };
@@ -261,16 +280,26 @@ const ReelsPage = () => {
                       {reel.caption}
                     </p>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleLike(reel.id)}
-                        className={`flex items-center gap-2 ${reel.user_liked ? 'text-pink-500' : 'text-slate-400'} hover:text-pink-400`}
+                        className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${reel.user_liked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10`}
                         data-testid="like-reel-btn"
                       >
                         <Heart className={`w-5 h-5 ${reel.user_liked ? 'fill-current' : ''}`} />
                         <span>{reel.like_count || 0}</span>
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleShareReel(reel)}
+                        className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10"
+                        data-testid="share-reel-btn"
+                      >
+                        <Share2 className="w-4 h-4" />
                       </Button>
                       
                       <Badge variant="outline" className="text-slate-400 border-slate-600">

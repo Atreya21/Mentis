@@ -3,10 +3,12 @@ import axios from 'axios';
 import { AuthContext } from '@/App';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { Sparkles, Calendar, Heart, MessageCircle, Send, X } from 'lucide-react';
+import { Sparkles, Calendar, Heart, MessageCircle, Send, X, Plus, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 
@@ -21,6 +23,8 @@ const Curiofacts = () => {
   const [selectedFact, setSelectedFact] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [submitForm, setSubmitForm] = useState({ title: '', content: '' });
 
   useEffect(() => {
     fetchFacts();
@@ -125,6 +129,44 @@ const Curiofacts = () => {
     }
   };
 
+  const handleSubmitCuriofact = async () => {
+    if (!submitForm.title.trim() || !submitForm.content.trim()) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/curiofacts/submit`, submitForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Curiofact submitted for approval!');
+      setSubmitDialogOpen(false);
+      setSubmitForm({ title: '', content: '' });
+    } catch (err) {
+      toast.error('Failed to submit curiofact');
+    }
+  };
+
+  const handleShareFact = (fact) => {
+    const shareUrl = `${window.location.origin}/curiofacts?view=${fact.id}`;
+    const shareText = `🧠 Interesting Math Fact: "${fact.title}"\n\n${fact.content.substring(0, 150)}...\n\n🔗 ${shareUrl}\n\n✨ Discover more at Mentis - The premier platform for mathematics enthusiasts!\n${window.location.origin}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: `${fact.title} - Mentis Curiofacts`,
+        text: shareText,
+        url: shareUrl
+      }).catch(() => {
+        navigator.clipboard.writeText(shareText);
+        toast.success('Link copied to clipboard!');
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast.success('Link copied to clipboard!');
+    }
+  };
+
   return (
     <div className="min-h-screen pt-20 bg-slate-950">
       <div className="max-w-5xl mx-auto px-6 md:px-12 py-20">
@@ -148,13 +190,66 @@ const Curiofacts = () => {
             Curiofacts
           </motion.h1>
           <motion.p 
-            className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto"
+            className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             Fascinating facts and weekly updates from the world of mathematics
           </motion.p>
+          
+          {/* Submit Curiofact Button */}
+          {user && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Submit a Curiofact
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-slate-800 border-slate-700 max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Submit a Curiofact</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <p className="text-sm text-slate-400">
+                      Share an interesting math fact with the community! Your submission will be reviewed before publishing.
+                    </p>
+                    <div>
+                      <Label className="text-slate-300">Title</Label>
+                      <Input
+                        value={submitForm.title}
+                        onChange={(e) => setSubmitForm({...submitForm, title: e.target.value})}
+                        className="mt-2 bg-slate-900 border-slate-700 text-white"
+                        placeholder="E.g., The Beauty of Euler's Identity"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-slate-300">Content</Label>
+                      <Textarea
+                        value={submitForm.content}
+                        onChange={(e) => setSubmitForm({...submitForm, content: e.target.value})}
+                        className="mt-2 bg-slate-900 border-slate-700 text-white"
+                        rows={6}
+                        placeholder="Share your fascinating math fact..."
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSubmitCuriofact}
+                      className="w-full bg-gradient-to-r from-orange-500 to-pink-500"
+                    >
+                      Submit for Review
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </motion.div>
+          )}
         </div>
 
         <div className="space-y-8">
@@ -191,27 +286,37 @@ const Curiofacts = () => {
                   </p>
                 </div>
                 
-                {/* Like and Comment Section */}
-                <div className="flex items-center gap-4 mt-6 pt-6 border-t border-slate-700">
+                {/* Like, Comment and Share Section */}
+                <div className="flex items-center gap-3 mt-6 pt-6 border-t border-slate-700">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => handleLike(fact.id)}
-                    className={`flex items-center gap-2 ${likes[fact.id]?.userLiked ? 'text-pink-500' : 'text-slate-400'} hover:text-pink-400`}
+                    className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${likes[fact.id]?.userLiked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10`}
                     data-testid="like-fact-btn"
                   >
                     <Heart className={`w-5 h-5 ${likes[fact.id]?.userLiked ? 'fill-current' : ''}`} />
-                    <span>{likes[fact.id]?.count || 0} Likes</span>
+                    <span>{likes[fact.id]?.count || 0}</span>
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => openComments(fact)}
-                    className="flex items-center gap-2 text-slate-400 hover:text-orange-400"
+                    className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10"
                     data-testid="comment-fact-btn"
                   >
                     <MessageCircle className="w-5 h-5" />
-                    <span>Comments</span>
+                    <span>Comment</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleShareFact(fact)}
+                    className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10"
+                    data-testid="share-fact-btn"
+                  >
+                    <Share2 className="w-5 h-5" />
+                    <span>Share</span>
                   </Button>
                 </div>
               </div>

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { BookOpen, Plus, Filter, Search, User, Heart, MessageCircle, Send, X } from 'lucide-react';
+import { BookOpen, Plus, Filter, Search, User, Heart, MessageCircle, Send, X, Bookmark, Share2 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -61,6 +61,8 @@ const ResourceHub = () => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [likes, setLikes] = useState({});
+  const [savedResources, setSavedResources] = useState([]);
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -69,21 +71,88 @@ const ResourceHub = () => {
     topic: ''
   });
 
-  // Filter resources based on search query
+  // Filter resources based on search query and saved filter
   const filteredResources = useMemo(() => {
-    if (!searchQuery.trim()) return resources;
-    const query = searchQuery.toLowerCase();
-    return resources.filter(r => 
-      r.title?.toLowerCase().includes(query) ||
-      r.description?.toLowerCase().includes(query) ||
-      r.topic?.toLowerCase().includes(query) ||
-      r.uploader_name?.toLowerCase().includes(query)
-    );
-  }, [resources, searchQuery]);
+    let filtered = resources;
+    
+    // Filter by saved only
+    if (showSavedOnly) {
+      filtered = filtered.filter(r => savedResources.includes(r.id));
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(r => 
+        r.title?.toLowerCase().includes(query) ||
+        r.description?.toLowerCase().includes(query) ||
+        r.topic?.toLowerCase().includes(query) ||
+        r.uploader_name?.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [resources, searchQuery, showSavedOnly, savedResources]);
 
   useEffect(() => {
     fetchResources();
+    fetchSavedResources();
   }, [filter]);
+
+  // Fetch saved resources
+  const fetchSavedResources = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await axios.get(`${API}/saved-resources`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSavedResources(res.data.map(r => r.resource_id));
+    } catch (err) {
+      console.error('Failed to fetch saved resources');
+    }
+  };
+
+  // Save/Unsave resource
+  const handleSaveResource = async (resourceId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API}/resources/${resourceId}/save`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.data.saved) {
+        setSavedResources([...savedResources, resourceId]);
+        toast.success('Resource saved!');
+      } else {
+        setSavedResources(savedResources.filter(id => id !== resourceId));
+        toast.success('Resource removed from saved');
+      }
+    } catch (err) {
+      toast.error('Failed to save resource');
+    }
+  };
+
+  // Share resource
+  const handleShareResource = (resource) => {
+    const shareUrl = `${window.location.origin}/resources?view=${resource.id}`;
+    const shareText = `📚 Check out "${resource.title}" on Mentis - The premier platform for mathematics enthusiasts!\n\n${resource.description?.substring(0, 100)}...\n\n🔗 ${shareUrl}\n\n✨ Join Mentis today: ${window.location.origin}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: `${resource.title} - Mentis`,
+        text: shareText,
+        url: shareUrl
+      }).catch(() => {
+        // Fallback to copy
+        navigator.clipboard.writeText(shareText);
+        toast.success('Link copied to clipboard!');
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast.success('Link copied to clipboard!');
+    }
+  };
 
   // Fetch likes for all resources
   const fetchLikes = async (resourceList) => {
@@ -334,12 +403,25 @@ const ResourceHub = () => {
           </div>
         </div>
 
-        <Tabs value={filter} onValueChange={setFilter} className="mb-8">
-          <TabsList>
-            <TabsTrigger value="approved" data-testid="filter-approved">Approved</TabsTrigger>
-            {user && <TabsTrigger value="pending" data-testid="filter-pending">Pending</TabsTrigger>}
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-4 mb-8">
+          <Tabs value={filter} onValueChange={setFilter}>
+            <TabsList>
+              <TabsTrigger value="approved" data-testid="filter-approved">All Resources</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {user && (
+            <Button
+              variant={showSavedOnly ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowSavedOnly(!showSavedOnly)}
+              className={showSavedOnly ? "bg-yellow-500 hover:bg-yellow-600" : "border-slate-700"}
+              data-testid="saved-filter-btn"
+            >
+              <Bookmark className={`w-4 h-4 mr-2 ${showSavedOnly ? 'fill-current' : ''}`} />
+              Saved Resources
+            </Button>
+          )}
+        </div>
 
         <TooltipProvider>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -394,28 +476,46 @@ const ResourceHub = () => {
                   </a>
                 </div>
                 
-                {/* Like and Comment Section */}
+                {/* Like, Comment, Save, Share Section */}
                 {user && (
-                  <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-700">
+                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-700">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleLike(resource.id)}
-                      className={`flex items-center gap-2 ${likes[resource.id]?.userLiked ? 'text-pink-500' : 'text-slate-400'} hover:text-pink-400`}
+                      onClick={(e) => { e.stopPropagation(); handleLike(resource.id); }}
+                      className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${likes[resource.id]?.userLiked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10`}
                       data-testid="like-resource-btn"
                     >
                       <Heart className={`w-4 h-4 ${likes[resource.id]?.userLiked ? 'fill-current' : ''}`} />
                       <span>{likes[resource.id]?.count || 0}</span>
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => openComments(resource)}
-                      className="flex items-center gap-2 text-slate-400 hover:text-orange-400"
+                      onClick={(e) => { e.stopPropagation(); openComments(resource); }}
+                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10"
                       data-testid="comment-resource-btn"
                     >
                       <MessageCircle className="w-4 h-4" />
-                      <span>Comments</span>
+                      <span>Comment</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleSaveResource(resource.id); }}
+                      className={`flex items-center gap-2 border-slate-600 hover:border-yellow-500 ${savedResources.includes(resource.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-slate-400'} hover:text-yellow-400 hover:bg-yellow-500/10`}
+                      data-testid="save-resource-btn"
+                    >
+                      <Bookmark className={`w-4 h-4 ${savedResources.includes(resource.id) ? 'fill-current' : ''}`} />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleShareResource(resource); }}
+                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10"
+                      data-testid="share-resource-btn"
+                    >
+                      <Share2 className="w-4 h-4" />
                     </Button>
                   </div>
                 )}

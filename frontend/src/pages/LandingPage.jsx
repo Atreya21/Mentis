@@ -92,6 +92,16 @@ const LandingPage = () => {
             >
               Be a part of the world where minds meet mathematics.
             </motion.p>
+            <motion.div
+              className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.55 }}
+            >
+              <p className="text-orange-400 text-sm font-medium">
+                🔐 Sign up to unlock all features including Resource Hub, Funamatics, Reels, and Mathmate!
+              </p>
+            </motion.div>
             <motion.div 
               className="flex gap-4"
               initial={{ opacity: 0, y: 20 }}

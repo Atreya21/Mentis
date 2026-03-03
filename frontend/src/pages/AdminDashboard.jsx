@@ -76,6 +76,7 @@ const AdminDashboard = () => {
   const [matrixMembers, setMatrixMembers] = useState([]);
   const [resetTokens, setResetTokens] = useState([]);
   const [pendingReels, setPendingReels] = useState([]);
+  const [pendingCuriofacts, setPendingCuriofacts] = useState([]);
   const [userReports, setUserReports] = useState([]);
   const [siteSettings, setSiteSettings] = useState({ hero_image_url: '' });
   const [stats, setStats] = useState({ users: 0, resources: 0, games: 0, facts: 0, matrixMembers: 0 });
@@ -116,8 +117,35 @@ const AdminDashboard = () => {
     fetchResetTokens();
     fetchStats();
     fetchPendingReels();
+    fetchPendingCuriofacts();
     fetchUserReports();
   }, []);
+
+  const fetchPendingCuriofacts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/curiofacts/pending`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPendingCuriofacts(res.data);
+    } catch (err) {
+      console.error('Failed to fetch pending curiofacts');
+    }
+  };
+
+  const handleCuriofactApproval = async (submissionId, status) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/admin/curiofacts/${submissionId}?status=${status}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`Curiofact ${status}`);
+      fetchPendingCuriofacts();
+      fetchAllFacts();
+    } catch (err) {
+      toast.error('Failed to update curiofact status');
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -613,6 +641,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="content" data-testid="admin-tab-content">Manage Content</TabsTrigger>
             <TabsTrigger value="upload" data-testid="admin-tab-upload">Upload New</TabsTrigger>
             <TabsTrigger value="reels" data-testid="admin-tab-reels">Pending Reels</TabsTrigger>
+            <TabsTrigger value="curiofacts-pending" data-testid="admin-tab-curiofacts">Pending Curiofacts</TabsTrigger>
             <TabsTrigger value="reports" data-testid="admin-tab-reports">User Reports</TabsTrigger>
             <TabsTrigger value="settings" data-testid="admin-tab-settings">Site Settings</TabsTrigger>
             <TabsTrigger value="matrix" data-testid="admin-tab-matrix">Matrix Members</TabsTrigger>
@@ -1356,6 +1385,57 @@ const AdminDashboard = () => {
                               variant="destructive"
                               className="flex-1"
                               onClick={() => handleReelApproval(reel.id, 'rejected')}
+                            >
+                              <X className="w-4 h-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Pending Curiofacts Tab */}
+          <TabsContent value="curiofacts-pending">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Pending Curiofacts</CardTitle>
+                <CardDescription className="text-slate-400">Review user-submitted math facts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingCuriofacts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400">No pending curiofacts to review</p>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {pendingCuriofacts.map((submission) => (
+                      <div key={submission.id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm text-slate-400">Submitted by: <span className="text-white">{submission.user_name}</span></p>
+                            <span className="text-xs text-slate-500">
+                              {new Date(submission.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <h3 className="text-white font-medium text-lg">{submission.title}</h3>
+                          <p className="text-slate-300 text-sm line-clamp-4">{submission.content}</p>
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-green-600 hover:bg-green-700"
+                              onClick={() => handleCuriofactApproval(submission.id, 'approved')}
+                            >
+                              <Check className="w-4 h-4 mr-1" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="flex-1"
+                              onClick={() => handleCuriofactApproval(submission.id, 'rejected')}
                             >
                               <X className="w-4 h-4 mr-1" /> Reject
                             </Button>

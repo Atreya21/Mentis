@@ -86,7 +86,7 @@ const ReelsPage = () => {
 
   const handleShareReel = (reel) => {
     const shareUrl = `${window.location.origin}/reels?view=${reel.id}`;
-    const shareText = `🎬 Check out this educational reel on Mentis!\n\n"${reel.caption.substring(0, 100)}..."\n\n🔗 ${shareUrl}\n\n✨ Discover more at Mentis - The premier platform for mathematics enthusiasts!\n${window.location.origin}`;
+    const shareText = `🎬 Check out this educational reel on Mentis!\n\n"${reel.caption.substring(0, 100)}..."\n\n🔗 ${shareUrl}\n\n━━━━━━━━━━━━━━━━━\n✨ MENTIS - Where Minds Meet Mathematics ✨\n🎯 Join the premier platform for mathematics enthusiasts!\n📖 Resources • 🎮 Games • 🎬 Reels • 💬 Connect\n🌐 ${window.location.origin}\n━━━━━━━━━━━━━━━━━`;
     
     if (navigator.share) {
       navigator.share({
@@ -95,11 +95,11 @@ const ReelsPage = () => {
         url: shareUrl
       }).catch(() => {
         navigator.clipboard.writeText(shareText);
-        toast.success('Link copied to clipboard!');
+        toast.success('Link copied to clipboard with promotional message!');
       });
     } else {
       navigator.clipboard.writeText(shareText);
-      toast.success('Link copied to clipboard!');
+      toast.success('Link copied to clipboard with promotional message!');
     }
   };
 

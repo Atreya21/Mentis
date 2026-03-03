@@ -133,10 +133,10 @@ const ResourceHub = () => {
     }
   };
 
-  // Share resource
+  // Share resource with promotional message
   const handleShareResource = (resource) => {
     const shareUrl = `${window.location.origin}/resources?view=${resource.id}`;
-    const shareText = `📚 Check out "${resource.title}" on Mentis - The premier platform for mathematics enthusiasts!\n\n${resource.description?.substring(0, 100)}...\n\n🔗 ${shareUrl}\n\n✨ Join Mentis today: ${window.location.origin}`;
+    const shareText = `📚 Check out "${resource.title}" on Mentis!\n\n${resource.description?.substring(0, 100)}...\n\n🔗 ${shareUrl}\n\n━━━━━━━━━━━━━━━━━\n✨ MENTIS - Where Minds Meet Mathematics ✨\n🎯 Join the premier platform for mathematics enthusiasts!\n📖 Resources • 🎮 Games • 🎬 Reels • 💬 Connect\n🌐 ${window.location.origin}\n━━━━━━━━━━━━━━━━━`;
     
     if (navigator.share) {
       navigator.share({
@@ -146,11 +146,11 @@ const ResourceHub = () => {
       }).catch(() => {
         // Fallback to copy
         navigator.clipboard.writeText(shareText);
-        toast.success('Link copied to clipboard!');
+        toast.success('Link copied to clipboard with promotional message!');
       });
     } else {
       navigator.clipboard.writeText(shareText);
-      toast.success('Link copied to clipboard!');
+      toast.success('Link copied to clipboard with promotional message!');
     }
   };
 

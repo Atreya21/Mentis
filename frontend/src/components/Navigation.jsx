@@ -1,12 +1,32 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/App';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Shield, Users } from 'lucide-react';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const Navigation = () => {
   const { user, logout } = useContext(AuthContext);
   const location = useLocation();
+  const [logoUrl, setLogoUrl] = useState(null);
+
+  useEffect(() => {
+    fetchLogo();
+  }, []);
+
+  const fetchLogo = async () => {
+    try {
+      const res = await axios.get(`${API}/about-us`);
+      if (res.data?.logo_url) {
+        setLogoUrl(res.data.logo_url);
+      }
+    } catch (err) {
+      console.error('Failed to fetch logo');
+    }
+  };
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -16,15 +36,25 @@ const Navigation = () => {
     { name: 'Matrix', path: '/matrix' },
     { name: 'Reels', path: '/reels', requiresAuth: true },
     { name: 'Mathmate', path: '/connect', requiresAuth: true },
-    { name: 'About', path: '/about' },
+    { name: 'About us', path: '/about' },
   ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <div className="flex items-center justify-between h-20">
-          <Link to="/" className="font-heading text-3xl font-bold text-gradient shine-effect">
-            Mentis
+          <Link to="/" className="flex items-center gap-3">
+            {logoUrl && (
+              <img 
+                src={logoUrl} 
+                alt="Mentis Logo" 
+                className="w-10 h-10 rounded-lg object-cover"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            )}
+            <span className="font-heading text-3xl font-bold text-gradient shine-effect">
+              Mentis
+            </span>
           </Link>
           
           <div className="hidden md:flex items-center gap-8">

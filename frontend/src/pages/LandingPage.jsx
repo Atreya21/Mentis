@@ -203,6 +203,8 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Ready to Begin Section - Only show for non-logged-in users */}
+      {!user && (
       <section className="py-20 md:py-32 bg-slate-950 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-orange-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
@@ -240,6 +242,7 @@ const LandingPage = () => {
           </motion.div>
         </div>
       </section>
+      )}
     </div>
   );
 };

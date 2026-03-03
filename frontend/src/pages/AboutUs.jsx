@@ -168,12 +168,24 @@ const AboutUs = () => {
             className="inline-block mb-8"
             animate={floatingAnimation}
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-pink-500 rounded-3xl blur-xl opacity-50"></div>
-              <div className="relative w-24 h-24 bg-gradient-to-br from-orange-500 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl">
-                <Sparkles className="w-12 h-12 text-white" />
+            {aboutContent?.logo_url ? (
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-pink-500 rounded-3xl blur-xl opacity-50"></div>
+                <img 
+                  src={aboutContent.logo_url} 
+                  alt="Mentis Logo" 
+                  className="relative w-24 h-24 rounded-3xl object-cover shadow-2xl border-2 border-orange-500/30"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
               </div>
-            </div>
+            ) : (
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-pink-500 rounded-3xl blur-xl opacity-50"></div>
+                <div className="relative w-24 h-24 bg-gradient-to-br from-orange-500 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl">
+                  <Sparkles className="w-12 h-12 text-white" />
+                </div>
+              </div>
+            )}
           </motion.div>
           
           <motion.h1 

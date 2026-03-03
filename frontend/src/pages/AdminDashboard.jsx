@@ -86,7 +86,8 @@ const AdminDashboard = () => {
     vision: '',
     mission: '',
     values: '',
-    instructions: ''
+    instructions: '',
+    logo_url: ''
   });
   const [tutorials, setTutorials] = useState([]);
   const [tutorialForm, setTutorialForm] = useState({ title: '', description: '', video_url: '', order: 0 });
@@ -349,7 +350,8 @@ const AdminDashboard = () => {
           vision: res.data.vision || '',
           mission: res.data.mission || '',
           values: res.data.values || '',
-          instructions: res.data.instructions || ''
+          instructions: res.data.instructions || '',
+          logo_url: res.data.logo_url || ''
         });
       }
     } catch (err) {
@@ -1375,6 +1377,31 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSaveAboutContent} className="space-y-6">
+                    {/* Logo Image URL */}
+                    <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                      <Label htmlFor="logo_url" className="text-slate-300 text-lg font-semibold">Logo Image</Label>
+                      <p className="text-sm text-slate-400 mb-3">This logo will appear in the top-left corner of all pages</p>
+                      <Input
+                        id="logo_url"
+                        value={aboutContent.logo_url}
+                        onChange={(e) => setAboutContent({ ...aboutContent, logo_url: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white"
+                        placeholder="https://example.com/logo.png or Google Drive link"
+                        data-testid="about-logo-input"
+                      />
+                      {aboutContent.logo_url && (
+                        <div className="mt-3 flex items-center gap-4">
+                          <span className="text-sm text-slate-400">Preview:</span>
+                          <img 
+                            src={aboutContent.logo_url} 
+                            alt="Logo Preview" 
+                            className="w-12 h-12 rounded-lg object-cover border border-slate-600"
+                            onError={(e) => { e.target.src = 'https://via.placeholder.com/48?text=Invalid'; }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
                     <div>
                       <Label htmlFor="tagline" className="text-slate-300">Tagline</Label>
                       <Input

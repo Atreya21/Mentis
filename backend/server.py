@@ -318,6 +318,7 @@ class AboutUsContent(BaseModel):
     mission: Optional[str] = None
     values: Optional[str] = None
     instructions: Optional[str] = None
+    logo_url: Optional[str] = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_by: Optional[str] = None
 
@@ -329,6 +330,7 @@ class AboutUsUpdate(BaseModel):
     mission: Optional[str] = None
     values: Optional[str] = None
     instructions: Optional[str] = None
+    logo_url: Optional[str] = None
 
 # Tutorial Video Model
 class Tutorial(BaseModel):
@@ -489,13 +491,19 @@ async def update_resource_status(resource_id: str, update: ResourceApprove, admi
     if isinstance(result['created_at'], str):
         result['created_at'] = datetime.fromisoformat(result['created_at'])
     
-    # Send approval email if resource was pending and is now approved
-    if was_pending and update.status == 'approved':
-        submitter_id = existing_resource.get('submitted_by')
-        if submitter_id:
-            submitter = await db.users.find_one({"id": submitter_id}, {"_id": 0})
-            if submitter and submitter.get('email'):
+    # Send email notifications based on new status
+    submitter_id = existing_resource.get('submitted_by')
+    if was_pending and submitter_id:
+        submitter = await db.users.find_one({"id": submitter_id}, {"_id": 0})
+        if submitter and submitter.get('email'):
+            if update.status == 'approved':
                 await send_resource_approval_email(
+                    user_email=submitter['email'],
+                    user_name=submitter.get('name', 'Mentis User'),
+                    resource_title=existing_resource.get('title', 'Your Resource')
+                )
+            elif update.status == 'rejected':
+                await send_resource_rejection_email(
                     user_email=submitter['email'],
                     user_name=submitter.get('name', 'Mentis User'),
                     resource_title=existing_resource.get('title', 'Your Resource')
@@ -2198,6 +2206,66 @@ async def send_resource_approval_email(user_email: str, user_name: str, resource
         
     except Exception as e:
         logger.error(f"Failed to send resource approval email to {user_email}: {str(e)}")
+        return False
+
+async def send_resource_rejection_email(user_email: str, user_name: str, resource_title: str):
+    """Send email notification when a user's resource is rejected"""
+    try:
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        from_email = os.environ.get('FROM_EMAIL', 'noreply@mentis.com')
+        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+        
+        if not sendgrid_api_key:
+            logger.warning(f"SendGrid not configured. Cannot send rejection email to {user_email}")
+            return False
+            
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Email, To
+        
+        message = Mail(
+            from_email=Email(from_email),
+            to_emails=To(user_email),
+            subject='Resource Submission Update - Mentis',
+            html_content=f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 10px;">
+                <h2 style="color: #f97316; margin-bottom: 20px;">Hello {user_name},</h2>
+                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
+                    Thank you for your contribution to Mentis! After careful review, we were unable to approve your submitted resource <strong style="color: #94a3b8;">"{resource_title}"</strong> at this time.
+                </p>
+                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
+                    This could be due to one of the following reasons:
+                </p>
+                <ul style="color: #94a3b8; font-size: 14px; line-height: 1.8;">
+                    <li>The content may not align with our community guidelines</li>
+                    <li>The resource link may be inaccessible or broken</li>
+                    <li>Similar content already exists in our Resource Hub</li>
+                    <li>The description or metadata needs improvement</li>
+                </ul>
+                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
+                    We encourage you to review and resubmit your resource. If you have any questions, feel free to reach out to us.
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{frontend_url}/resources" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">Submit Another Resource</a>
+                </div>
+                <p style="color: #94a3b8; font-size: 14px;">
+                    Your contributions help make Mentis a better platform for everyone!
+                </p>
+                <hr style="border: none; border-top: 1px solid #374151; margin: 30px 0;">
+                <p style="color: #64748b; font-size: 12px; text-align: center;">
+                    Mentis - Mathematics Community Platform<br>
+                    <a href="mailto:mentis.mathematics@gmail.com" style="color: #f97316;">mentis.mathematics@gmail.com</a>
+                </p>
+            </div>
+            '''
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        logger.info(f"Resource rejection email sent to {user_email}, status: {response.status_code}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send resource rejection email to {user_email}: {str(e)}")
         return False
 
 @app.on_event("shutdown")

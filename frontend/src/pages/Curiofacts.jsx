@@ -150,7 +150,7 @@ const Curiofacts = () => {
 
   const handleShareFact = (fact) => {
     const shareUrl = `${window.location.origin}/curiofacts?view=${fact.id}`;
-    const shareText = `🧠 Interesting Math Fact: "${fact.title}"\n\n${fact.content.substring(0, 150)}...\n\n🔗 ${shareUrl}\n\n✨ Discover more at Mentis - The premier platform for mathematics enthusiasts!\n${window.location.origin}`;
+    const shareText = `🧠 Interesting Math Fact: "${fact.title}"\n\n${fact.content.substring(0, 150)}...\n\n🔗 ${shareUrl}\n\n━━━━━━━━━━━━━━━━━\n✨ MENTIS - Where Minds Meet Mathematics ✨\n🎯 Join the premier platform for mathematics enthusiasts!\n📖 Resources • 🎮 Games • 🎬 Reels • 💬 Connect\n🌐 ${window.location.origin}\n━━━━━━━━━━━━━━━━━`;
     
     if (navigator.share) {
       navigator.share({
@@ -159,11 +159,11 @@ const Curiofacts = () => {
         url: shareUrl
       }).catch(() => {
         navigator.clipboard.writeText(shareText);
-        toast.success('Link copied to clipboard!');
+        toast.success('Link copied to clipboard with promotional message!');
       });
     } else {
       navigator.clipboard.writeText(shareText);
-      toast.success('Link copied to clipboard!');
+      toast.success('Link copied to clipboard with promotional message!');
     }
   };
 

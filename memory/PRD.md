@@ -202,6 +202,21 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Uploader name displayed on each Curiofact card ("by [name]")
    - Admin Dashboard shows images in pending Curiofacts review
 
+10. ✅ **Chat Scrollbar Fix (Enhanced)**:
+    - Messages contained within fixed-height (300px) scrollable container
+    - Uses `overflow-hidden` + `absolute inset-0` ScrollArea pattern
+    - No message overflow outside chatbox
+
+11. ✅ **Non-Registered User Access Restriction**:
+    - Non-logged-in users only see Homepage (/) and About Us (/about)
+    - All other pages redirect to login
+    - Navigation hides protected links for non-authenticated users
+
+12. ✅ **Description Tooltips**:
+    - Resource Hub: Tooltip on hover shows full description
+    - Reels: Tooltip on hover shows full caption
+    - Both use `cursor-help` class for visual indication
+
 ### Completed (Previous Session - Fixes)
 1. ✅ **Like/Comment/Save/Share buttons fixed** - Added z-index, preventDefault, stopPropagation for proper click handling
 2. ✅ **Sign up banner conditional** - Only shows for non-logged-in users

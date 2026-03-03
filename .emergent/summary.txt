@@ -4,158 +4,179 @@ The user wants to build a website called Mentis for a mathematics community, act
 **PRODUCT REQUIREMENTS:**
 - **User Authentication:** Full registration and login system.
 - **Four Core Sections:**
-    1.  **Resource Hub:** A place for students to find notes and playlists. Resources can be added and require admin approval.
-    2.  **Funamatics:** A gaming section with links to external math-related games.
+    1.  **Resource Hub:** A place for students to find notes and playlists. Resources can be added and require admin approval. The uploader's name should be mentioned. A search function is required.
+    2.  **Funamatics:** A gaming section with links to external math-related games. A search function is required.
     3.  **Curiofacts:** A section for weekly updates of interesting math facts.
-    4.  **Matrix:** A community joining section that displays live counts of registered members and associated colleges. It should also have a link to a WhatsApp community.
+    4.  **Matrix:** A community joining section that displays live counts of registered members and associated colleges. It should have a link to a WhatsApp community and a note saying All details must be filled in CAPITAL letters.
+- **Mathmate (formerly Connect):** A section for users to find each other, send connection requests, and engage in real-time chat. Users should be able to view profiles of other users, including their Mentis Score (number of resources submitted) and membership duration.
 - **Admin Control Panel:** A comprehensive dashboard for an admin to:
-    -   Manage (approve, reject, add, delete) content in Resource Hub, Funamatics, and Curiofacts.
-    -   View a list of all registered users and export it as a CSV file.
+    -   Manage (approve, reject, add, delete) content in Resource Hub, Funamatics, and Curiofacts via dedicated upload forms.
+    -   View a list of all registered users and matrix members, with the ability to delete them.
     -   Promote other users to admin status.
-    -   Update site-wide settings, such as the homepage hero image.
+    -   Export user lists as a CSV file.
+    -   Update site-wide settings, such as the homepage hero image. Google Drive links should be supported for image uploads.
 - **Forgot Password:** A secure password reset mechanism using email.
-- **Design:** A Modern along with Academic elegant dark theme with interactive animations.
+- **Design:** A Modern along with Academic elegant dark theme with interactive animations. The Made with Emergent branding should be removed.
 - **Footer:** A footer on every page with the contact email: mentis.mathematics@gmail.com.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application (FastAPI + React + MongoDB) is implemented. It features a complete dark-themed UI, user authentication (signup, login), and all four core sections (Resource Hub, Funamatics, Curiofacts, Matrix) populated with initial data. A comprehensive admin dashboard exists, allowing for content management, user tracking with CSV export, and site settings modification (like changing the hero image). A secure Forgot Password flow has been architected and partially implemented with SendGrid. A footer has been added to all pages.
+A full-stack application (FastAPI + React + MongoDB) is implemented with a complete dark theme. It features user authentication (signup, login, secure password reset via SendGrid) and role-based access. All core sections are functional: Resource Hub, Funamatics, Curiofacts, and Matrix. A new Mathmate section has been added with user discovery, connection requests, and real-time chat capabilities. A comprehensive admin dashboard allows for content management, user management (including deletion), and dynamic site settings updates (hero image). Google Drive URLs are automatically converted for image/PDF uploads across the application. The UI has been improved with search bars, tooltips for long descriptions, and fixes for visibility and interactivity issues.
 
 **Last working item**:
-- Last item agent was working: The agent was finalizing the secure Forgot Password feature. The user pointed out that displaying the reset link on-screen was insecure and requested email integration. The agent installed SendGrid, updated the backend and frontend code to send an email instead of displaying the link, and received the SendGrid API key from the user. The next step is to add this key to the environment and test the complete flow.
+- Last item agent was working: The agent was implementing a three-part user request:
+    1.  Rename the 'Connect' tab to 'Mathmate'. (Partially Done)
+    2.  Add a 'Mentis Score' (resource count) to the user dashboard and profile view. (Done)
+    3.  Add the note All details must be filled in CAPITAL letters to the Matrix section. (In Progress)
+    The agent had successfully added the 'Mentis Score' and was in the process of updating the  file for the instructional note when the session was interrupted.
 - Status: IN PROGRESS
 - Agent Testing Done: N
-- Which testing method agent to use? manual testing by curl
+- Which testing method agent to use? both
 - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Finalize and Test Secure Password Reset (P0)
+  - Issue 1: Finalize UI Changes from Last Request (P0)
 
   Issues Detail:
-  - Issue 1:
-     - Attempted fixes: The initial insecure implementation (displaying the reset link on the UI) was replaced with a secure flow that sends an email via SendGrid. The backend code, frontend UI, and  structure are ready. The user has provided the API key.
+  - Issue 1: 
+     - Attempted fixes: The agent has already updated  and  to rename 'Connect' to 'Mathmate' and added the 'Mentis Score' to  and . The agent started to work on the  update.
      - Next debug checklist:
-        1. Use  to add the  provided by the user to .
-        2. Restart the backend service using backend: stopped
-backend: started.
-        3. Trigger the forgot password flow for a test user via the UI or .
-        4. Ask the user to verify if they received the password reset email to confirm the end-to-end flow is working.
-     - Why fix this issue and what will be achieved with the fix? This is a critical security vulnerability. Fixing it will make the password reset process secure and production-ready, protecting user accounts.
-     - Status: IN PROGRESS
+        1.  View  to confirm if the CAPITAL letters note was added.
+        2.  If not present, use  to add a  tag with the text  above the form inputs within the registration card.
+        3.  Restart the frontend service if necessary.
+        4.  Take screenshots of the Mathmate page, the user Dashboard, the user profile modal, and the Matrix page to verify all three changes.
+     - Why fix this issue and what will be achieved with the fix? To complete the user's latest request and ensure all UI/UX enhancements are correctly implemented and visible.
+     - Status:  IN PROGRESS
      - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? Backend
+     - Should Test frontend/backend/both after fix? Frontend
      - Blocked on other issue: None
 
 **In progress Task List**:
   None
 
 **Upcoming and Future Tasks**
-  None. All user requests have been addressed or are in progress.
+- **Refactor  (P1):** The component is monolithic and has been a recurring source of issues. It needs to be broken down into smaller, manageable components for each tab (e.g., , ).
+- **Add Rejection Email Notifications (P1):** Implement a feature where if an admin rejects a resource, an email is sent to the user who submitted it, ideally with a reason for rejection.
+- **Add Email Verification for New Signups (P2):** Implement an email verification flow for new user registrations to ensure valid email addresses.
+- **Implement Drag-and-Drop Uploads (P2):** Enhance the admin dashboard's upload forms with drag-and-drop functionality for a better user experience, especially for image uploads.
 
 **Completed work in this session**
-- **Full-Stack Application:** Built the entire Mentis platform with a FastAPI backend and React frontend.
-- **User Authentication:** Implemented JWT-based signup, login, and role-based access control (user, admin).
-- **Core Sections:** Created and populated , , , and  pages.
-- **Dark Theme & UI/UX:** Transformed the entire site to a modern dark theme with  animations.
-- **Admin Dashboard:** Developed a comprehensive admin panel with features for:
-    - Approving/rejecting pending resources.
-    - Adding/deleting resources, games, and curiofacts.
-    - Viewing all registered users and promoting them to admin.
-    - Exporting user and matrix registration lists to CSV.
-    - Updating the site's hero image dynamically.
-- **Content Seeding:** Created and executed a script () to populate the database with initial content for games and facts.
-- **Site Management:**
-  - Added a  component to all pages with the contact email.
-  - Created multiple markdown guides (, , ) for the user.
+- **Secure Password Reset:** Finalized and tested the SendGrid integration for the Forgot Password feature.
+- **Resource Approval Notifications:** Implemented email notifications to users when their submitted resources are approved.
+- **Mathmate (formerly Connect) Feature:**
+    -   Built backend endpoints and WebSocket support for real-time chat, connections, and user discovery.
+    -   Created a Mathmate page with tabs for discovering users, managing connections (pending, accepted), and a real-time chat interface.
+- **User Profile Modal:** Added a feature to view other users' profiles, showing their name, email, membership start date, and Mentis Score.
+- **Admin Deletion Capabilities:** Added functionality for admins to delete registered users and Matrix members from the dashboard.
+- **Google Drive URL Conversion:** Implemented and later improved a robust function to convert Google Drive share links (for images and documents) into direct, embeddable URLs across the entire application (Admin Dashboard, Resource Hub).
+- **UI/UX Enhancements:**
+    -   Added search bars to the Resource Hub and Funamatics sections.
+    -   Implemented tooltips to show full descriptions on hover in Resource Hub and Funamatics.
+    -   Fixed a z-index bug in Funamatics and a click interception bug in Resource Hub, making links work correctly.
+    -   Fixed broken image links in the Funamatics section.
+    -   Added the uploader's name to each resource card in the Resource Hub.
+    -   Corrected a font color issue in the Admin Dashboard for better visibility in dark mode.
+- **Deployment Fixes:**
+    -   Corrected the  file to stop blocking  files.
+    -   Added  attributes to critical UI elements.
+- **Branding Removal:** Removed the Made with Emergent badge from .
 
 **Earlier issues found/mentioned but not fixed**
-None. All identified issues have been resolved.
+None. All identified issues were addressed.
 
 **Known issue recurrence from previous fork**
-  - **Issue:** The agent repeatedly struggled to edit the  file due to its large size and complexity. Multiple attempts using  and  failed or resulted in syntax errors, requiring several corrective steps.
-  - **Recurrence count:** 3+ times
-  - **Status:** RESOLVED (for now), but the file remains a high-risk area for future modifications.
+  - **Issue:** The  file is extremely large and fragile, making it difficult to edit. This was noted in the previous handoff and continues to be a risk, though no new breakage occurred in this session.
+  - **Recurrence count:** 3+
+  - **Status:** RESOLVED (for now, but refactoring is highly recommended)
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Backend:** FastAPI, Python, MongoDB (with Pymongo)
+- **Backend:** FastAPI, Python, MongoDB (Pymongo), WebSockets
 - **Frontend:** React, Tailwind CSS, shadcn/ui, Framer Motion
-- **Authentication:** JWT (JSON Web Tokens) with Passlib for password hashing
-- **Email:** SendGrid for transactional emails (password reset)
-- **Architecture:** MERN-like (MongoDB, Express-like[FastAPI], React, Node environment for frontend)
+- **Authentication:** JWT (JSON Web Tokens) with Passlib
+- **Email:** SendGrid
+- **Architecture:** MERN-like (MongoDB, FastAPI, React)
 
 **key DB schema**
-- : {id, name, email, hashed_password, role, college}
-- : {id, title, description, url, status ('pending'/'approved'), created_by, created_at}
-- : {id, title, description, url, difficulty, image_url}
-- : {id, title, content, image_url, created_at}
-- : {id, name, email, college, created_at}
+- : {id, name, email, hashed_password, role, college, created_at}
+- : {id, title, url, status, submitted_by, uploader_name, created_at}
+- : {id, title, url, thumbnail}
+- : {id, title, content}
+- : {id, name, email, college}
 - : {email, token, expires_at}
-- : {key: 'site_settings', hero_image_url}
+-  & : {key/id, hero_image_url}
+- : {user1_id, user2_id, status ('pending', 'accepted')}
+- : {connection_id, sender_id, content, timestamp}
 
 **changes in tech stack**
 None.
 
 **All files of reference**
-- : The core FastAPI application containing all API endpoints.
-- : The large and complex frontend component for all admin functionalities.
-- : The UI for initiating the password reset flow.
-- : The UI for setting a new password using a token.
-- : Defines all frontend routes.
-- : Contains navigation logic, including the conditional Admin button.
-- : Stores environment variables, including the .
-- : Guide for setting up SendGrid.
+- : Heavily modified to add WebSocket support, connection/chat logic, user profile endpoints, and Google Drive URL conversion.
+- : Heavily modified to add upload forms, delete user/member functionality, and Google Drive URL support.
+- : A new, complex component for the Mathmate/chat feature.
+- : Updated with search, tooltips, uploader info, and a fix for the View button.
+- : Updated with search, tooltips, and a fix for broken links.
+- : Updated to include 'Mentis Score' and a dark theme fix.
+- : Updated to rename 'Connect' to 'Mathmate'.
+- : Modified to remove the Made with Emergent badge.
 
 **Areas that need refactoring**:
-The  file is monolithic and has become difficult to maintain. It should be broken down into smaller, more manageable components for each tab/feature (e.g., , ). This would significantly improve stability and ease future development.
+-  remains monolithic and is a high-priority candidate for refactoring. Breaking it into smaller components would improve maintainability and reduce the risk of errors during future edits.
 
 **key api endpoints**
 - 
 - 
 - 
-- 
+- , , 
+- **New Chat/Connect Endpoints:**
+    - 
+    - 
+    - 
+    - 
+    - 
+    - 
+    -  (WebSocket for real-time chat)
 
 **Critical Info for New Agent**
-- **AdminDashboard Fragility:** Be extremely cautious when editing . It's prone to breaking. Consider refactoring it into smaller components if significant changes are needed.
-- **SendGrid Key:** The user has provided the SendGrid API key. Your immediate task is to add it to  and test the email flow.
-- **Security:** The user is attentive to security details. Ensure all implementations, especially those involving user data or authentication, are robust.
+- **Last Task Interrupted:** Your immediate priority is to finish the user's last request. Verify that the CAPITAL letters note is present on the Matrix page. If not, add it. Then, test and verify all three recent changes (Mathmate rename, Mentis Score, and Matrix note).
+- ** is Fragile:** This file is very large and complex. Be extra cautious when making edits. Refactoring this file into smaller components is a key upcoming task.
+- **Google Drive URLs:** The user is very particular about Google Drive links working seamlessly for all image and document uploads. The current implementation uses a  conversion which has proven reliable, but it's a feature to keep a close eye on.
 
 **documents and test reports created in this job**
-- 
-- 
-- 
-- 
-- 
+-  (Updated multiple times)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requests an option for users who forget their password.
-2.  **Agent:** Implements an *insecure* password reset feature that shows the link on the screen.
-3.  **User:** Points out the security flaw and requests email integration instead.
-4.  **Agent:** Agrees and starts implementing a secure SendGrid integration.
-5.  **User:** Asks how to integrate SendGrid and requests a footer with a contact email on every page.
-6.  **Agent:** Adds the footer and creates a SendGrid setup guide. Asks user for their API key to complete the setup.
-7.  **User:** Provides the SendGrid API Key.
-8.  **Agent:** Acknowledges receipt of the key and states it will proceed with the configuration.
+1.  **User:** Requests search bars for Resource Hub/Funamatics, tooltips for descriptions, display of uploader names, and a fix for a dark font color on the dashboard. (All DONE)
+2.  **User:** Asks to check deployment readiness. (DONE)
+3.  **User:** Reports the View option in Resource Hub is not working and requests a user profile view feature. (Both DONE)
+4.  **User:** Reports the View button is *still* not working. (DONE - a more robust fix was implemented)
+5.  **User:** Requests to rename 'Connect' to 'Mathmate', add a 'Mentis Score', and add a note to the Matrix section. (IN PROGRESS)
+6.  **Agent:** Starts implementing the changes.
+7.  **User:**  (prompting the agent to proceed with its multi-step edit).
+8.  **Agent:** Updates .
+9.  **Agent:** Updates  for the 'Mentis Score' feature.
+10. **Agent:** Starts working on the  update.
 
 **Project Health Check:**
 - **Broken:**  is fragile and prone to breaking during edits, though it is currently functional.
 - **Mocked:** None.
 
 **3rd Party Integrations**
-- **SendGrid:** Used for sending transactional emails (password reset). Requires a User API Key.
+- **SendGrid:** Used for sending transactional emails (password reset, resource approval). Requires a User API Key.
 
 **Testing status**
 - Testing agent used after significant changes: YES
-- Troubleshoot agent used after agent stuck in loop: N/A
-- Test files created: 
-- Known regressions: None currently, but the Admin Dashboard UI has been a recurring source of issues during development.
+- Troubleshoot agent used after agent stuck in loop: NO
+- Test files created: None.
+- Known regressions: None.
 
 **Credentials to test flow:**
 - **Admin Email:** atreyaghoshal.68@gmail.com
 - **Admin Password:** 4tr3y4@54N14
 
 **What agent forgot to execute**
-Nothing was forgotten. The agent correctly identified and was in the process of rectifying the security flaw in the password reset mechanism when the session ended.</analysis>
+The agent did not forget anything but was interrupted mid-task. The final part of the user's last request—adding an instructional note to —was not completed and needs to be addressed first.</analysis>

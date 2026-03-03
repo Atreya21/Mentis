@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { BookOpen, Plus, Filter, Search, User } from 'lucide-react';
+import { BookOpen, Plus, Filter, Search, User, Heart, MessageCircle, Send, X } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -55,6 +56,11 @@ const ResourceHub = () => {
   const [filter, setFilter] = useState('approved');
   const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [likes, setLikes] = useState({});
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -79,12 +85,105 @@ const ResourceHub = () => {
     fetchResources();
   }, [filter]);
 
+  // Fetch likes for all resources
+  const fetchLikes = async (resourceList) => {
+    const token = localStorage.getItem('token');
+    const likesData = {};
+    
+    for (const resource of resourceList) {
+      try {
+        const res = await axios.get(`${API}/resources/${resource.id}/likes`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        likesData[resource.id] = {
+          count: res.data.count,
+          likes: res.data.likes,
+          userLiked: res.data.likes.some(l => l.user_id === user?.id)
+        };
+      } catch (err) {
+        likesData[resource.id] = { count: 0, likes: [], userLiked: false };
+      }
+    }
+    setLikes(likesData);
+  };
+
   const fetchResources = async () => {
     try {
       const res = await axios.get(`${API}/resources?status=${filter}`);
       setResources(res.data);
+      if (user) {
+        fetchLikes(res.data);
+      }
     } catch (err) {
       toast.error('Failed to fetch resources');
+    }
+  };
+
+  const handleLike = async (resourceId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API}/resources/${resourceId}/like`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update local state
+      setLikes(prev => ({
+        ...prev,
+        [resourceId]: {
+          ...prev[resourceId],
+          count: res.data.liked ? (prev[resourceId]?.count || 0) + 1 : Math.max(0, (prev[resourceId]?.count || 0) - 1),
+          userLiked: res.data.liked
+        }
+      }));
+    } catch (err) {
+      toast.error('Failed to like resource');
+    }
+  };
+
+  const openComments = async (resource) => {
+    setSelectedResource(resource);
+    setCommentDialogOpen(true);
+    
+    try {
+      const res = await axios.get(`${API}/resources/${resource.id}/comments`);
+      setComments(res.data);
+    } catch (err) {
+      toast.error('Failed to load comments');
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/resources/${selectedResource.id}/comment`, 
+        { content: newComment },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+      
+      toast.success('Comment added');
+      setNewComment('');
+      
+      // Refresh comments
+      const res = await axios.get(`${API}/resources/${selectedResource.id}/comments`);
+      setComments(res.data);
+    } catch (err) {
+      toast.error('Failed to add comment');
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/comments/${commentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('Comment deleted');
+      setComments(comments.filter(c => c.id !== commentId));
+    } catch (err) {
+      toast.error('Failed to delete comment');
     }
   };
 
@@ -294,10 +393,105 @@ const ResourceHub = () => {
                     View →
                   </a>
                 </div>
+                
+                {/* Like and Comment Section */}
+                {user && (
+                  <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-700">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleLike(resource.id)}
+                      className={`flex items-center gap-2 ${likes[resource.id]?.userLiked ? 'text-pink-500' : 'text-slate-400'} hover:text-pink-400`}
+                      data-testid="like-resource-btn"
+                    >
+                      <Heart className={`w-4 h-4 ${likes[resource.id]?.userLiked ? 'fill-current' : ''}`} />
+                      <span>{likes[resource.id]?.count || 0}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openComments(resource)}
+                      className="flex items-center gap-2 text-slate-400 hover:text-orange-400"
+                      data-testid="comment-resource-btn"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Comments</span>
+                    </Button>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
         </TooltipProvider>
+
+        {/* Comments Dialog */}
+        <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
+          <DialogContent className="max-w-lg bg-slate-800 border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="text-white">Comments - {selectedResource?.title}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <ScrollArea className="h-[300px] pr-4">
+                {comments.length > 0 ? (
+                  <div className="space-y-4">
+                    {comments.map((comment) => (
+                      <div key={comment.id} className="bg-slate-900/50 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+                              {comment.user_name?.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-white text-sm font-medium">{comment.user_name}</p>
+                              <p className="text-xs text-slate-500">
+                                {new Date(comment.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          {(comment.user_id === user?.id || user?.role === 'admin' || user?.role === 'master_admin') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-slate-400 hover:text-red-400"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-slate-300 text-sm">{comment.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageCircle className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                    <p className="text-slate-400">No comments yet</p>
+                  </div>
+                )}
+              </ScrollArea>
+
+              {/* Add Comment */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
+                  className="bg-slate-900 border-slate-700 text-white"
+                  data-testid="comment-input"
+                />
+                <Button
+                  onClick={handleAddComment}
+                  className="bg-gradient-to-r from-orange-500 to-pink-500"
+                  data-testid="submit-comment-btn"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {filteredResources.length === 0 && searchQuery && (
           <div className="text-center py-20">

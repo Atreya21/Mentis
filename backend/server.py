@@ -211,6 +211,70 @@ class UserPublic(BaseModel):
     college: Optional[str] = None
     created_at: datetime
 
+# Like Model for Resources and Curiofacts
+class Like(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    target_id: str  # resource_id or curiofact_id
+    target_type: str  # 'resource' or 'curiofact'
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Comment Model for Resources and Curiofacts
+class Comment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: Optional[str] = None
+    target_id: str  # resource_id or curiofact_id
+    target_type: str  # 'resource' or 'curiofact'
+    content: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CommentCreate(BaseModel):
+    content: str
+
+# User Report Model
+class UserReport(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    reporter_id: str
+    reported_user_id: str
+    reason: str
+    description: str
+    status: str = "pending"  # pending, reviewed, resolved
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserReportCreate(BaseModel):
+    reported_user_id: str
+    reason: str
+    description: str
+
+# Reel Model for educational short videos
+class Reel(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: Optional[str] = None
+    video_url: str
+    video_type: str = "link"  # 'link' (YouTube, Instagram, Drive) or 'upload'
+    caption: str
+    status: str = "pending"  # pending, approved, rejected
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ReelCreate(BaseModel):
+    video_url: str
+    video_type: str = "link"
+    caption: str
+
+# Pinned Chat Model
+class PinnedChat(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    connection_id: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # WebSocket Connection Manager for real-time chat
 class ConnectionManager:
     def __init__(self):
@@ -262,8 +326,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Invalid token")
 
 async def get_admin_user(user: User = Depends(get_current_user)):
-    if user.role != "admin":
+    if user.role != "admin" and user.role != "master_admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
+async def get_master_admin_user(user: User = Depends(get_current_user)):
+    if user.role != "master_admin":
+        raise HTTPException(status_code=403, detail="Master Admin access required")
     return user
 
 @api_router.post("/auth/signup", response_model=Token)
@@ -1074,6 +1143,546 @@ async def send_message(connection_id: str, message: MessageCreate, current_user:
     }, other_user_id)
     
     return {"message": "Message sent", "id": new_message.id}
+
+# ============== LIKE & COMMENT FEATURE ==============
+
+@api_router.post("/{target_type}/{target_id}/like")
+async def like_content(target_type: str, target_id: str, current_user: User = Depends(get_current_user)):
+    """Like a resource or curiofact"""
+    if target_type not in ['resources', 'curiofacts']:
+        raise HTTPException(status_code=400, detail="Invalid target type")
+    
+    # Check if already liked
+    existing = await db.likes.find_one({
+        "user_id": current_user.id,
+        "target_id": target_id,
+        "target_type": target_type
+    })
+    
+    if existing:
+        # Unlike - remove the like
+        await db.likes.delete_one({"id": existing['id']})
+        return {"message": "Like removed", "liked": False}
+    
+    # Create new like
+    like = Like(
+        user_id=current_user.id,
+        target_id=target_id,
+        target_type=target_type
+    )
+    doc = like.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.likes.insert_one(doc)
+    
+    return {"message": "Content liked", "liked": True}
+
+@api_router.get("/{target_type}/{target_id}/likes")
+async def get_likes(target_type: str, target_id: str):
+    """Get all likes for a resource or curiofact"""
+    if target_type not in ['resources', 'curiofacts']:
+        raise HTTPException(status_code=400, detail="Invalid target type")
+    
+    likes = await db.likes.find({
+        "target_id": target_id,
+        "target_type": target_type
+    }, {"_id": 0}).to_list(1000)
+    
+    # Enrich with user details
+    for like in likes:
+        user = await db.users.find_one({"id": like['user_id']}, {"_id": 0, "password": 0})
+        if user:
+            like['user_name'] = user.get('name', 'Unknown')
+    
+    return {"count": len(likes), "likes": likes}
+
+@api_router.post("/{target_type}/{target_id}/comment")
+async def add_comment(target_type: str, target_id: str, comment_data: CommentCreate, current_user: User = Depends(get_current_user)):
+    """Add a comment to a resource or curiofact"""
+    if target_type not in ['resources', 'curiofacts']:
+        raise HTTPException(status_code=400, detail="Invalid target type")
+    
+    comment = Comment(
+        user_id=current_user.id,
+        user_name=current_user.name,
+        target_id=target_id,
+        target_type=target_type,
+        content=comment_data.content
+    )
+    doc = comment.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.comments.insert_one(doc)
+    
+    return {"message": "Comment added", "comment_id": comment.id}
+
+@api_router.get("/{target_type}/{target_id}/comments")
+async def get_comments(target_type: str, target_id: str):
+    """Get all comments for a resource or curiofact"""
+    if target_type not in ['resources', 'curiofacts']:
+        raise HTTPException(status_code=400, detail="Invalid target type")
+    
+    comments = await db.comments.find({
+        "target_id": target_id,
+        "target_type": target_type
+    }, {"_id": 0}).sort("created_at", -1).to_list(500)
+    
+    for c in comments:
+        if isinstance(c.get('created_at'), str):
+            c['created_at'] = datetime.fromisoformat(c['created_at'])
+    
+    return comments
+
+@api_router.delete("/comments/{comment_id}")
+async def delete_comment(comment_id: str, current_user: User = Depends(get_current_user)):
+    """Delete own comment or admin can delete any comment"""
+    comment = await db.comments.find_one({"id": comment_id}, {"_id": 0})
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    
+    if comment['user_id'] != current_user.id and current_user.role not in ['admin', 'master_admin']:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
+    
+    await db.comments.delete_one({"id": comment_id})
+    return {"message": "Comment deleted"}
+
+# ============== USER REPORT FEATURE ==============
+
+@api_router.post("/users/{user_id}/report")
+async def report_user(user_id: str, report_data: UserReportCreate, current_user: User = Depends(get_current_user)):
+    """Report a user for misconduct"""
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot report yourself")
+    
+    # Check if user exists
+    reported_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not reported_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    report = UserReport(
+        reporter_id=current_user.id,
+        reported_user_id=user_id,
+        reason=report_data.reason,
+        description=report_data.description
+    )
+    doc = report.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.user_reports.insert_one(doc)
+    
+    # Send email notification to admin
+    try:
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        admin_email = os.environ.get('FROM_EMAIL', 'mentis.mathematics@gmail.com')
+        
+        if sendgrid_api_key:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail, Email, To
+            
+            reporter = await db.users.find_one({"id": current_user.id}, {"_id": 0})
+            
+            message = Mail(
+                from_email=Email(admin_email),
+                to_emails=To(admin_email),
+                subject=f'🚨 User Report: {reported_user.get("name", "Unknown")} - Mentis',
+                html_content=f'''
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 10px;">
+                    <h2 style="color: #ef4444; margin-bottom: 20px;">New User Report 🚨</h2>
+                    <p style="color: #e2e8f0;"><strong>Reported User:</strong> {reported_user.get("name", "Unknown")} ({reported_user.get("email", "Unknown")})</p>
+                    <p style="color: #e2e8f0;"><strong>Reported By:</strong> {reporter.get("name", "Unknown") if reporter else "Unknown"}</p>
+                    <p style="color: #e2e8f0;"><strong>Reason:</strong> {report_data.reason}</p>
+                    <p style="color: #e2e8f0;"><strong>Description:</strong> {report_data.description}</p>
+                    <hr style="border: none; border-top: 1px solid #374151; margin: 20px 0;">
+                    <p style="color: #64748b; font-size: 12px;">Please review this report in the Admin Dashboard.</p>
+                </div>
+                '''
+            )
+            
+            sg = SendGridAPIClient(sendgrid_api_key)
+            sg.send(message)
+    except Exception as e:
+        logger.error(f"Failed to send report notification email: {str(e)}")
+    
+    return {"message": "Report submitted successfully", "report_id": report.id}
+
+@api_router.get("/admin/reports")
+async def get_user_reports(admin: User = Depends(get_admin_user)):
+    """Get all user reports (admin only)"""
+    reports = await db.user_reports.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    
+    for report in reports:
+        if isinstance(report.get('created_at'), str):
+            report['created_at'] = datetime.fromisoformat(report['created_at'])
+        
+        # Enrich with user details
+        reporter = await db.users.find_one({"id": report['reporter_id']}, {"_id": 0, "password": 0})
+        reported = await db.users.find_one({"id": report['reported_user_id']}, {"_id": 0, "password": 0})
+        report['reporter'] = reporter
+        report['reported_user'] = reported
+    
+    return reports
+
+@api_router.patch("/admin/reports/{report_id}")
+async def update_report_status(report_id: str, status: str, admin: User = Depends(get_admin_user)):
+    """Update report status (admin only)"""
+    if status not in ['pending', 'reviewed', 'resolved']:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    result = await db.user_reports.update_one(
+        {"id": report_id},
+        {"$set": {"status": status}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    return {"message": f"Report status updated to {status}"}
+
+# ============== REELS FEATURE ==============
+
+def convert_video_url(url: str) -> dict:
+    """Convert video URLs from various platforms to embeddable format"""
+    result = {"url": url, "platform": "direct", "embed_url": url}
+    
+    # YouTube
+    youtube_patterns = [
+        r'youtube\.com/watch\?v=([a-zA-Z0-9_-]+)',
+        r'youtu\.be/([a-zA-Z0-9_-]+)',
+        r'youtube\.com/shorts/([a-zA-Z0-9_-]+)',
+    ]
+    for pattern in youtube_patterns:
+        match = re.search(pattern, url)
+        if match:
+            video_id = match.group(1)
+            result['platform'] = 'youtube'
+            result['embed_url'] = f'https://www.youtube.com/embed/{video_id}'
+            return result
+    
+    # Instagram
+    instagram_patterns = [
+        r'instagram\.com/reel/([a-zA-Z0-9_-]+)',
+        r'instagram\.com/p/([a-zA-Z0-9_-]+)',
+    ]
+    for pattern in instagram_patterns:
+        match = re.search(pattern, url)
+        if match:
+            result['platform'] = 'instagram'
+            result['embed_url'] = url + '/embed'
+            return result
+    
+    # Google Drive
+    drive_pattern = r'drive\.google\.com/file/d/([a-zA-Z0-9_-]+)'
+    match = re.search(drive_pattern, url)
+    if match:
+        file_id = match.group(1)
+        result['platform'] = 'googledrive'
+        result['embed_url'] = f'https://drive.google.com/file/d/{file_id}/preview'
+        return result
+    
+    return result
+
+@api_router.post("/reels", response_model=dict)
+async def create_reel(reel_data: ReelCreate, current_user: User = Depends(get_current_user)):
+    """Create a new reel (educational short video)"""
+    video_info = convert_video_url(reel_data.video_url)
+    
+    reel = Reel(
+        user_id=current_user.id,
+        user_name=current_user.name,
+        video_url=video_info['embed_url'],
+        video_type=video_info['platform'],
+        caption=reel_data.caption
+    )
+    doc = reel.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['original_url'] = reel_data.video_url
+    await db.reels.insert_one(doc)
+    
+    return {"message": "Reel submitted for approval", "reel_id": reel.id}
+
+@api_router.get("/reels")
+async def get_reels(status: Optional[str] = "approved", current_user: User = Depends(get_current_user)):
+    """Get all approved reels or pending (for submitter)"""
+    query = {"status": status}
+    
+    reels = await db.reels.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    
+    for reel in reels:
+        if isinstance(reel.get('created_at'), str):
+            reel['created_at'] = datetime.fromisoformat(reel['created_at'])
+        
+        # Get like count
+        like_count = await db.likes.count_documents({
+            "target_id": reel['id'],
+            "target_type": "reels"
+        })
+        reel['like_count'] = like_count
+        
+        # Check if current user liked
+        user_liked = await db.likes.find_one({
+            "user_id": current_user.id,
+            "target_id": reel['id'],
+            "target_type": "reels"
+        })
+        reel['user_liked'] = user_liked is not None
+    
+    return reels
+
+@api_router.get("/reels/pending")
+async def get_pending_reels(admin: User = Depends(get_admin_user)):
+    """Get all pending reels (admin only)"""
+    reels = await db.reels.find({"status": "pending"}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    
+    for reel in reels:
+        if isinstance(reel.get('created_at'), str):
+            reel['created_at'] = datetime.fromisoformat(reel['created_at'])
+    
+    return reels
+
+@api_router.patch("/admin/reels/{reel_id}")
+async def update_reel_status(reel_id: str, status: str, admin: User = Depends(get_admin_user)):
+    """Update reel status (admin only)"""
+    if status not in ['pending', 'approved', 'rejected']:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    result = await db.reels.update_one(
+        {"id": reel_id},
+        {"$set": {"status": status}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Reel not found")
+    
+    return {"message": f"Reel status updated to {status}"}
+
+@api_router.delete("/admin/reels/{reel_id}")
+async def delete_reel(reel_id: str, admin: User = Depends(get_admin_user)):
+    """Delete a reel (admin only)"""
+    result = await db.reels.delete_one({"id": reel_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Reel not found")
+    return {"message": "Reel deleted"}
+
+# Like a reel
+@api_router.post("/reels/{reel_id}/like")
+async def like_reel(reel_id: str, current_user: User = Depends(get_current_user)):
+    """Like or unlike a reel"""
+    existing = await db.likes.find_one({
+        "user_id": current_user.id,
+        "target_id": reel_id,
+        "target_type": "reels"
+    })
+    
+    if existing:
+        await db.likes.delete_one({"id": existing['id']})
+        return {"message": "Like removed", "liked": False}
+    
+    like = Like(
+        user_id=current_user.id,
+        target_id=reel_id,
+        target_type="reels"
+    )
+    doc = like.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.likes.insert_one(doc)
+    
+    return {"message": "Reel liked", "liked": True}
+
+# ============== ENHANCED CHAT FEATURES ==============
+
+@api_router.delete("/messages/{message_id}")
+async def delete_message(message_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a specific message"""
+    message = await db.messages.find_one({"id": message_id}, {"_id": 0})
+    
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    if message['sender_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Can only delete your own messages")
+    
+    await db.messages.delete_one({"id": message_id})
+    
+    return {"message": "Message deleted"}
+
+@api_router.delete("/connections/{connection_id}/messages")
+async def clear_chat_history(connection_id: str, current_user: User = Depends(get_current_user)):
+    """Clear all messages in a connection (for current user's view)"""
+    connection = await db.connections.find_one({"id": connection_id}, {"_id": 0})
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['requester_id'] != current_user.id and connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Delete all messages in this connection
+    await db.messages.delete_many({"connection_id": connection_id})
+    
+    return {"message": "Chat history cleared"}
+
+@api_router.patch("/messages/{message_id}/unsend")
+async def unsend_message(message_id: str, current_user: User = Depends(get_current_user)):
+    """Unsend (mark as deleted) a message - only sender can unsend"""
+    message = await db.messages.find_one({"id": message_id}, {"_id": 0})
+    
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    if message['sender_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Can only unsend your own messages")
+    
+    # Mark message as unsent instead of deleting
+    await db.messages.update_one(
+        {"id": message_id},
+        {"$set": {"content": "This message was unsent", "unsent": True}}
+    )
+    
+    return {"message": "Message unsent"}
+
+@api_router.post("/messages/{message_id}/reply")
+async def reply_to_message(message_id: str, reply_data: MessageCreate, current_user: User = Depends(get_current_user)):
+    """Reply to a specific message"""
+    original_message = await db.messages.find_one({"id": message_id}, {"_id": 0})
+    
+    if not original_message:
+        raise HTTPException(status_code=404, detail="Original message not found")
+    
+    connection = await db.connections.find_one({"id": original_message['connection_id']}, {"_id": 0})
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['requester_id'] != current_user.id and connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if connection['status'] != 'accepted':
+        raise HTTPException(status_code=400, detail="Connection is not accepted")
+    
+    new_message = Message(
+        connection_id=original_message['connection_id'],
+        sender_id=current_user.id,
+        content=reply_data.content
+    )
+    
+    doc = new_message.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['reply_to'] = message_id
+    doc['reply_to_content'] = original_message.get('content', '')[:100]  # Store first 100 chars of original
+    await db.messages.insert_one(doc)
+    
+    # Notify the other user
+    other_user_id = connection['receiver_id'] if connection['requester_id'] == current_user.id else connection['requester_id']
+    await manager.send_personal_message({
+        "type": "new_message",
+        "message": {
+            "id": new_message.id,
+            "connection_id": original_message['connection_id'],
+            "sender_id": current_user.id,
+            "sender_name": current_user.name,
+            "content": reply_data.content,
+            "created_at": doc['created_at'],
+            "reply_to": message_id,
+            "reply_to_content": doc['reply_to_content']
+        }
+    }, other_user_id)
+    
+    return {"message": "Reply sent", "id": new_message.id}
+
+# Pinned Chats
+@api_router.post("/connections/{connection_id}/pin")
+async def pin_chat(connection_id: str, current_user: User = Depends(get_current_user)):
+    """Pin or unpin a chat"""
+    connection = await db.connections.find_one({"id": connection_id}, {"_id": 0})
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['requester_id'] != current_user.id and connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Check if already pinned
+    existing = await db.pinned_chats.find_one({
+        "user_id": current_user.id,
+        "connection_id": connection_id
+    })
+    
+    if existing:
+        await db.pinned_chats.delete_one({"id": existing['id']})
+        return {"message": "Chat unpinned", "pinned": False}
+    
+    pinned = PinnedChat(
+        user_id=current_user.id,
+        connection_id=connection_id
+    )
+    doc = pinned.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.pinned_chats.insert_one(doc)
+    
+    return {"message": "Chat pinned", "pinned": True}
+
+@api_router.get("/connections/pinned")
+async def get_pinned_chats(current_user: User = Depends(get_current_user)):
+    """Get all pinned chats for current user"""
+    pinned = await db.pinned_chats.find({"user_id": current_user.id}, {"_id": 0}).to_list(50)
+    return [p['connection_id'] for p in pinned]
+
+# ============== MASTER ADMIN FEATURES ==============
+
+@api_router.patch("/master-admin/demote/{user_id}")
+async def demote_admin(user_id: str, master_admin: User = Depends(get_master_admin_user)):
+    """Demote an admin to regular user (master admin only)"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get('role') == 'master_admin':
+        raise HTTPException(status_code=400, detail="Cannot demote master admin")
+    
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=400, detail="User is not an admin")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"role": "user"}}
+    )
+    
+    return {"message": f"User {user.get('email')} demoted to regular user"}
+
+@api_router.delete("/master-admin/remove-admin/{user_id}")
+async def remove_admin(user_id: str, master_admin: User = Depends(get_master_admin_user)):
+    """Remove admin status from a user (master admin only)"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get('role') == 'master_admin':
+        raise HTTPException(status_code=400, detail="Cannot remove master admin")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"role": "user"}}
+    )
+    
+    return {"message": f"Admin privileges removed from {user.get('email')}"}
+
+# Initialize Master Admin on startup
+@app.on_event("startup")
+async def setup_master_admin():
+    """Set up the master admin user on startup"""
+    master_admin_email = "atreyaghoshal.68@gmail.com"
+    
+    # Check if user exists
+    user = await db.users.find_one({"email": master_admin_email})
+    if user:
+        # Update role to master_admin if not already
+        if user.get('role') != 'master_admin':
+            await db.users.update_one(
+                {"email": master_admin_email},
+                {"$set": {"role": "master_admin"}}
+            )
+            logger.info(f"Updated {master_admin_email} to master_admin role")
+    else:
+        logger.info(f"Master admin user {master_admin_email} not found yet - will be set on first login")
 
 # WebSocket endpoint for real-time chat
 @app.websocket("/ws/{token}")

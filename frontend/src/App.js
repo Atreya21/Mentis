@@ -17,6 +17,7 @@ import Matrix from '@/pages/Matrix';
 import Dashboard from '@/pages/Dashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
 import ConnectPage from '@/pages/ConnectPage';
+import ReelsPage from '@/pages/ReelsPage';
 import '@/App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -96,13 +97,14 @@ function App() {
               <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/resources" element={<ResourceHub />} />
-              <Route path="/funamatics" element={<Funamatics />} />
+              <Route path="/resources" element={user ? <ResourceHub /> : <Navigate to="/login" />} />
+              <Route path="/funamatics" element={user ? <Funamatics /> : <Navigate to="/login" />} />
               <Route path="/curiofacts" element={<Curiofacts />} />
               <Route path="/matrix" element={<Matrix />} />
               <Route path="/connect" element={user ? <ConnectPage /> : <Navigate to="/login" />} />
+              <Route path="/reels" element={user ? <ReelsPage /> : <Navigate to="/login" />} />
               <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-              <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} />
+              <Route path="/admin" element={(user?.role === 'admin' || user?.role === 'master_admin') ? <AdminDashboard /> : <Navigate to="/" />} />
             </Routes>
           </div>
           <Footer />

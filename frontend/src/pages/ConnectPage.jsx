@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,7 +16,8 @@ import axios from 'axios';
 import { 
   Search, UserPlus, Check, X, MessageCircle, Send, 
   Users, Bell, Clock, UserCheck, Filter, Loader2,
-  ArrowLeft, Circle, BookOpen, Calendar, Link2, Eye, Award
+  ArrowLeft, Circle, BookOpen, Calendar, Link2, Eye, Award,
+  Flag, Pin, Trash2, RotateCcw, Reply, MoreVertical
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -25,7 +28,7 @@ const ConnectPage = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('discover');
   const [searchQuery, setSearchQuery] = useState('');
-  const [collegeFilter, setCollegeFilter] = useState('all');
+  const [collegeFilter, setCollegeFilter] = useState('');
   const [colleges, setColleges] = useState([]);
   const [users, setUsers] = useState([]);
   const [connections, setConnections] = useState([]);
@@ -40,6 +43,15 @@ const ConnectPage = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
+  
+  // New state for enhanced features
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportUserId, setReportUserId] = useState(null);
+  const [reportForm, setReportForm] = useState({ reason: '', description: '' });
+  const [pinnedChats, setPinnedChats] = useState([]);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -64,7 +76,7 @@ const ConnectPage = () => {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
       if (searchQuery) params.append('q', searchQuery);
-      if (collegeFilter && collegeFilter !== 'all') params.append('college', collegeFilter);
+      if (collegeFilter && collegeFilter !== '') params.append('college', collegeFilter);
       
       const res = await axios.get(`${API}/users/search?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -200,14 +212,139 @@ const ConnectPage = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/messages/${activeChat.id}`, 
-        { content: newMessage },
-        { headers: { Authorization: `Bearer ${token}` }}
-      );
+      
+      if (replyingTo) {
+        // Send as reply
+        await axios.post(`${API}/messages/${replyingTo.id}/reply`, 
+          { content: newMessage },
+          { headers: { Authorization: `Bearer ${token}` }}
+        );
+        setReplyingTo(null);
+      } else {
+        await axios.post(`${API}/messages/${activeChat.id}`, 
+          { content: newMessage },
+          { headers: { Authorization: `Bearer ${token}` }}
+        );
+      }
+      
       setNewMessage('');
       fetchMessages(activeChat.id);
     } catch (err) {
       toast.error('Failed to send message');
+    }
+  };
+
+  // Delete message
+  const deleteMessage = async (messageId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/messages/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Message deleted');
+      setMessages(messages.filter(m => m.id !== messageId));
+      setSelectedMessage(null);
+    } catch (err) {
+      toast.error('Failed to delete message');
+    }
+  };
+
+  // Unsend message
+  const unsendMessage = async (messageId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/messages/${messageId}/unsend`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Message unsent');
+      fetchMessages(activeChat.id);
+      setSelectedMessage(null);
+    } catch (err) {
+      toast.error('Failed to unsend message');
+    }
+  };
+
+  // Clear chat history
+  const clearChatHistory = async () => {
+    if (!activeChat) return;
+    if (!window.confirm('Are you sure you want to clear all messages? This cannot be undone.')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/connections/${activeChat.id}/messages`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Chat history cleared');
+      setMessages([]);
+    } catch (err) {
+      toast.error('Failed to clear chat history');
+    }
+  };
+
+  // Refresh chat
+  const refreshChat = async () => {
+    if (activeChat) {
+      await fetchMessages(activeChat.id);
+      toast.success('Chat refreshed');
+    }
+  };
+
+  // Pin/Unpin chat
+  const togglePinChat = async (connectionId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API}/connections/${connectionId}/pin`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.data.pinned) {
+        setPinnedChats([...pinnedChats, connectionId]);
+        toast.success('Chat pinned');
+      } else {
+        setPinnedChats(pinnedChats.filter(id => id !== connectionId));
+        toast.success('Chat unpinned');
+      }
+    } catch (err) {
+      toast.error('Failed to pin/unpin chat');
+    }
+  };
+
+  // Fetch pinned chats
+  const fetchPinnedChats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/connections/pinned`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPinnedChats(res.data);
+    } catch (err) {
+      console.error('Failed to fetch pinned chats');
+    }
+  };
+
+  // Report user
+  const openReportDialog = (userId) => {
+    setReportUserId(userId);
+    setReportForm({ reason: '', description: '' });
+    setReportDialogOpen(true);
+  };
+
+  const submitReport = async () => {
+    if (!reportForm.reason || !reportForm.description) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/users/${reportUserId}/report`, reportForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Report submitted successfully');
+      setReportDialogOpen(false);
+      setReportUserId(null);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to submit report');
     }
   };
 
@@ -282,6 +419,7 @@ const ConnectPage = () => {
     fetchConnections();
     fetchPendingRequests();
     fetchSentRequests();
+    fetchPinnedChats();
     searchUsers();
   }, []);
 
@@ -383,12 +521,21 @@ const ConnectPage = () => {
                     <p className="text-slate-400 text-center py-4">No connections yet</p>
                   ) : (
                     <div className="space-y-2">
-                      {connections.map((conn) => (
+                      {/* Sort connections - pinned first */}
+                      {[...connections]
+                        .sort((a, b) => {
+                          const aPinned = pinnedChats.includes(a.id);
+                          const bPinned = pinnedChats.includes(b.id);
+                          if (aPinned && !bPinned) return -1;
+                          if (!aPinned && bPinned) return 1;
+                          return 0;
+                        })
+                        .map((conn) => (
                         <div 
                           key={conn.id} 
                           className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
                             activeChat?.id === conn.id ? 'bg-orange-500/20 border border-orange-500/50' : 'bg-slate-900/50 hover:bg-slate-900'
-                          }`}
+                          } ${pinnedChats.includes(conn.id) ? 'border-l-2 border-l-yellow-400' : ''}`}
                           onClick={() => openChat(conn)}
                           data-testid="connection-item"
                         >
@@ -402,7 +549,12 @@ const ConnectPage = () => {
                               )}
                             </div>
                             <div>
-                              <p className="text-white font-medium">{conn.other_user?.name}</p>
+                              <div className="flex items-center gap-1">
+                                <p className="text-white font-medium">{conn.other_user?.name}</p>
+                                {pinnedChats.includes(conn.id) && (
+                                  <Pin className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                                )}
+                              </div>
                               {conn.last_message && (
                                 <p className="text-slate-400 text-xs truncate max-w-[120px]">
                                   {conn.last_message.content}
@@ -480,10 +632,9 @@ const ConnectPage = () => {
                       <Select value={collegeFilter} onValueChange={setCollegeFilter}>
                         <SelectTrigger className="w-[180px] bg-slate-900 border-slate-700 text-white">
                           <Filter className="w-4 h-4 mr-2" />
-                          <SelectValue placeholder="Filter by college" />
+                          <SelectValue placeholder="Filter by organization" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All Colleges</SelectItem>
                           {colleges.map((college) => (
                             <SelectItem key={college} value={college}>{college}</SelectItem>
                           ))}
@@ -608,23 +759,54 @@ const ConnectPage = () => {
                     ) : (
                       <>
                         {/* Chat Header */}
-                        <div className="flex items-center gap-3 pb-4 border-b border-slate-700">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="lg:hidden"
-                            onClick={() => setActiveChat(null)}
-                          >
-                            <ArrowLeft className="w-4 h-4" />
-                          </Button>
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                            {activeChat.other_user?.name?.charAt(0).toUpperCase()}
+                        <div className="flex items-center justify-between pb-4 border-b border-slate-700">
+                          <div className="flex items-center gap-3">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="lg:hidden"
+                              onClick={() => setActiveChat(null)}
+                            >
+                              <ArrowLeft className="w-4 h-4" />
+                            </Button>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                              {activeChat.other_user?.name?.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">{activeChat.other_user?.name}</p>
+                              {isTyping && (
+                                <p className="text-green-400 text-sm animate-pulse">typing...</p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-white font-medium">{activeChat.other_user?.name}</p>
-                            {isTyping && (
-                              <p className="text-green-400 text-sm animate-pulse">typing...</p>
-                            )}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => togglePinChat(activeChat.id)}
+                              className={`${pinnedChats.includes(activeChat.id) ? 'text-yellow-400' : 'text-slate-400'} hover:text-yellow-300`}
+                              title={pinnedChats.includes(activeChat.id) ? 'Unpin chat' : 'Pin chat'}
+                            >
+                              <Pin className={`w-4 h-4 ${pinnedChats.includes(activeChat.id) ? 'fill-current' : ''}`} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={refreshChat}
+                              className="text-slate-400 hover:text-white"
+                              title="Refresh chat"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={clearChatHistory}
+                              className="text-slate-400 hover:text-red-400"
+                              title="Clear chat history"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
 
@@ -634,19 +816,66 @@ const ConnectPage = () => {
                             {messages.map((msg) => (
                               <div
                                 key={msg.id}
-                                className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                                className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'} group`}
                               >
-                                <div
-                                  className={`max-w-[70%] px-4 py-2 rounded-2xl ${
-                                    msg.sender_id === user?.id
-                                      ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white'
-                                      : 'bg-slate-700 text-white'
-                                  }`}
-                                >
-                                  <p>{msg.content}</p>
-                                  <p className={`text-xs mt-1 ${msg.sender_id === user?.id ? 'text-white/70' : 'text-slate-400'}`}>
-                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </p>
+                                <div className="max-w-[70%]">
+                                  {/* Reply indicator */}
+                                  {msg.reply_to && (
+                                    <div className={`text-xs px-3 py-1 mb-1 rounded-t-lg ${
+                                      msg.sender_id === user?.id ? 'bg-orange-600/30 text-orange-200' : 'bg-slate-600/50 text-slate-300'
+                                    }`}>
+                                      <Reply className="w-3 h-3 inline mr-1" />
+                                      {msg.reply_to_content?.substring(0, 50)}...
+                                    </div>
+                                  )}
+                                  <div
+                                    className={`px-4 py-2 rounded-2xl relative ${
+                                      msg.unsent
+                                        ? 'bg-slate-800 text-slate-500 italic'
+                                        : msg.sender_id === user?.id
+                                        ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white'
+                                        : 'bg-slate-700 text-white'
+                                    }`}
+                                  >
+                                    <p>{msg.content}</p>
+                                    <p className={`text-xs mt-1 ${msg.sender_id === user?.id ? 'text-white/70' : 'text-slate-400'}`}>
+                                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                    
+                                    {/* Message actions (visible on hover) */}
+                                    {!msg.unsent && (
+                                      <div className={`absolute ${msg.sender_id === user?.id ? '-left-20' : '-right-20'} top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1`}>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setReplyingTo(msg)}
+                                          className="h-7 w-7 p-0 text-slate-400 hover:text-white"
+                                        >
+                                          <Reply className="w-3 h-3" />
+                                        </Button>
+                                        {msg.sender_id === user?.id && (
+                                          <>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => unsendMessage(msg.id)}
+                                              className="h-7 w-7 p-0 text-slate-400 hover:text-yellow-400"
+                                            >
+                                              <X className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => deleteMessage(msg.id)}
+                                              className="h-7 w-7 p-0 text-slate-400 hover:text-red-400"
+                                            >
+                                              <Trash2 className="w-3 h-3" />
+                                            </Button>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -654,10 +883,28 @@ const ConnectPage = () => {
                           </div>
                         </ScrollArea>
 
+                        {/* Reply indicator */}
+                        {replyingTo && (
+                          <div className="flex items-center justify-between px-3 py-2 bg-slate-800 border-t border-slate-700">
+                            <div className="flex items-center gap-2 text-sm text-slate-400">
+                              <Reply className="w-4 h-4" />
+                              <span>Replying to: {replyingTo.content?.substring(0, 30)}...</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setReplyingTo(null)}
+                              className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+
                         {/* Message Input */}
                         <div className="flex gap-2 pt-4 border-t border-slate-700">
                           <Input
-                            placeholder="Type a message..."
+                            placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
                             value={newMessage}
                             onChange={(e) => {
                               setNewMessage(e.target.value);
@@ -797,8 +1044,87 @@ const ConnectPage = () => {
                     </Button>
                   )}
                 </div>
+
+                {/* Report User Button */}
+                <div className="pt-4 border-t border-slate-700">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    onClick={() => {
+                      setProfileDialogOpen(false);
+                      openReportDialog(selectedUserProfile.id);
+                    }}
+                  >
+                    <Flag className="w-4 h-4 mr-2" />
+                    Report User
+                  </Button>
+                </div>
               </div>
             ) : null}
+          </DialogContent>
+        </Dialog>
+
+        {/* Report User Dialog */}
+        <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+          <DialogContent className="bg-slate-900 border-slate-700 max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Flag className="w-5 h-5 text-red-400" />
+                Report User
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-slate-400 text-sm">
+                Please provide details about the misconduct. Your report will be reviewed by our admin team.
+              </p>
+              
+              <div>
+                <Label className="text-slate-300">Reason for Report</Label>
+                <Select 
+                  value={reportForm.reason} 
+                  onValueChange={(value) => setReportForm({...reportForm, reason: value})}
+                >
+                  <SelectTrigger className="mt-2 bg-slate-800 border-slate-700 text-white">
+                    <SelectValue placeholder="Select a reason" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="harassment">Harassment</SelectItem>
+                    <SelectItem value="spam">Spam</SelectItem>
+                    <SelectItem value="inappropriate_content">Inappropriate Content</SelectItem>
+                    <SelectItem value="impersonation">Impersonation</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label className="text-slate-300">Description</Label>
+                <Textarea
+                  value={reportForm.description}
+                  onChange={(e) => setReportForm({...reportForm, description: e.target.value})}
+                  className="mt-2 bg-slate-800 border-slate-700 text-white"
+                  rows={4}
+                  placeholder="Please describe the issue in detail..."
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-slate-700"
+                  onClick={() => setReportDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                  onClick={submitReport}
+                >
+                  Submit Report
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

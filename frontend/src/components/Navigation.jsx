@@ -10,10 +10,11 @@ const Navigation = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Resource Hub', path: '/resources' },
-    { name: 'Funamatics', path: '/funamatics' },
+    { name: 'Resource Hub', path: '/resources', requiresAuth: true },
+    { name: 'Funamatics', path: '/funamatics', requiresAuth: true },
     { name: 'Curiofacts', path: '/curiofacts' },
     { name: 'Matrix', path: '/matrix' },
+    { name: 'Reels', path: '/reels', requiresAuth: true },
     { name: 'Mathmate', path: '/connect', requiresAuth: true },
   ];
 
@@ -51,7 +52,7 @@ const Navigation = () => {
                     Dashboard
                   </Button>
                 </Link>
-                {user.role === 'admin' && (
+                {(user.role === 'admin' || user.role === 'master_admin') && (
                   <Link to="/admin">
                     <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="admin-dashboard-btn">
                       <Shield className="w-4 h-4 mr-2" />

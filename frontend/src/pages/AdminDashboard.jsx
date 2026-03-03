@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '@/App';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Check, X, Plus, Shield, Users, BookOpen, Sparkles, Gamepad2, Crown, Trash2 } from 'lucide-react';
+import { Check, X, Plus, Shield, Users, BookOpen, Sparkles, Gamepad2, Crown, Trash2, ShieldOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -66,6 +67,7 @@ const convertGoogleDriveUrl = (url, forceDownload = false) => {
 const convertToDirectImageUrl = (url) => convertGoogleDriveUrl(url, false);
 
 const AdminDashboard = () => {
+  const { user: currentUser } = useContext(AuthContext);
   const [pendingResources, setPendingResources] = useState([]);
   const [allResources, setAllResources] = useState([]);
   const [allGames, setAllGames] = useState([]);
@@ -73,6 +75,8 @@ const AdminDashboard = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [matrixMembers, setMatrixMembers] = useState([]);
   const [resetTokens, setResetTokens] = useState([]);
+  const [pendingReels, setPendingReels] = useState([]);
+  const [userReports, setUserReports] = useState([]);
   const [siteSettings, setSiteSettings] = useState({ hero_image_url: '' });
   const [stats, setStats] = useState({ users: 0, resources: 0, games: 0, facts: 0, matrixMembers: 0 });
   const [gameDialogOpen, setGameDialogOpen] = useState(false);
@@ -111,6 +115,8 @@ const AdminDashboard = () => {
     fetchSiteSettings();
     fetchResetTokens();
     fetchStats();
+    fetchPendingReels();
+    fetchUserReports();
   }, []);
 
   const fetchStats = async () => {
@@ -171,6 +177,71 @@ const AdminDashboard = () => {
       setMatrixMembers(res.data);
     } catch (err) {
       toast.error('Failed to fetch Matrix members');
+    }
+  };
+
+  const fetchPendingReels = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/reels/pending`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPendingReels(res.data);
+    } catch (err) {
+      console.error('Failed to fetch pending reels');
+    }
+  };
+
+  const fetchUserReports = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/admin/reports`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUserReports(res.data);
+    } catch (err) {
+      console.error('Failed to fetch user reports');
+    }
+  };
+
+  const handleReelApproval = async (reelId, status) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/admin/reels/${reelId}?status=${status}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`Reel ${status}`);
+      fetchPendingReels();
+    } catch (err) {
+      toast.error('Failed to update reel status');
+    }
+  };
+
+  const handleDeleteReel = async (reelId) => {
+    if (!window.confirm('Are you sure you want to delete this reel?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/admin/reels/${reelId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Reel deleted');
+      fetchPendingReels();
+    } catch (err) {
+      toast.error('Failed to delete reel');
+    }
+  };
+
+  const handleReportStatus = async (reportId, status) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/admin/reports/${reportId}?status=${status}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`Report marked as ${status}`);
+      fetchUserReports();
+    } catch (err) {
+      toast.error('Failed to update report status');
     }
   };
 
@@ -458,6 +529,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDemoteAdmin = async (userId, userEmail) => {
+    if (!window.confirm(`Are you sure you want to demote ${userEmail} from admin?`)) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/master-admin/demote/${userId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`${userEmail} has been demoted to regular user`);
+      fetchAllUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to demote admin');
+    }
+  };
+
   return (
     <div className="min-h-screen pt-20 bg-slate-950">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
@@ -521,11 +607,13 @@ const AdminDashboard = () => {
           </div>
 
         <Tabs defaultValue="pending" className="space-y-8">
-          <TabsList className="bg-slate-800 border border-slate-700">
+          <TabsList className="bg-slate-800 border border-slate-700 flex-wrap">
             <TabsTrigger value="pending" data-testid="admin-tab-pending">Pending Approvals</TabsTrigger>
             <TabsTrigger value="users" data-testid="admin-tab-users">User Management</TabsTrigger>
             <TabsTrigger value="content" data-testid="admin-tab-content">Manage Content</TabsTrigger>
             <TabsTrigger value="upload" data-testid="admin-tab-upload">Upload New</TabsTrigger>
+            <TabsTrigger value="reels" data-testid="admin-tab-reels">Pending Reels</TabsTrigger>
+            <TabsTrigger value="reports" data-testid="admin-tab-reports">User Reports</TabsTrigger>
             <TabsTrigger value="settings" data-testid="admin-tab-settings">Site Settings</TabsTrigger>
             <TabsTrigger value="matrix" data-testid="admin-tab-matrix">Matrix Members</TabsTrigger>
           </TabsList>
@@ -629,9 +717,12 @@ const AdminDashboard = () => {
                           <TableCell className="text-white font-medium">{user.name}</TableCell>
                           <TableCell className="text-slate-400">{user.email}</TableCell>
                           <TableCell>
-                            <Badge className={user.role === 'admin' ? 'bg-orange-500' : 'bg-slate-600'}>
-                              {user.role === 'admin' && <Crown className="w-3 h-3 mr-1" />}
-                              {user.role}
+                            <Badge className={
+                              user.role === 'master_admin' ? 'bg-purple-500' :
+                              user.role === 'admin' ? 'bg-orange-500' : 'bg-slate-600'
+                            }>
+                              {(user.role === 'admin' || user.role === 'master_admin') && <Crown className="w-3 h-3 mr-1" />}
+                              {user.role === 'master_admin' ? 'Master Admin' : user.role}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-slate-400">
@@ -639,7 +730,7 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
-                              {user.role !== 'admin' && (
+                              {user.role === 'user' && (
                                 <Button
                                   size="sm"
                                   onClick={() => handlePromoteToAdmin(user.id)}
@@ -650,7 +741,19 @@ const AdminDashboard = () => {
                                   Promote
                                 </Button>
                               )}
-                              {user.role !== 'admin' && (
+                              {/* Master Admin can demote regular admins */}
+                              {currentUser?.role === 'master_admin' && user.role === 'admin' && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleDemoteAdmin(user.id, user.email)}
+                                  className="bg-yellow-600 hover:bg-yellow-700"
+                                  data-testid="demote-admin-btn"
+                                >
+                                  <ShieldOff className="w-3 h-3 mr-1" />
+                                  Demote
+                                </Button>
+                              )}
+                              {user.role !== 'admin' && user.role !== 'master_admin' && (
                                 <Button
                                   size="sm"
                                   variant="destructive"
@@ -1162,7 +1265,7 @@ const AdminDashboard = () => {
                       <TableRow className="border-slate-700">
                         <TableHead className="text-slate-300">Name</TableHead>
                         <TableHead className="text-slate-300">Email</TableHead>
-                        <TableHead className="text-slate-300">College</TableHead>
+                        <TableHead className="text-slate-300">Organization</TableHead>
                         <TableHead className="text-slate-300">Interests</TableHead>
                         <TableHead className="text-slate-300">Joined</TableHead>
                         <TableHead className="text-slate-300">Actions</TableHead>
@@ -1194,6 +1297,154 @@ const AdminDashboard = () => {
                     </TableBody>
                   </Table>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Pending Reels Tab */}
+          <TabsContent value="reels">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Pending Reels</CardTitle>
+                <CardDescription className="text-slate-400">Review and approve user-submitted educational videos</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingReels.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400">No pending reels to review</p>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {pendingReels.map((reel) => (
+                      <div key={reel.id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <div className="aspect-video bg-black rounded-lg mb-4 flex items-center justify-center">
+                          {reel.video_type === 'youtube' ? (
+                            <iframe
+                              src={reel.video_url}
+                              className="w-full h-full rounded-lg"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <a 
+                              href={reel.original_url || reel.video_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-orange-400 hover:text-orange-300"
+                            >
+                              View Video
+                            </a>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-white font-medium">{reel.user_name}</p>
+                          <p className="text-slate-400 text-sm line-clamp-3">{reel.caption}</p>
+                          <p className="text-xs text-slate-500">
+                            Platform: {reel.video_type} | 
+                            Submitted: {new Date(reel.created_at).toLocaleDateString()}
+                          </p>
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-green-600 hover:bg-green-700"
+                              onClick={() => handleReelApproval(reel.id, 'approved')}
+                            >
+                              <Check className="w-4 h-4 mr-1" /> Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="flex-1"
+                              onClick={() => handleReelApproval(reel.id, 'rejected')}
+                            >
+                              <X className="w-4 h-4 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* User Reports Tab */}
+          <TabsContent value="reports">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">User Reports</CardTitle>
+                <CardDescription className="text-slate-400">Review misconduct reports from users</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {userReports.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400">No reports to review</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {userReports.map((report) => (
+                      <div key={report.id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-4">
+                              <Badge className={
+                                report.status === 'pending' ? 'bg-yellow-600' :
+                                report.status === 'reviewed' ? 'bg-blue-600' :
+                                'bg-green-600'
+                              }>
+                                {report.status.toUpperCase()}
+                              </Badge>
+                              <span className="text-xs text-slate-500">
+                                {new Date(report.created_at).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-slate-500">Reported User</p>
+                                <p className="text-white">{report.reported_user?.name || 'Unknown'}</p>
+                                <p className="text-slate-400 text-sm">{report.reported_user?.email || 'Unknown'}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-slate-500">Reporter</p>
+                                <p className="text-white">{report.reporter?.name || 'Unknown'}</p>
+                                <p className="text-slate-400 text-sm">{report.reporter?.email || 'Unknown'}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Reason</p>
+                              <Badge variant="outline" className="border-red-500 text-red-400">
+                                {report.reason?.replace('_', ' ').toUpperCase()}
+                              </Badge>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Description</p>
+                              <p className="text-slate-300">{report.description}</p>
+                            </div>
+                          </div>
+                          {report.status === 'pending' && (
+                            <div className="flex gap-2 ml-4">
+                              <Button
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700"
+                                onClick={() => handleReportStatus(report.id, 'reviewed')}
+                              >
+                                Mark Reviewed
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() => handleReportStatus(report.id, 'resolved')}
+                              >
+                                Resolve
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -98,7 +98,7 @@ const Matrix = () => {
             <div className="font-mono text-6xl font-bold text-green-500 mb-2 matrix-glow">
               {stats.total_colleges}
             </div>
-            <p className="font-mono text-lg text-green-400 uppercase tracking-widest">Partner Colleges</p>
+            <p className="font-mono text-lg text-green-400 uppercase tracking-widest">Partner Organizations</p>
           </motion.div>
         </div>
 
@@ -144,14 +144,14 @@ const Matrix = () => {
             </div>
 
             <div>
-              <Label htmlFor="college" className="font-mono text-green-400 uppercase tracking-wider">College/University</Label>
+              <Label htmlFor="college" className="font-mono text-green-400 uppercase tracking-wider">Organization</Label>
               <Input
                 id="college"
                 value={formData.college}
                 onChange={(e) => setFormData({ ...formData, college: e.target.value.toUpperCase() })}
                 required
                 className="mt-2 bg-black border-green-900 text-green-500 font-mono focus:border-green-500 focus:ring-green-500 uppercase"
-                placeholder="ENTER YOUR COLLEGE NAME"
+                placeholder="ENTER YOUR ORGANIZATION NAME"
                 data-testid="matrix-college-input"
               />
             </div>

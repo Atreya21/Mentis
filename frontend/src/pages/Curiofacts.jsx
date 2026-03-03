@@ -24,7 +24,7 @@ const Curiofacts = () => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
-  const [submitForm, setSubmitForm] = useState({ title: '', content: '' });
+  const [submitForm, setSubmitForm] = useState({ title: '', content: '', image_url: '' });
 
   useEffect(() => {
     fetchFacts();
@@ -142,7 +142,7 @@ const Curiofacts = () => {
       });
       toast.success('Curiofact submitted for approval!');
       setSubmitDialogOpen(false);
-      setSubmitForm({ title: '', content: '' });
+      setSubmitForm({ title: '', content: '', image_url: '' });
     } catch (err) {
       toast.error('Failed to submit curiofact');
     }
@@ -239,6 +239,25 @@ const Curiofacts = () => {
                         placeholder="Share your fascinating math fact..."
                       />
                     </div>
+                    <div>
+                      <Label className="text-slate-300">Cover Image URL (Optional)</Label>
+                      <Input
+                        value={submitForm.image_url}
+                        onChange={(e) => setSubmitForm({...submitForm, image_url: e.target.value})}
+                        className="mt-2 bg-slate-900 border-slate-700 text-white"
+                        placeholder="https://example.com/image.png or Google Drive link"
+                      />
+                      {submitForm.image_url && (
+                        <div className="mt-2">
+                          <img 
+                            src={submitForm.image_url} 
+                            alt="Preview" 
+                            className="max-h-32 rounded-lg border border-slate-600"
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        </div>
+                      )}
+                    </div>
                     <Button 
                       onClick={handleSubmitCuriofact}
                       className="w-full bg-gradient-to-r from-orange-500 to-pink-500"
@@ -273,9 +292,17 @@ const Curiofacts = () => {
                 </div>
               )}
               <div className="p-8">
-                <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
-                  <Calendar className="w-4 h-4" />
-                  <time>{format(new Date(fact.published_at), 'MMMM d, yyyy')}</time>
+                <div className="flex items-center justify-between gap-2 text-sm text-slate-500 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <time>{format(new Date(fact.published_at), 'MMMM d, yyyy')}</time>
+                  </div>
+                  {fact.uploader_name && (
+                    <div className="flex items-center gap-2 text-orange-400/80">
+                      <span className="text-slate-400">by</span>
+                      <span className="font-medium">{fact.uploader_name}</span>
+                    </div>
+                  )}
                 </div>
                 <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mb-4">
                   {fact.title}

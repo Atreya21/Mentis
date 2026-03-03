@@ -987,8 +987,8 @@ const ConnectPage = () => {
                         </div>
 
                         {/* Messages */}
-                        <ScrollArea className="flex-1 py-4">
-                          <div className="space-y-3">
+                        <ScrollArea className="flex-1 py-4 h-[350px]">
+                          <div className="space-y-3 pr-4">
                             {messages.map((msg) => (
                               <div
                                 key={msg.id}

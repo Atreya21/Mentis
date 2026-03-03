@@ -1,0 +1,102 @@
+{
+  "summary": "Tested 3 requested features: 1) Chat messages scrollbar (h-[350px] ScrollArea), 2) Footer visibility conditional on homepage and about us pages only, 3) Curiofact cover image upload and uploader name display. All 9 backend tests passed. Frontend verified via Playwright.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_curiofact_features.py",
+    "/app/test_reports/pytest/pytest_curiofact.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Existing curiofacts created by admin directly don't have uploader_name (shows null). Only user-submitted and approved curiofacts will display the uploader name. This is by design."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_curiofact_features.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 pytest tests passed)",
+    "frontend": "100% (all UI features verified via Playwright)"
+  },
+  "test_credentials": {
+    "master_admin_email": "atreyaghoshal.68@gmail.com",
+    "master_admin_password": "4tr3y4@54N14"
+  },
+  "seed_data_creation": "Created test curiofact submissions with image_url for testing (cleaned up after tests)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Three features fully implemented and tested: Chat scrollbar uses Radix ScrollArea with h-[350px] fixed height. ConditionalFooter component in App.js checks pathname to show footer only on / and /about. Curiofact submission form has Cover Image URL field (optional). Admin dashboard shows pending curiofacts with images and uploader names.",
+  "features_verified": {
+    "chat_scrollbar": {
+      "status": "PASS",
+      "implementation": "ConnectPage.jsx line 990: <ScrollArea className='flex-1 py-4 h-[350px]'>",
+      "verification": "Playwright found 'heightConstrained: 1' and 'scrollAreasInChat: 1' confirming fixed height scroll area",
+      "notes": "Users can scroll through older messages without layout overlap"
+    },
+    "conditional_footer": {
+      "status": "PASS",
+      "implementation": "App.js lines 30-38: ConditionalFooter component uses useLocation to check pathname",
+      "verification_homepage": "Footer VISIBLE on / (homepage)",
+      "verification_about": "Footer VISIBLE on /about (About Us)",
+      "verification_curiofacts": "Footer NOT present on /curiofacts",
+      "verification_matrix": "Footer NOT present on /matrix"
+    },
+    "curiofact_cover_image": {
+      "status": "PASS",
+      "implementation": {
+        "frontend_form": "Curiofacts.jsx lines 243-260: Cover Image URL (Optional) input field with preview",
+        "backend_model": "server.py CuriofactSubmission model includes image_url field",
+        "admin_approval": "server.py lines 1990-1999: image_url is preserved when curiofact is approved"
+      },
+      "verification": "Submit form shows Cover Image URL field with placeholder and preview functionality"
+    },
+    "curiofact_uploader_name": {
+      "status": "PASS",
+      "implementation": {
+        "backend_storage": "server.py line 1997: uploader_name saved from submission when approved",
+        "frontend_display": "Curiofacts.jsx lines 300-305: Conditionally displays 'by [uploader_name]' when present"
+      },
+      "notes": "Existing admin-created curiofacts have null uploader_name. Only user-submitted curiofacts will show the contributor name."
+    },
+    "admin_pending_curiofacts": {
+      "status": "PASS",
+      "implementation": "AdminDashboard shows Pending Curiofacts tab with cover images and submitter names",
+      "verification": "Screenshot shows pending curiofacts with images displayed and 'Submitted by:' attribution"
+    }
+  },
+  "api_tests_summary": {
+    "total_tests": 9,
+    "passed": 9,
+    "failed": 0,
+    "test_file": "/app/backend/tests/test_curiofact_features.py",
+    "endpoints_verified": [
+      "GET /api/curiofacts - Returns public curiofacts with image_url and uploader_name fields",
+      "POST /api/curiofacts/submit - Accepts title, content, image_url (optional)",
+      "GET /api/curiofacts/pending - Admin only - Returns pending submissions with all fields",
+      "PATCH /api/admin/curiofacts/{id}?status=approved - Approves and creates curiofact with uploader_name",
+      "PATCH /api/admin/curiofacts/{id}?status=rejected - Rejects submission"
+    ]
+  },
+  "frontend_tests_summary": {
+    "pages_tested": [
+      "Homepage (/) - Footer visible",
+      "About Us (/about) - Footer visible",
+      "Curiofacts (/curiofacts) - No footer, Submit form with Cover Image URL field",
+      "Matrix (/matrix) - No footer",
+      "Mathmate (/connect) - Chat with ScrollArea h-[350px]",
+      "Admin Dashboard (/admin) - Pending Curiofacts tab with images"
+    ],
+    "ui_elements_verified": [
+      "data-testid='curiofact-card' - Curiofact cards with image and optional uploader name",
+      "data-testid='chat-tab' - Chat tab in Mathmate",
+      "data-testid='connection-item' - Connection list items",
+      "data-testid='message-input' - Message input in chat"
+    ]
+  }
+}

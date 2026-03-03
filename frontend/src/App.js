@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
@@ -25,6 +25,18 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 export const AuthContext = React.createContext(null);
+
+// Conditional Footer component that only shows on specific pages
+const ConditionalFooter = () => {
+  const location = useLocation();
+  const showFooterPaths = ['/', '/about'];
+  
+  if (!showFooterPaths.includes(location.pathname)) {
+    return null;
+  }
+  
+  return <Footer />;
+};
 
 function App() {
   const [user, setUser] = useState(null);
@@ -109,7 +121,7 @@ function App() {
               <Route path="/admin" element={(user?.role === 'admin' || user?.role === 'master_admin') ? <AdminDashboard /> : <Navigate to="/" />} />
             </Routes>
           </div>
-          <Footer />
+          <ConditionalFooter />
           <Toaster position="top-right" />
         </div>
       </BrowserRouter>

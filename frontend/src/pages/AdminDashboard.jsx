@@ -1785,8 +1785,18 @@ const AdminDashboard = () => {
                 ) : (
                   <div className="grid md:grid-cols-2 gap-6">
                     {pendingCuriofacts.map((submission) => (
-                      <div key={submission.id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-                        <div className="space-y-3">
+                      <div key={submission.id} className="bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700">
+                        {submission.image_url && (
+                          <div className="h-40 overflow-hidden">
+                            <img 
+                              src={submission.image_url} 
+                              alt={submission.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                            />
+                          </div>
+                        )}
+                        <div className="p-4 space-y-3">
                           <div className="flex items-center justify-between">
                             <p className="text-sm text-slate-400">Submitted by: <span className="text-white">{submission.user_name}</span></p>
                             <span className="text-xs text-slate-500">

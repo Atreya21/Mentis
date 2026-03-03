@@ -129,6 +129,8 @@ class Curiofact(BaseModel):
     title: str
     content: str
     image_url: Optional[str] = None
+    uploader_name: Optional[str] = None
+    submitted_by: Optional[str] = None
     published_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class CuriofactCreate(BaseModel):
@@ -301,12 +303,14 @@ class CuriofactSubmission(BaseModel):
     user_name: Optional[str] = None
     title: str
     content: str
+    image_url: Optional[str] = None
     status: str = "pending"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class CuriofactCreate(BaseModel):
     title: str
     content: str
+    image_url: Optional[str] = None
 
 # About Us Content Model
 class AboutUsContent(BaseModel):
@@ -1956,7 +1960,8 @@ async def submit_curiofact(fact_data: CuriofactCreate, current_user: User = Depe
         user_id=current_user.id,
         user_name=current_user.name,
         title=fact_data.title,
-        content=fact_data.content
+        content=fact_data.content,
+        image_url=fact_data.image_url
     )
     doc = submission.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -1986,9 +1991,10 @@ async def approve_curiofact(submission_id: str, status: str, admin: User = Depen
             "id": str(uuid.uuid4()),
             "title": submission['title'],
             "content": submission['content'],
+            "image_url": submission.get('image_url'),
             "published_at": datetime.now(timezone.utc).isoformat(),
             "submitted_by": submission['user_id'],
-            "submitter_name": submission['user_name']
+            "uploader_name": submission['user_name']
         }
         await db.curiofacts.insert_one(new_fact)
         

@@ -256,11 +256,11 @@ const ReelsPage = () => {
                   data-testid="reel-card"
                 >
                   {/* Video Embed */}
-                  <div className="aspect-[9/16] max-h-[400px] bg-black relative">
+                  <div className="aspect-[9/16] max-h-[400px] bg-black relative flex items-center justify-center">
                     {reel.video_type === 'youtube' ? (
                       <iframe
                         src={getEmbedUrl(reel)}
-                        className="w-full h-full"
+                        className="w-full h-full absolute inset-0 m-auto max-w-full max-h-full"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
@@ -279,7 +279,7 @@ const ReelsPage = () => {
                     ) : reel.video_type === 'googledrive' ? (
                       <iframe
                         src={getEmbedUrl(reel)}
-                        className="w-full h-full"
+                        className="w-full h-full absolute inset-0 m-auto max-w-full max-h-full"
                         allow="autoplay"
                         allowFullScreen
                       />
@@ -390,7 +390,7 @@ const ReelsPage = () => {
         </DialogHeader>
         {viewReel && (
           <div className="space-y-4">
-            <div className="aspect-video bg-black rounded-lg overflow-hidden">
+            <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
               {viewReel.video_type === 'youtube' || viewReel.video_url.includes('youtube.com') || viewReel.video_url.includes('youtu.be') ? (
                 <iframe
                   src={viewReel.video_url}

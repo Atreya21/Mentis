@@ -78,6 +78,7 @@ code {
 html, body {
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
 }
 
 /* Safe area insets for notched devices */
@@ -97,11 +98,21 @@ html, body {
     user-select: none;
 }
 
+/* ========================================
+   MOBILE RESPONSIVENESS FIXES
+   ======================================== */
+
+/* Ensure all containers use relative widths */
+.container, .max-w-7xl, .max-w-6xl, .max-w-5xl, .max-w-4xl, .max-w-3xl, .max-w-2xl, .max-w-xl, .max-w-lg {
+    width: 100%;
+    max-width: 100%;
+}
+
 /* Touch-friendly tap targets */
 @media (max-width: 768px) {
-    button, a, [role="button"] {
+    /* Minimum touch target sizes */
+    button, a, [role="button"], input, select, textarea {
         min-height: 44px;
-        min-width: 44px;
     }
     
     /* Improve touch scrolling */
@@ -118,6 +129,115 @@ html, body {
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
+    
+    /* Reduce padding on mobile */
+    .px-6 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .px-12 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    /* Ensure text doesn't overflow */
+    h1, h2, h3, h4, h5, h6, p {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    /* Responsive font sizes */
+    h1 {
+        font-size: 1.75rem !important;
+        line-height: 1.2;
+    }
+    
+    h2 {
+        font-size: 1.5rem !important;
+        line-height: 1.25;
+    }
+    
+    h3 {
+        font-size: 1.25rem !important;
+    }
+    
+    /* Cards should stack vertically */
+    .grid {
+        gap: 1rem;
+    }
+    
+    /* Ensure images are responsive */
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    
+    /* Fix button text wrapping */
+    button {
+        white-space: nowrap;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    h2 {
+        font-size: 1.25rem !important;
+    }
+    
+    h3 {
+        font-size: 1.1rem !important;
+    }
+    
+    .text-5xl {
+        font-size: 1.75rem !important;
+    }
+    
+    .text-4xl {
+        font-size: 1.5rem !important;
+    }
+    
+    .text-3xl {
+        font-size: 1.25rem !important;
+    }
+    
+    /* Reduce spacing on very small screens */
+    .py-20 {
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+    
+    .py-32 {
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
+    
+    .mb-12 {
+        margin-bottom: 2rem;
+    }
+    
+    .mb-16 {
+        margin-bottom: 2.5rem;
+    }
+    
+    .gap-8 {
+        gap: 1rem;
+    }
+    
+    .gap-6 {
+        gap: 0.75rem;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .hidden.md\\:flex {
+        gap: 1rem;
+    }
 }
 
 /* Capacitor-specific: Status bar spacing */
@@ -130,5 +250,30 @@ body.capacitor {
     button:active, a:active, [role="button"]:active {
         opacity: 0.7;
         transform: scale(0.98);
+    }
+}
+
+/* Fix for flex containers on mobile - ensure wrapping */
+@media (max-width: 768px) {
+    .flex {
+        flex-wrap: wrap;
+    }
+    
+    .flex-nowrap {
+        flex-wrap: nowrap;
+    }
+    
+    /* Ensure navigation doesn't wrap incorrectly */
+    nav .flex {
+        flex-wrap: nowrap;
+    }
+}
+
+/* Ensure dialogs/modals are mobile-friendly */
+@media (max-width: 640px) {
+    [role="dialog"] {
+        max-width: calc(100vw - 2rem) !important;
+        max-height: calc(100vh - 4rem) !important;
+        margin: 1rem;
     }
 }

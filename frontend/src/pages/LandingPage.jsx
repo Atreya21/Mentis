@@ -78,21 +78,21 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen pt-20 bg-slate-950">
+    <div className="min-h-screen pt-16 sm:pt-20 bg-slate-950">
       <section className="relative min-h-screen flex items-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 noise-texture overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }}></div>
+          <div className="absolute -top-40 -right-40 w-60 sm:w-80 h-60 sm:h-80 bg-orange-500/10 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute -bottom-40 -left-40 w-60 sm:w-80 h-60 sm:h-80 bg-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }}></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-6 md:px-12 py-20 grid md:grid-cols-2 gap-12 items-center relative z-10">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-12 sm:py-20 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative z-10">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
           >
             <motion.h1 
-              className="font-heading text-5xl md:text-7xl font-bold tracking-tight leading-none text-white mb-6"
+              className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight text-white mb-4 sm:mb-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -101,7 +101,7 @@ const LandingPage = () => {
               <span className="block text-gradient mt-2">Mentis Mathematics Foundation</span>
             </motion.h1>
             <motion.p 
-              className="text-lg md:text-xl leading-relaxed text-slate-300 mb-4"
+              className="text-base sm:text-lg md:text-xl leading-relaxed text-slate-300 mb-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
@@ -109,7 +109,7 @@ const LandingPage = () => {
               Join Mentis, the premier platform for mathematics enthusiasts. Learn, share, and grow with a community that speaks your language.
             </motion.p>
             <motion.p 
-              className="text-base md:text-lg leading-relaxed text-slate-400 mb-8"
+              className="text-sm sm:text-base md:text-lg leading-relaxed text-slate-400 mb-6 sm:mb-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5 }}
@@ -118,29 +118,29 @@ const LandingPage = () => {
             </motion.p>
             {!user && (
               <motion.div
-                className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-6"
+                className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.55 }}
               >
-                <p className="text-orange-400 text-sm font-medium">
-                  🔐 Sign up to unlock all features including Resource Hub, Funamatics, Reels, and Mathmate!
+                <p className="text-orange-400 text-xs sm:text-sm font-medium">
+                  Sign up to unlock all features including Resource Hub, Funamatics, Reels, and Mathmate!
                 </p>
               </motion.div>
             )}
             <motion.div 
-              className="flex gap-4"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              <Link to="/signup">
-                <Button size="lg" className="rounded-full h-14 px-10 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect glow-on-hover" data-testid="hero-get-started-btn">
+              <Link to="/signup" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto rounded-full h-12 sm:h-14 px-6 sm:px-10 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect glow-on-hover text-sm sm:text-base" data-testid="hero-get-started-btn">
                   Get Started
                 </Button>
               </Link>
-              <Link to="/matrix">
-                <Button size="lg" variant="outline" className="rounded-full h-14 px-10 border-slate-700 hover:bg-slate-800 hover:border-orange-500 transition-all hover:scale-105" data-testid="hero-join-community-btn">
+              <Link to="/matrix" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full h-12 sm:h-14 px-6 sm:px-10 border-slate-700 hover:bg-slate-800 hover:border-orange-500 transition-all hover:scale-105 text-sm sm:text-base" data-testid="hero-join-community-btn">
                   Join Community
                 </Button>
               </Link>
@@ -151,14 +151,14 @@ const LandingPage = () => {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative animate-float"
+            className="relative animate-float hidden md:block"
           >
             <div className="gradient-border glow-on-hover">
               <div className="gradient-border-inner p-2">
                 <img
                   src={heroImage}
                   alt="Mentis Hero"
-                  className="rounded-2xl"
+                  className="rounded-2xl w-full h-auto"
                   onError={(e) => {
                     e.target.src = 'https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85';
                   }}
@@ -169,11 +169,11 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section className="py-20 md:py-32 bg-slate-900">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16">
+      <section className="py-12 sm:py-20 md:py-32 bg-slate-900">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+          <div className="text-center mb-8 sm:mb-12 md:mb-16">
             <motion.h2 
-              className="font-heading text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4"
+              className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-3 sm:mb-4"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -182,7 +182,7 @@ const LandingPage = () => {
               Everything You Need
             </motion.h2>
             <motion.p 
-              className="text-lg text-slate-400 max-w-2xl mx-auto"
+              className="text-sm sm:text-base lg:text-lg text-slate-400 max-w-2xl mx-auto px-4"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -192,7 +192,7 @@ const LandingPage = () => {
             </motion.p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
@@ -203,18 +203,18 @@ const LandingPage = () => {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
                   whileHover={{ scale: 1.02 }}
-                  className={index === 6 ? 'md:col-span-2 lg:col-span-1 lg:col-start-2' : ''}
+                  className={index === 6 ? 'sm:col-span-2 lg:col-span-1 lg:col-start-2' : ''}
                 >
                   <Link to={feature.link}>
-                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-8 rounded-2xl hover-lift card-hover shine-effect group relative overflow-hidden h-full">
-                      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${feature.color} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`}></div>
-                      <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative z-10`}>
-                        <Icon className="w-7 h-7 text-white" />
+                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl hover-lift card-hover shine-effect group relative overflow-hidden h-full">
+                      <div className={`absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-gradient-to-br ${feature.color} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`}></div>
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-br ${feature.color} rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform relative z-10`}>
+                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />
                       </div>
-                      <h3 className="font-heading text-2xl md:text-3xl font-medium text-white mb-3 relative z-10">
+                      <h3 className="font-heading text-lg sm:text-xl md:text-2xl lg:text-3xl font-medium text-white mb-2 sm:mb-3 relative z-10">
                         {feature.title}
                       </h3>
-                      <p className="text-base leading-relaxed text-slate-400 relative z-10">
+                      <p className="text-sm sm:text-base leading-relaxed text-slate-400 relative z-10">
                         {feature.description}
                       </p>
                     </div>
@@ -228,13 +228,13 @@ const LandingPage = () => {
 
       {/* Ready to Begin Section - Only show for non-logged-in users */}
       {!user && (
-      <section className="py-20 md:py-32 bg-slate-950 relative overflow-hidden">
+      <section className="py-12 sm:py-20 md:py-32 bg-slate-950 relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-orange-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-r from-orange-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
         </div>
-        <div className="max-w-4xl mx-auto px-6 md:px-12 text-center relative z-10">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 text-center relative z-10">
           <motion.h2 
-            className="font-heading text-4xl md:text-5xl font-semibold tracking-tight text-white mb-6"
+            className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-4 sm:mb-6"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -243,7 +243,7 @@ const LandingPage = () => {
             Ready to Begin?
           </motion.h2>
           <motion.p 
-            className="text-lg text-slate-400 mb-8"
+            className="text-sm sm:text-base lg:text-lg text-slate-400 mb-6 sm:mb-8 px-4"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
@@ -258,7 +258,7 @@ const LandingPage = () => {
             viewport={{ once: true }}
           >
             <Link to="/signup">
-              <Button size="lg" className="rounded-full h-14 px-10 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect glow-on-hover" data-testid="cta-signup-btn">
+              <Button size="lg" className="rounded-full h-12 sm:h-14 px-6 sm:px-10 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect glow-on-hover text-sm sm:text-base" data-testid="cta-signup-btn">
                 Create Your Account
               </Button>
             </Link>

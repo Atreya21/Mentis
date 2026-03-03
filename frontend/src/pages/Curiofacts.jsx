@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Sparkles, Calendar, Heart, MessageCircle, Send, X, Plus, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import ShareToChat from '@/components/ShareToChat';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -29,6 +30,8 @@ const Curiofacts = () => {
   const [submitForm, setSubmitForm] = useState({ title: '', content: '', image_url: '' });
   const [viewFactModalOpen, setViewFactModalOpen] = useState(false);
   const [viewFact, setViewFact] = useState(null);
+  const [shareToChatOpen, setShareToChatOpen] = useState(false);
+  const [shareContent, setShareContent] = useState(null);
 
   useEffect(() => {
     fetchFacts();
@@ -196,6 +199,17 @@ const Curiofacts = () => {
       navigator.clipboard.writeText(shareText);
       toast.success('Link copied to clipboard with promotional message!');
     }
+  };
+
+  const handleShareToChat = (fact) => {
+    const shareUrl = `${window.location.origin}/curiofacts?view=${fact.id}`;
+    setShareContent({
+      type: 'Curiofact',
+      title: fact.title,
+      url: shareUrl,
+      id: fact.id
+    });
+    setShareToChatOpen(true);
   };
 
   return (
@@ -376,6 +390,16 @@ const Curiofacts = () => {
                     <Share2 className="w-5 h-5" />
                     <span>Share</span>
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareToChat(fact); }}
+                    className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-purple-400 hover:border-purple-500 hover:bg-purple-500/10 cursor-pointer"
+                    data-testid="share-fact-to-chat-btn"
+                  >
+                    <Send className="w-5 h-5" />
+                    <span>Send</span>
+                  </Button>
                 </div>
               </div>
             </motion.article>
@@ -520,6 +544,16 @@ const Curiofacts = () => {
             </div>
           </div>
         )}
+
+        {/* Share to Chat Dialog */}
+        <ShareToChat
+          isOpen={shareToChatOpen}
+          onClose={() => setShareToChatOpen(false)}
+          contentType={shareContent?.type}
+          contentTitle={shareContent?.title}
+          contentUrl={shareContent?.url}
+          contentId={shareContent?.id}
+        />
       </div>
     </div>
   );

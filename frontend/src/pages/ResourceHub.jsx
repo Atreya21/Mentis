@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { BookOpen, Plus, Filter, Search, User, Heart, MessageCircle, Send, X, Bookmark, Share2 } from 'lucide-react';
+import ShareToChat from '@/components/ShareToChat';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -67,6 +68,8 @@ const ResourceHub = () => {
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [viewResourceModalOpen, setViewResourceModalOpen] = useState(false);
   const [viewResource, setViewResource] = useState(null);
+  const [shareToChatOpen, setShareToChatOpen] = useState(false);
+  const [shareContent, setShareContent] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -188,6 +191,17 @@ const ResourceHub = () => {
       navigator.clipboard.writeText(shareText);
       toast.success('Link copied to clipboard with promotional message!');
     }
+  };
+
+  const handleShareToChat = (resource) => {
+    const shareUrl = `${window.location.origin}/resources?view=${resource.id}`;
+    setShareContent({
+      type: 'Resource',
+      title: resource.title,
+      url: shareUrl,
+      id: resource.id
+    });
+    setShareToChatOpen(true);
   };
 
   // Fetch likes for all resources
@@ -560,6 +574,15 @@ const ResourceHub = () => {
                     >
                       <Share2 className="w-4 h-4" />
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareToChat(resource); }}
+                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10 cursor-pointer"
+                      data-testid="share-to-chat-btn"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
               </motion.div>
@@ -702,6 +725,16 @@ const ResourceHub = () => {
             <p className="text-slate-400 text-lg">No resources available yet</p>
           </div>
         )}
+
+        {/* Share to Chat Dialog */}
+        <ShareToChat
+          isOpen={shareToChatOpen}
+          onClose={() => setShareToChatOpen(false)}
+          contentType={shareContent?.type}
+          contentTitle={shareContent?.title}
+          contentUrl={shareContent?.url}
+          contentId={shareContent?.id}
+        />
       </div>
     </div>
   );

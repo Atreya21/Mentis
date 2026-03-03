@@ -13,9 +13,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { 
-  Play, Plus, Heart, MessageCircle, Share2, 
+  Play, Plus, Heart, MessageCircle, Share2, Send,
   User, Calendar, ExternalLink, Video, AlertTriangle
 } from 'lucide-react';
+import ShareToChat from '@/components/ShareToChat';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -28,6 +29,8 @@ const ReelsPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewReelModalOpen, setViewReelModalOpen] = useState(false);
   const [viewReel, setViewReel] = useState(null);
+  const [shareToChatOpen, setShareToChatOpen] = useState(false);
+  const [shareContent, setShareContent] = useState(null);
   const [formData, setFormData] = useState({
     video_url: '',
     caption: ''
@@ -136,6 +139,17 @@ const ReelsPage = () => {
       navigator.clipboard.writeText(shareText);
       toast.success('Link copied to clipboard with promotional message!');
     }
+  };
+
+  const handleShareToChat = (reel) => {
+    const shareUrl = `${window.location.origin}/reels?view=${reel.id}`;
+    setShareContent({
+      type: 'Reel',
+      title: reel.caption.substring(0, 50) + (reel.caption.length > 50 ? '...' : ''),
+      url: shareUrl,
+      id: reel.id
+    });
+    setShareToChatOpen(true);
   };
 
   const getEmbedUrl = (reel) => {
@@ -256,16 +270,16 @@ const ReelsPage = () => {
                   data-testid="reel-card"
                 >
                   {/* Video Embed */}
-                  <div className="aspect-[9/16] max-h-[400px] bg-black relative flex items-center justify-center">
-                    {reel.video_type === 'youtube' ? (
-                      <iframe
-                        src={getEmbedUrl(reel)}
-                        className="w-full h-full absolute inset-0 m-auto max-w-full max-h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : reel.video_type === 'instagram' ? (
-                      <div className="w-full h-full flex items-center justify-center">
+                  <div className="aspect-[9/16] max-h-[400px] bg-black relative overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      {reel.video_type === 'youtube' ? (
+                        <iframe
+                          src={getEmbedUrl(reel)}
+                          className="w-full aspect-video"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : reel.video_type === 'instagram' ? (
                         <a 
                           href={reel.original_url || reel.video_url} 
                           target="_blank" 
@@ -275,16 +289,14 @@ const ReelsPage = () => {
                           <ExternalLink className="w-8 h-8" />
                           <span>View on Instagram</span>
                         </a>
-                      </div>
-                    ) : reel.video_type === 'googledrive' ? (
-                      <iframe
-                        src={getEmbedUrl(reel)}
-                        className="w-full h-full absolute inset-0 m-auto max-w-full max-h-full"
-                        allow="autoplay"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
+                      ) : reel.video_type === 'googledrive' ? (
+                        <iframe
+                          src={getEmbedUrl(reel)}
+                          className="w-full aspect-video"
+                          allow="autoplay"
+                          allowFullScreen
+                        />
+                      ) : (
                         <a 
                           href={reel.original_url || reel.video_url} 
                           target="_blank" 
@@ -294,8 +306,8 @@ const ReelsPage = () => {
                           <Play className="w-12 h-12" />
                           <span>Watch Video</span>
                         </a>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
                   {/* Reel Info */}
@@ -343,6 +355,16 @@ const ReelsPage = () => {
                         data-testid="share-reel-btn"
                       >
                         <Share2 className="w-4 h-4" />
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareToChat(reel); }}
+                        className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10 cursor-pointer"
+                        data-testid="share-reel-to-chat-btn"
+                      >
+                        <Send className="w-4 h-4" />
                       </Button>
                       
                       <Badge variant="outline" className="text-slate-400 border-slate-600">
@@ -446,6 +468,16 @@ const ReelsPage = () => {
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Share to Chat Dialog */}
+    <ShareToChat
+      isOpen={shareToChatOpen}
+      onClose={() => setShareToChatOpen(false)}
+      contentType={shareContent?.type}
+      contentTitle={shareContent?.title}
+      contentUrl={shareContent?.url}
+      contentId={shareContent?.id}
+    />
     </TooltipProvider>
   );
 };

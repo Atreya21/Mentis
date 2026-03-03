@@ -269,17 +269,17 @@ const ReelsPage = () => {
                   className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden hover:border-pink-500/50 transition-colors"
                   data-testid="reel-card"
                 >
-                  {/* Video Embed */}
-                  <div className="aspect-[9/16] max-h-[400px] bg-black relative overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      {reel.video_type === 'youtube' ? (
-                        <iframe
-                          src={getEmbedUrl(reel)}
-                          className="w-full aspect-video"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : reel.video_type === 'instagram' ? (
+                  {/* Video Embed - aspect ratio matches video type */}
+                  <div className={`bg-black ${reel.video_type === 'instagram' ? 'aspect-[9/16] max-h-[350px]' : 'aspect-video'}`}>
+                    {reel.video_type === 'youtube' ? (
+                      <iframe
+                        src={getEmbedUrl(reel)}
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : reel.video_type === 'instagram' ? (
+                      <div className="w-full h-full flex items-center justify-center">
                         <a 
                           href={reel.original_url || reel.video_url} 
                           target="_blank" 
@@ -289,14 +289,16 @@ const ReelsPage = () => {
                           <ExternalLink className="w-8 h-8" />
                           <span>View on Instagram</span>
                         </a>
-                      ) : reel.video_type === 'googledrive' ? (
-                        <iframe
-                          src={getEmbedUrl(reel)}
-                          className="w-full aspect-video"
-                          allow="autoplay"
-                          allowFullScreen
-                        />
-                      ) : (
+                      </div>
+                    ) : reel.video_type === 'googledrive' ? (
+                      <iframe
+                        src={getEmbedUrl(reel)}
+                        className="w-full h-full"
+                        allow="autoplay"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
                         <a 
                           href={reel.original_url || reel.video_url} 
                           target="_blank" 
@@ -306,12 +308,12 @@ const ReelsPage = () => {
                           <Play className="w-12 h-12" />
                           <span>Watch Video</span>
                         </a>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Reel Info */}
-                  <div className="p-4">
+                  {/* Reel Info - Separate box below video */}
+                  <div className="p-4 bg-slate-900/50">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold">
                         {reel.user_name?.charAt(0).toUpperCase()}

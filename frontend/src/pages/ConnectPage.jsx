@@ -24,6 +24,41 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
 
+// Helper function to render message content with clickable links
+const renderMessageContent = (content) => {
+  if (!content) return null;
+  
+  // URL regex pattern
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = content.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      // Reset regex lastIndex
+      urlRegex.lastIndex = 0;
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-yellow-300 break-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    // Handle line breaks in non-URL text
+    return part.split('\n').map((line, lineIndex) => (
+      <React.Fragment key={`${index}-${lineIndex}`}>
+        {lineIndex > 0 && <br />}
+        {line}
+      </React.Fragment>
+    ));
+  });
+};
+
 const ConnectPage = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('discover');
@@ -1014,7 +1049,7 @@ const ConnectPage = () => {
                                         : 'bg-slate-700 text-white'
                                     }`}
                                   >
-                                    <p>{msg.content}</p>
+                                    <p className="whitespace-pre-wrap">{renderMessageContent(msg.content)}</p>
                                     <p className={`text-xs mt-1 ${msg.sender_id === user?.id ? 'text-white/70' : 'text-slate-400'}`}>
                                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>

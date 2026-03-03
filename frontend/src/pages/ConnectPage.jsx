@@ -1021,12 +1021,12 @@ const ConnectPage = () => {
                                     
                                     {/* Message actions (visible on hover) */}
                                     {!msg.unsent && (
-                                      <div className={`absolute ${msg.sender_id === user?.id ? '-left-20' : '-right-20'} top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1`}>
+                                      <div className={`absolute ${msg.sender_id === user?.id ? '-left-24' : '-right-24'} top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-slate-800/90 rounded-lg px-1 py-0.5`}>
                                         <Button
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => setReplyingTo(msg)}
-                                          className="h-7 w-7 p-0 text-slate-400 hover:text-white"
+                                          className="h-6 w-6 p-0 text-slate-400 hover:text-white"
                                         >
                                           <Reply className="w-3 h-3" />
                                         </Button>
@@ -1036,7 +1036,7 @@ const ConnectPage = () => {
                                               variant="ghost"
                                               size="sm"
                                               onClick={() => unsendMessage(msg.id)}
-                                              className="h-7 w-7 p-0 text-slate-400 hover:text-yellow-400"
+                                              className="h-6 w-6 p-0 text-slate-400 hover:text-yellow-400"
                                             >
                                               <X className="w-3 h-3" />
                                             </Button>
@@ -1044,7 +1044,7 @@ const ConnectPage = () => {
                                               variant="ghost"
                                               size="sm"
                                               onClick={() => deleteMessage(msg.id)}
-                                              className="h-7 w-7 p-0 text-slate-400 hover:text-red-400"
+                                              className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
                                             >
                                               <Trash2 className="w-3 h-3" />
                                             </Button>

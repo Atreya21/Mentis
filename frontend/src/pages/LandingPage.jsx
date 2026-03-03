@@ -75,8 +75,8 @@ const LandingPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              Mathematics is the
-              <span className="block text-gradient mt-2">Language of Logic</span>
+              Welcome to
+              <span className="block text-gradient mt-2">Mentis Mathematics Foundation</span>
             </motion.h1>
             <motion.p 
               className="text-lg md:text-xl leading-relaxed text-slate-300 mb-4"

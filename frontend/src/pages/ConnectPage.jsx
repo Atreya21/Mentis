@@ -666,8 +666,8 @@ const ConnectPage = () => {
 
           {/* Main Content Area */}
           <div className="lg:col-span-2">
-            <Card className="bg-slate-800/50 border-slate-700 h-[600px] flex flex-col">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <CardHeader className="pb-0">
                   <TabsList className="bg-slate-900">
                     <TabsTrigger value="discover" className="data-[state=active]:bg-orange-500" data-testid="discover-tab">
@@ -686,8 +686,8 @@ const ConnectPage = () => {
                 </CardHeader>
 
                 {/* Discover Tab */}
-                <TabsContent value="discover" className="flex-1 overflow-hidden m-0">
-                  <CardContent className="h-full flex flex-col pt-4 overflow-hidden">
+                <TabsContent value="discover" className="m-0">
+                  <CardContent className="pt-4">
                     {/* Search Only */}
                     <div className="mb-4 flex-shrink-0">
                       <div className="relative">
@@ -838,8 +838,8 @@ const ConnectPage = () => {
                 </TabsContent>
 
                 {/* Matrix Members Tab */}
-                <TabsContent value="matrix" className="flex-1 overflow-hidden m-0">
-                  <CardContent className="h-full flex flex-col pt-4 overflow-hidden">
+                <TabsContent value="matrix" className="m-0">
+                  <CardContent className="pt-4">
                     {/* Search */}
                     <div className="mb-4 flex-shrink-0">
                       <div className="relative">
@@ -923,17 +923,17 @@ const ConnectPage = () => {
                 </TabsContent>
 
                 {/* Chat Tab */}
-                <TabsContent value="chat" className="flex-1 overflow-hidden m-0">
-                  <CardContent className="h-full flex flex-col pt-4">
+                <TabsContent value="chat" className="m-0">
+                  <CardContent className="pt-4">
                     {!activeChat ? (
-                      <div className="flex-1 flex items-center justify-center">
+                      <div className="flex items-center justify-center py-16">
                         <div className="text-center">
                           <MessageCircle className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                           <p className="text-slate-400 text-lg">Select a connection to start chatting</p>
                         </div>
                       </div>
                     ) : (
-                      <>
+                      <div className="space-y-4">
                         {/* Chat Header */}
                         <div className="flex items-center justify-between pb-4 border-b border-slate-700">
                           <div className="flex items-center gap-3">
@@ -986,10 +986,10 @@ const ConnectPage = () => {
                           </div>
                         </div>
 
-                        {/* Messages */}
-                        <div className="flex-1 overflow-hidden relative">
-                          <ScrollArea className="absolute inset-0">
-                            <div className="space-y-3 pr-4 py-4">
+                        {/* Messages - Scrollable Area */}
+                        <div className="bg-slate-900/30 rounded-lg p-2">
+                          <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
+                            <div className="space-y-3 p-2">
                             {messages.map((msg) => (
                               <div
                                 key={msg.id}
@@ -1057,8 +1057,8 @@ const ConnectPage = () => {
                               </div>
                             ))}
                             <div ref={messagesEndRef} />
+                            </div>
                           </div>
-                        </ScrollArea>
                         </div>
 
                         {/* Reply indicator */}
@@ -1100,7 +1100,7 @@ const ConnectPage = () => {
                             <Send className="w-4 h-4" />
                           </Button>
                         </div>
-                      </>
+                      </div>
                     )}
                   </CardContent>
                 </TabsContent>

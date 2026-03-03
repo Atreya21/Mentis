@@ -423,16 +423,15 @@ const ResourceHub = () => {
           )}
         </div>
 
-        <TooltipProvider>
+        <TooltipProvider delayDuration={100}>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredResources.map((resource) => (
               <motion.div
                 key={resource.id}
-                className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-6 rounded-xl hover-lift card-hover shine-effect group"
+                className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-6 rounded-xl card-hover shine-effect group hover:border-orange-500/50 transition-all duration-300"
                 data-testid="resource-card"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02 }}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center">
@@ -445,16 +444,24 @@ const ResourceHub = () => {
                 <h3 className="font-heading text-xl font-semibold text-white mb-2">
                   {resource.title}
                 </h3>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <p className="text-sm text-slate-400 mb-3 line-clamp-2 cursor-help">
-                      {resource.description}
-                    </p>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-sm bg-slate-900 border-slate-700 text-slate-200 p-3">
-                    <p className="text-sm">{resource.description}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p 
+                        className="text-sm text-slate-400 mb-3 line-clamp-2 cursor-help hover:text-slate-300 transition-colors"
+                      >
+                        {resource.description}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent 
+                      side="top" 
+                      className="max-w-md bg-slate-800 border-slate-600 text-slate-200 p-4 shadow-xl z-[100]"
+                      sideOffset={5}
+                    >
+                      <p className="text-sm leading-relaxed">{resource.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <div className="flex items-center gap-2 mb-3">
                   <User className="w-3 h-3 text-slate-500" />
                   <span className="text-xs text-slate-500">Uploaded by {resource.uploader_name || 'Unknown'}</span>

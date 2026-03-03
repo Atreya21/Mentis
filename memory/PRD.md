@@ -189,6 +189,19 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Navigation polls every 30 seconds for unread count
    - API: `/api/messages/unread/count`, `/api/messages/{connection_id}/mark-read`
 
+7. ✅ **Chat Scrollbar Fix**:
+   - Added fixed height (350px) ScrollArea for chat messages
+   - Users can scroll through older messages without layout overlap
+
+8. ✅ **Conditional Footer**:
+   - Footer only visible on Homepage (/) and About Us (/about) pages
+   - Hidden on all other pages (Curiofacts, Mathmate, Resources, etc.)
+
+9. ✅ **Curiofacts Cover Image & Uploader Name**:
+   - Users can upload optional cover image URL when submitting Curiofacts
+   - Uploader name displayed on each Curiofact card ("by [name]")
+   - Admin Dashboard shows images in pending Curiofacts review
+
 ### Completed (Previous Session - Fixes)
 1. ✅ **Like/Comment/Save/Share buttons fixed** - Added z-index, preventDefault, stopPropagation for proper click handling
 2. ✅ **Sign up banner conditional** - Only shows for non-logged-in users

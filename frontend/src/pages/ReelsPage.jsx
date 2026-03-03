@@ -269,8 +269,8 @@ const ReelsPage = () => {
                   className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden hover:border-pink-500/50 transition-colors"
                   data-testid="reel-card"
                 >
-                  {/* Video Embed - aspect ratio matches video type */}
-                  <div className={`bg-black ${reel.video_type === 'instagram' ? 'aspect-[9/16] max-h-[350px]' : 'aspect-video'}`}>
+                  {/* Video Embed - 16:9 aspect ratio for all video types */}
+                  <div className="bg-black aspect-video">
                     {reel.video_type === 'youtube' ? (
                       <iframe
                         src={getEmbedUrl(reel)}

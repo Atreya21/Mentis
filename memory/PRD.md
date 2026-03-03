@@ -236,11 +236,34 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - Master admin role with demote capability
 - Protected routes requiring authentication
 
+### Completed (December 3, 2026 - Session 2)
+1. ✅ **FAQ Section for About Us**
+   - Accordion-style FAQ display on About Us page
+   - Master Admin FAQ management (add, edit, delete) in Admin Dashboard
+   - API: `/api/faqs` (public), `/api/master-admin/faqs` (CRUD)
+
+2. ✅ **Deep Linking for Shared Content**
+   - Share URLs use `?view=` query parameter
+   - Clicking shared link opens content in modal popup
+   - Implemented for Resources, Curiofacts, and Reels
+   - Single item fetch endpoints: `/api/resources/{id}`, `/api/curiofacts/{id}`, `/api/reels/{id}`
+
+3. ✅ **Master Admin Matrix Member Editing**
+   - Edit button added to Matrix Members tab for Master Admin
+   - Can edit name, email, organization, and interests
+   - API: `PATCH /api/master-admin/matrix-members/{id}`
+
+4. ✅ **Unique Name/Email for Matrix Registration**
+   - Case-insensitive duplicate checking for name and email
+   - Auto-capitalization of name and organization fields
+   - Clear error messages for duplicates
+
 ### Pending/Future Tasks
 1. **P1**: Implement "Reply to Message" in Mathmate chat
 2. **P1**: Refactor AdminDashboard.jsx into smaller components
 3. **P2**: Implement email verification for new signups
 4. **P2**: Add drag-and-drop uploads in admin dashboard
+5. **P2**: Add `data-testid` attributes to new interactive elements
 
 ## Master Admin Credentials
 - Email: atreyaghoshal.68@gmail.com

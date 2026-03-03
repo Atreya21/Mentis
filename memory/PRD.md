@@ -164,7 +164,22 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Master Admin management panel in Admin Dashboard
    - CRUD for tutorial videos
    - Content editing for all text sections
+   - **Logo Image** management - appears in top-left corner of all pages
    - API: `/api/about-us`, `/api/master-admin/about-us`, `/api/tutorials`, `/api/master-admin/tutorials`
+
+2. ✅ **Promotional Share Message** - Enhanced share buttons across:
+   - Resource Hub
+   - Curiofacts
+   - Reels
+   - All include branded "MENTIS - Where Minds Meet Mathematics" footer
+
+3. ✅ **Resource Rejection Email** - Email notification sent when admin rejects a resource
+
+4. ✅ **Navigation Updates**:
+   - Renamed "About" to "About us"
+   - Logo display in top-left corner (set by Master Admin)
+
+5. ✅ **"Ready to Begin" Section** - Hidden for logged-in users, only shows for visitors
 
 ### Completed (Previous Session - Fixes)
 1. ✅ **Like/Comment/Save/Share buttons fixed** - Added z-index, preventDefault, stopPropagation for proper click handling
@@ -187,11 +202,9 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 
 ### Pending/Future Tasks
 1. **P1**: Implement "Reply to Message" in Mathmate chat
-2. **P1**: Add promotional message when sharing content links
-3. **P1**: Refactor AdminDashboard.jsx into smaller components
-4. **P2**: Add rejection email notifications for resources
-5. **P2**: Implement email verification for new signups
-6. **P2**: Add drag-and-drop uploads in admin dashboard
+2. **P1**: Refactor AdminDashboard.jsx into smaller components
+3. **P2**: Implement email verification for new signups
+4. **P2**: Add drag-and-drop uploads in admin dashboard
 
 ## Master Admin Credentials
 - Email: atreyaghoshal.68@gmail.com

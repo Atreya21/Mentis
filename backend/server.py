@@ -307,6 +307,46 @@ class CuriofactCreate(BaseModel):
     title: str
     content: str
 
+# About Us Content Model
+class AboutUsContent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = "about_us_main"
+    tagline: Optional[str] = None
+    community_info: Optional[str] = None
+    foundation_info: Optional[str] = None
+    vision: Optional[str] = None
+    mission: Optional[str] = None
+    values: Optional[str] = None
+    instructions: Optional[str] = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_by: Optional[str] = None
+
+class AboutUsUpdate(BaseModel):
+    tagline: Optional[str] = None
+    community_info: Optional[str] = None
+    foundation_info: Optional[str] = None
+    vision: Optional[str] = None
+    mission: Optional[str] = None
+    values: Optional[str] = None
+    instructions: Optional[str] = None
+
+# Tutorial Video Model
+class Tutorial(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    video_url: str
+    order: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_by: Optional[str] = None
+
+class TutorialCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    video_url: str
+    order: Optional[int] = 0
+
 # WebSocket Connection Manager for real-time chat
 class ConnectionManager:
     def __init__(self):
@@ -2008,6 +2048,90 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         await websocket.close(code=4001)
     except jwt.InvalidTokenError:
         await websocket.close(code=4001)
+
+# ============== ABOUT US SECTION ==============
+
+@api_router.get("/about-us")
+async def get_about_us():
+    """Get about us content (public)"""
+    content = await db.about_us.find_one({"id": "about_us_main"}, {"_id": 0})
+    if not content:
+        # Return default content
+        return {
+            "id": "about_us_main",
+            "tagline": "Empowering the mathematics community through collaboration and knowledge sharing",
+            "community_info": None,
+            "foundation_info": None,
+            "vision": "To create a world where mathematical knowledge is accessible to everyone and mathematical thinking is celebrated.",
+            "mission": "To build a supportive platform where mathematics enthusiasts can learn, share, and grow together.",
+            "values": "Collaboration, curiosity, inclusivity, and the pursuit of mathematical excellence.",
+            "instructions": None
+        }
+    return content
+
+@api_router.patch("/master-admin/about-us")
+async def update_about_us(updates: AboutUsUpdate, admin: User = Depends(get_master_admin_user)):
+    """Update about us content (Master Admin only)"""
+    update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    update_data['updated_by'] = admin.id
+    
+    await db.about_us.update_one(
+        {"id": "about_us_main"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    return {"message": "About Us content updated successfully"}
+
+# ============== TUTORIALS SECTION ==============
+
+@api_router.get("/tutorials")
+async def get_tutorials():
+    """Get all tutorials (public)"""
+    tutorials = await db.tutorials.find({}, {"_id": 0}).sort("order", 1).to_list(50)
+    return tutorials
+
+@api_router.post("/master-admin/tutorials")
+async def create_tutorial(tutorial_data: TutorialCreate, admin: User = Depends(get_master_admin_user)):
+    """Create a new tutorial (Master Admin only)"""
+    tutorial = Tutorial(
+        title=tutorial_data.title,
+        description=tutorial_data.description,
+        video_url=tutorial_data.video_url,
+        order=tutorial_data.order or 0,
+        created_by=admin.id
+    )
+    doc = tutorial.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.tutorials.insert_one(doc)
+    
+    return {"message": "Tutorial created successfully", "id": tutorial.id}
+
+@api_router.patch("/master-admin/tutorials/{tutorial_id}")
+async def update_tutorial(tutorial_id: str, tutorial_data: TutorialCreate, admin: User = Depends(get_master_admin_user)):
+    """Update a tutorial (Master Admin only)"""
+    update_data = {k: v for k, v in tutorial_data.model_dump().items() if v is not None}
+    
+    result = await db.tutorials.update_one(
+        {"id": tutorial_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Tutorial not found")
+    
+    return {"message": "Tutorial updated successfully"}
+
+@api_router.delete("/master-admin/tutorials/{tutorial_id}")
+async def delete_tutorial(tutorial_id: str, admin: User = Depends(get_master_admin_user)):
+    """Delete a tutorial (Master Admin only)"""
+    result = await db.tutorials.delete_one({"id": tutorial_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Tutorial not found")
+    
+    return {"message": "Tutorial deleted successfully"}
 
 app.include_router(api_router)
 

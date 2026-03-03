@@ -13,7 +13,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://mathmate-platform.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://mentis-dev-1.preview.emergentagent.com')
 
 # Master Admin credentials
 MASTER_ADMIN_EMAIL = "atreyaghoshal.68@gmail.com"

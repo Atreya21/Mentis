@@ -18,6 +18,7 @@ import Dashboard from '@/pages/Dashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
 import ConnectPage from '@/pages/ConnectPage';
 import ReelsPage from '@/pages/ReelsPage';
+import AboutUs from '@/pages/AboutUs';
 import '@/App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -97,6 +98,7 @@ function App() {
               <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/about" element={<AboutUs />} />
               <Route path="/resources" element={user ? <ResourceHub /> : <Navigate to="/login" />} />
               <Route path="/funamatics" element={user ? <Funamatics /> : <Navigate to="/login" />} />
               <Route path="/curiofacts" element={<Curiofacts />} />

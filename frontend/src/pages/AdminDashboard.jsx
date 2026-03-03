@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Check, X, Plus, Shield, Users, BookOpen, Sparkles, Gamepad2, Crown, Trash2, ShieldOff } from 'lucide-react';
+import { Check, X, Plus, Shield, Users, BookOpen, Sparkles, Gamepad2, Crown, Trash2, ShieldOff, Info, Play, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -79,6 +79,18 @@ const AdminDashboard = () => {
   const [pendingCuriofacts, setPendingCuriofacts] = useState([]);
   const [userReports, setUserReports] = useState([]);
   const [siteSettings, setSiteSettings] = useState({ hero_image_url: '' });
+  const [aboutContent, setAboutContent] = useState({
+    tagline: '',
+    community_info: '',
+    foundation_info: '',
+    vision: '',
+    mission: '',
+    values: '',
+    instructions: ''
+  });
+  const [tutorials, setTutorials] = useState([]);
+  const [tutorialForm, setTutorialForm] = useState({ title: '', description: '', video_url: '', order: 0 });
+  const [tutorialDialogOpen, setTutorialDialogOpen] = useState(false);
   const [stats, setStats] = useState({ users: 0, resources: 0, games: 0, facts: 0, matrixMembers: 0 });
   const [gameDialogOpen, setGameDialogOpen] = useState(false);
   const [factDialogOpen, setFactDialogOpen] = useState(false);
@@ -119,6 +131,8 @@ const AdminDashboard = () => {
     fetchPendingReels();
     fetchPendingCuriofacts();
     fetchUserReports();
+    fetchAboutContent();
+    fetchTutorials();
   }, []);
 
   const fetchPendingCuriofacts = async () => {
@@ -321,6 +335,78 @@ const AdminDashboard = () => {
       setResetTokens(res.data);
     } catch (err) {
       console.error('Failed to fetch reset tokens');
+    }
+  };
+
+  const fetchAboutContent = async () => {
+    try {
+      const res = await axios.get(`${API}/about-us`);
+      if (res.data) {
+        setAboutContent({
+          tagline: res.data.tagline || '',
+          community_info: res.data.community_info || '',
+          foundation_info: res.data.foundation_info || '',
+          vision: res.data.vision || '',
+          mission: res.data.mission || '',
+          values: res.data.values || '',
+          instructions: res.data.instructions || ''
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch about content');
+    }
+  };
+
+  const fetchTutorials = async () => {
+    try {
+      const res = await axios.get(`${API}/tutorials`);
+      setTutorials(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch tutorials');
+    }
+  };
+
+  const handleSaveAboutContent = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/master-admin/about-us`, aboutContent, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('About Us content updated successfully!');
+      fetchAboutContent();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update About Us content');
+    }
+  };
+
+  const handleAddTutorial = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/master-admin/tutorials`, tutorialForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Tutorial added successfully!');
+      setTutorialDialogOpen(false);
+      setTutorialForm({ title: '', description: '', video_url: '', order: 0 });
+      fetchTutorials();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add tutorial');
+    }
+  };
+
+  const handleDeleteTutorial = async (tutorialId) => {
+    if (!confirm('Are you sure you want to delete this tutorial?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/master-admin/tutorials/${tutorialId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Tutorial deleted successfully!');
+      fetchTutorials();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to delete tutorial');
     }
   };
 
@@ -644,6 +730,9 @@ const AdminDashboard = () => {
             <TabsTrigger value="curiofacts-pending" data-testid="admin-tab-curiofacts">Pending Curiofacts</TabsTrigger>
             <TabsTrigger value="reports" data-testid="admin-tab-reports">User Reports</TabsTrigger>
             <TabsTrigger value="settings" data-testid="admin-tab-settings">Site Settings</TabsTrigger>
+            {currentUser?.role === 'master_admin' && (
+              <TabsTrigger value="about-us" data-testid="admin-tab-about-us">About Us</TabsTrigger>
+            )}
             <TabsTrigger value="matrix" data-testid="admin-tab-matrix">Matrix Members</TabsTrigger>
           </TabsList>
 
@@ -1268,6 +1357,262 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* About Us Management Tab (Master Admin Only) */}
+          {currentUser?.role === 'master_admin' && (
+          <TabsContent value="about-us">
+            <div className="space-y-6">
+              {/* About Us Content Management */}
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <Info className="w-6 h-6 text-orange-400" />
+                    <div>
+                      <CardTitle className="text-white">About Us Content</CardTitle>
+                      <CardDescription className="text-slate-400">Manage the content displayed on the About Us page</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSaveAboutContent} className="space-y-6">
+                    <div>
+                      <Label htmlFor="tagline" className="text-slate-300">Tagline</Label>
+                      <Input
+                        id="tagline"
+                        value={aboutContent.tagline}
+                        onChange={(e) => setAboutContent({ ...aboutContent, tagline: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white mt-1"
+                        placeholder="Empowering the mathematics community..."
+                        data-testid="about-tagline-input"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="community_info" className="text-slate-300">Community Information</Label>
+                      <Textarea
+                        id="community_info"
+                        value={aboutContent.community_info}
+                        onChange={(e) => setAboutContent({ ...aboutContent, community_info: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white mt-1 min-h-[150px]"
+                        placeholder="Tell visitors about your community..."
+                        data-testid="about-community-info-input"
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="vision" className="text-slate-300">Vision</Label>
+                        <Textarea
+                          id="vision"
+                          value={aboutContent.vision}
+                          onChange={(e) => setAboutContent({ ...aboutContent, vision: e.target.value })}
+                          className="bg-slate-900 border-slate-700 text-white mt-1 min-h-[100px]"
+                          placeholder="Your vision statement..."
+                          data-testid="about-vision-input"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="mission" className="text-slate-300">Mission</Label>
+                        <Textarea
+                          id="mission"
+                          value={aboutContent.mission}
+                          onChange={(e) => setAboutContent({ ...aboutContent, mission: e.target.value })}
+                          className="bg-slate-900 border-slate-700 text-white mt-1 min-h-[100px]"
+                          placeholder="Your mission statement..."
+                          data-testid="about-mission-input"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="values" className="text-slate-300">Values</Label>
+                        <Textarea
+                          id="values"
+                          value={aboutContent.values}
+                          onChange={(e) => setAboutContent({ ...aboutContent, values: e.target.value })}
+                          className="bg-slate-900 border-slate-700 text-white mt-1 min-h-[100px]"
+                          placeholder="Your core values..."
+                          data-testid="about-values-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="foundation_info" className="text-slate-300">Foundation Information (Optional)</Label>
+                      <Textarea
+                        id="foundation_info"
+                        value={aboutContent.foundation_info}
+                        onChange={(e) => setAboutContent({ ...aboutContent, foundation_info: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white mt-1 min-h-[100px]"
+                        placeholder="Additional details about your foundation..."
+                        data-testid="about-foundation-input"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="instructions" className="text-slate-300">How to Use Instructions (Optional)</Label>
+                      <Textarea
+                        id="instructions"
+                        value={aboutContent.instructions}
+                        onChange={(e) => setAboutContent({ ...aboutContent, instructions: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white mt-1 min-h-[150px]"
+                        placeholder="Custom instructions on how to use the platform (leave empty for default)"
+                        data-testid="about-instructions-input"
+                      />
+                    </div>
+
+                    <div className="flex gap-4">
+                      <Button 
+                        type="submit" 
+                        className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+                        data-testid="save-about-content-btn"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Save About Content
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        onClick={fetchAboutContent}
+                        className="border-slate-700 hover:bg-slate-800"
+                      >
+                        Reset
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Tutorial Videos Management */}
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <Play className="w-6 h-6 text-red-400" />
+                      <div>
+                        <CardTitle className="text-white">Tutorial Videos</CardTitle>
+                        <CardDescription className="text-slate-400">Manage tutorial videos displayed on the About Us page</CardDescription>
+                      </div>
+                    </div>
+                    <Dialog open={tutorialDialogOpen} onOpenChange={setTutorialDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="add-tutorial-btn">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Tutorial
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-slate-800 border-slate-700">
+                        <DialogHeader>
+                          <DialogTitle className="text-white">Add Tutorial Video</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleAddTutorial} className="space-y-4">
+                          <div>
+                            <Label htmlFor="tutorial-title" className="text-slate-300">Title</Label>
+                            <Input
+                              id="tutorial-title"
+                              value={tutorialForm.title}
+                              onChange={(e) => setTutorialForm({ ...tutorialForm, title: e.target.value })}
+                              className="bg-slate-900 border-slate-700 text-white"
+                              placeholder="Getting Started with Mentis"
+                              required
+                              data-testid="tutorial-title-input"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="tutorial-desc" className="text-slate-300">Description (Optional)</Label>
+                            <Textarea
+                              id="tutorial-desc"
+                              value={tutorialForm.description}
+                              onChange={(e) => setTutorialForm({ ...tutorialForm, description: e.target.value })}
+                              className="bg-slate-900 border-slate-700 text-white"
+                              placeholder="A quick guide on how to navigate..."
+                              data-testid="tutorial-desc-input"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="tutorial-url" className="text-slate-300">YouTube Video URL</Label>
+                            <Input
+                              id="tutorial-url"
+                              value={tutorialForm.video_url}
+                              onChange={(e) => setTutorialForm({ ...tutorialForm, video_url: e.target.value })}
+                              className="bg-slate-900 border-slate-700 text-white"
+                              placeholder="https://www.youtube.com/watch?v=..."
+                              required
+                              data-testid="tutorial-url-input"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="tutorial-order" className="text-slate-300">Display Order</Label>
+                            <Input
+                              id="tutorial-order"
+                              type="number"
+                              value={tutorialForm.order}
+                              onChange={(e) => setTutorialForm({ ...tutorialForm, order: parseInt(e.target.value) || 0 })}
+                              className="bg-slate-900 border-slate-700 text-white"
+                              placeholder="0"
+                              data-testid="tutorial-order-input"
+                            />
+                          </div>
+                          <Button 
+                            type="submit" 
+                            className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+                            data-testid="submit-tutorial-btn"
+                          >
+                            Add Tutorial
+                          </Button>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {tutorials.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Play className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                      <p className="text-slate-400 text-lg">No tutorials added yet</p>
+                      <p className="text-slate-500 text-sm mt-2">Click &quot;Add Tutorial&quot; to create your first tutorial video</p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {tutorials.map((tutorial) => (
+                        <div key={tutorial.id} className="bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700 group">
+                          <div className="aspect-video bg-black">
+                            <iframe
+                              src={`https://www.youtube.com/embed/${tutorial.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/)?.[1] || ''}`}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              title={tutorial.title}
+                            />
+                          </div>
+                          <div className="p-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="text-white font-medium flex-1">{tutorial.title}</h4>
+                              <Badge variant="outline" className="text-slate-400 border-slate-600 ml-2">
+                                #{tutorial.order || 0}
+                              </Badge>
+                            </div>
+                            {tutorial.description && (
+                              <p className="text-slate-400 text-sm line-clamp-2 mb-3">{tutorial.description}</p>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteTutorial(tutorial.id)}
+                              className="w-full bg-red-600/80 hover:bg-red-600"
+                              data-testid="delete-tutorial-btn"
+                            >
+                              <Trash2 className="w-3 h-3 mr-2" />
+                              Delete Tutorial
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          )}
 
           {/* Matrix Members Tab */}
           <TabsContent value="matrix">

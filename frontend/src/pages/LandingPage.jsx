@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Gamepad2, Sparkles, Network } from 'lucide-react';
 import axios from 'axios';
+import { AuthContext } from '@/App';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const LandingPage = () => {
+  const { user } = useContext(AuthContext);
   const [heroImage, setHeroImage] = React.useState('https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85');
 
   React.useEffect(() => {
@@ -92,16 +94,18 @@ const LandingPage = () => {
             >
               Be a part of the world where minds meet mathematics.
             </motion.p>
-            <motion.div
-              className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.55 }}
-            >
-              <p className="text-orange-400 text-sm font-medium">
-                🔐 Sign up to unlock all features including Resource Hub, Funamatics, Reels, and Mathmate!
-              </p>
-            </motion.div>
+            {!user && (
+              <motion.div
+                className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 mb-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.55 }}
+              >
+                <p className="text-orange-400 text-sm font-medium">
+                  🔐 Sign up to unlock all features including Resource Hub, Funamatics, Reels, and Mathmate!
+                </p>
+              </motion.div>
+            )}
             <motion.div 
               className="flex gap-4"
               initial={{ opacity: 0, y: 20 }}

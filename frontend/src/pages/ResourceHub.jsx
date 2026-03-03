@@ -478,12 +478,12 @@ const ResourceHub = () => {
                 
                 {/* Like, Comment, Save, Share Section */}
                 {user && (
-                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-700">
+                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-700 relative z-20">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={(e) => { e.stopPropagation(); handleLike(resource.id); }}
-                      className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${likes[resource.id]?.userLiked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10`}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLike(resource.id); }}
+                      className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${likes[resource.id]?.userLiked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10 cursor-pointer`}
                       data-testid="like-resource-btn"
                     >
                       <Heart className={`w-4 h-4 ${likes[resource.id]?.userLiked ? 'fill-current' : ''}`} />
@@ -492,8 +492,8 @@ const ResourceHub = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={(e) => { e.stopPropagation(); openComments(resource); }}
-                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openComments(resource); }}
+                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10 cursor-pointer"
                       data-testid="comment-resource-btn"
                     >
                       <MessageCircle className="w-4 h-4" />
@@ -502,8 +502,8 @@ const ResourceHub = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={(e) => { e.stopPropagation(); handleSaveResource(resource.id); }}
-                      className={`flex items-center gap-2 border-slate-600 hover:border-yellow-500 ${savedResources.includes(resource.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-slate-400'} hover:text-yellow-400 hover:bg-yellow-500/10`}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSaveResource(resource.id); }}
+                      className={`flex items-center gap-2 border-slate-600 hover:border-yellow-500 ${savedResources.includes(resource.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-slate-400'} hover:text-yellow-400 hover:bg-yellow-500/10 cursor-pointer`}
                       data-testid="save-resource-btn"
                     >
                       <Bookmark className={`w-4 h-4 ${savedResources.includes(resource.id) ? 'fill-current' : ''}`} />
@@ -511,8 +511,8 @@ const ResourceHub = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={(e) => { e.stopPropagation(); handleShareResource(resource); }}
-                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareResource(resource); }}
+                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10 cursor-pointer"
                       data-testid="share-resource-btn"
                     >
                       <Share2 className="w-4 h-4" />

@@ -56,6 +56,11 @@ const ConnectPage = () => {
   const [emailRequestDialogOpen, setEmailRequestDialogOpen] = useState(false);
   const [emailRequests, setEmailRequests] = useState([]);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [matrixPage, setMatrixPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+  
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -682,23 +687,23 @@ const ConnectPage = () => {
 
                 {/* Discover Tab */}
                 <TabsContent value="discover" className="flex-1 overflow-hidden m-0">
-                  <CardContent className="h-full flex flex-col pt-4">
+                  <CardContent className="h-full flex flex-col pt-4 overflow-hidden">
                     {/* Search Only */}
-                    <div className="mb-4">
+                    <div className="mb-4 flex-shrink-0">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <Input
                           placeholder="Search by name..."
                           value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                           className="pl-10 bg-slate-900 border-slate-700 text-white"
                           data-testid="user-search-input"
                         />
                       </div>
                     </div>
 
-                    {/* User List */}
-                    <ScrollArea className="flex-1">
+                    {/* User List with Scrollbar */}
+                    <div className="flex-1 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 400px)' }}>
                       {loading ? (
                         <div className="flex items-center justify-center py-12">
                           <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
@@ -710,7 +715,7 @@ const ConnectPage = () => {
                         </div>
                       ) : (
                         <div className="grid gap-3">
-                          {users.map((u) => (
+                          {users.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((u) => (
                             <motion.div
                               key={u.id}
                               initial={{ opacity: 0, y: 10 }}
@@ -796,28 +801,60 @@ const ConnectPage = () => {
                           ))}
                         </div>
                       )}
-                    </ScrollArea>
+                    </div>
+                    
+                    {/* Pagination Controls */}
+                    {users.length > ITEMS_PER_PAGE && (
+                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-700 flex-shrink-0">
+                        <p className="text-sm text-slate-400">
+                          Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, users.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, users.length)} of {users.length}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            className="border-slate-600"
+                          >
+                            Previous
+                          </Button>
+                          <span className="flex items-center px-3 text-white">
+                            Page {currentPage} of {Math.ceil(users.length / ITEMS_PER_PAGE)}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={currentPage >= Math.ceil(users.length / ITEMS_PER_PAGE)}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            className="border-slate-600"
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </TabsContent>
 
                 {/* Matrix Members Tab */}
                 <TabsContent value="matrix" className="flex-1 overflow-hidden m-0">
-                  <CardContent className="h-full flex flex-col pt-4">
+                  <CardContent className="h-full flex flex-col pt-4 overflow-hidden">
                     {/* Search */}
-                    <div className="mb-4">
+                    <div className="mb-4 flex-shrink-0">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <Input
                           placeholder="Search matrix members..."
                           value={matrixSearch}
-                          onChange={(e) => setMatrixSearch(e.target.value)}
+                          onChange={(e) => { setMatrixSearch(e.target.value); setMatrixPage(1); }}
                           className="pl-10 bg-slate-900 border-slate-700 text-white"
                           data-testid="matrix-search-input"
                         />
                       </div>
                     </div>
 
-                    <ScrollArea className="flex-1">
+                    <div className="flex-1 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 400px)' }}>
                       {filteredMatrixMembers.length === 0 ? (
                         <div className="text-center py-8">
                           <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
@@ -825,7 +862,7 @@ const ConnectPage = () => {
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {filteredMatrixMembers.map((member) => (
+                          {filteredMatrixMembers.slice((matrixPage - 1) * ITEMS_PER_PAGE, matrixPage * ITEMS_PER_PAGE).map((member) => (
                             <motion.div
                               key={member.id}
                               className="flex items-center gap-4 p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900 transition-colors"
@@ -849,7 +886,39 @@ const ConnectPage = () => {
                           ))}
                         </div>
                       )}
-                    </ScrollArea>
+                    </div>
+                    
+                    {/* Pagination Controls */}
+                    {filteredMatrixMembers.length > ITEMS_PER_PAGE && (
+                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-700 flex-shrink-0">
+                        <p className="text-sm text-slate-400">
+                          Showing {Math.min((matrixPage - 1) * ITEMS_PER_PAGE + 1, filteredMatrixMembers.length)}-{Math.min(matrixPage * ITEMS_PER_PAGE, filteredMatrixMembers.length)} of {filteredMatrixMembers.length}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={matrixPage === 1}
+                            onClick={() => setMatrixPage(p => Math.max(1, p - 1))}
+                            className="border-slate-600"
+                          >
+                            Previous
+                          </Button>
+                          <span className="flex items-center px-3 text-white">
+                            Page {matrixPage} of {Math.ceil(filteredMatrixMembers.length / ITEMS_PER_PAGE)}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={matrixPage >= Math.ceil(filteredMatrixMembers.length / ITEMS_PER_PAGE)}
+                            onClick={() => setMatrixPage(p => p + 1)}
+                            className="border-slate-600"
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </TabsContent>
 

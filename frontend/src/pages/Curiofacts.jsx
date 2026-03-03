@@ -287,12 +287,12 @@ const Curiofacts = () => {
                 </div>
                 
                 {/* Like, Comment and Share Section */}
-                <div className="flex items-center gap-3 mt-6 pt-6 border-t border-slate-700">
+                <div className="flex items-center gap-3 mt-6 pt-6 border-t border-slate-700 relative z-20">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleLike(fact.id)}
-                    className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${likes[fact.id]?.userLiked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10`}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLike(fact.id); }}
+                    className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${likes[fact.id]?.userLiked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10 cursor-pointer`}
                     data-testid="like-fact-btn"
                   >
                     <Heart className={`w-5 h-5 ${likes[fact.id]?.userLiked ? 'fill-current' : ''}`} />
@@ -301,8 +301,8 @@ const Curiofacts = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => openComments(fact)}
-                    className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); openComments(fact); }}
+                    className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10 cursor-pointer"
                     data-testid="comment-fact-btn"
                   >
                     <MessageCircle className="w-5 h-5" />
@@ -311,8 +311,8 @@ const Curiofacts = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleShareFact(fact)}
-                    className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareFact(fact); }}
+                    className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10 cursor-pointer"
                     data-testid="share-fact-btn"
                   >
                     <Share2 className="w-5 h-5" />

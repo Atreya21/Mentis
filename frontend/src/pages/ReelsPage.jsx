@@ -280,12 +280,12 @@ const ReelsPage = () => {
                       {reel.caption}
                     </p>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 relative z-20">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleLike(reel.id)}
-                        className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${reel.user_liked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10`}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLike(reel.id); }}
+                        className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${reel.user_liked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10 cursor-pointer`}
                         data-testid="like-reel-btn"
                       >
                         <Heart className={`w-5 h-5 ${reel.user_liked ? 'fill-current' : ''}`} />
@@ -295,8 +295,8 @@ const ReelsPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleShareReel(reel)}
-                        className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareReel(reel); }}
+                        className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10 cursor-pointer"
                         data-testid="share-reel-btn"
                       >
                         <Share2 className="w-4 h-4" />

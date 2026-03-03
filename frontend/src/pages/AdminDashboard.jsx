@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Check, X, Plus, Shield, Users, BookOpen, Sparkles, Gamepad2, Crown, Trash2, ShieldOff, Info, Play, Save } from 'lucide-react';
+import { Check, X, Plus, Shield, Users, BookOpen, Sparkles, Gamepad2, Crown, Trash2, ShieldOff, Info, Play, Save, Edit, HelpCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -92,6 +92,13 @@ const AdminDashboard = () => {
   const [tutorials, setTutorials] = useState([]);
   const [tutorialForm, setTutorialForm] = useState({ title: '', description: '', video_url: '', order: 0 });
   const [tutorialDialogOpen, setTutorialDialogOpen] = useState(false);
+  const [faqs, setFaqs] = useState([]);
+  const [faqForm, setFaqForm] = useState({ question: '', answer: '', order: 0 });
+  const [faqDialogOpen, setFaqDialogOpen] = useState(false);
+  const [editingFaq, setEditingFaq] = useState(null);
+  const [editingMatrixMember, setEditingMatrixMember] = useState(null);
+  const [matrixEditDialogOpen, setMatrixEditDialogOpen] = useState(false);
+  const [matrixEditForm, setMatrixEditForm] = useState({ name: '', email: '', college: '', interests: '' });
   const [stats, setStats] = useState({ users: 0, resources: 0, games: 0, facts: 0, matrixMembers: 0 });
   const [gameDialogOpen, setGameDialogOpen] = useState(false);
   const [factDialogOpen, setFactDialogOpen] = useState(false);
@@ -134,6 +141,7 @@ const AdminDashboard = () => {
     fetchUserReports();
     fetchAboutContent();
     fetchTutorials();
+    fetchFaqs();
   }, []);
 
   const fetchPendingCuriofacts = async () => {
@@ -409,6 +417,98 @@ const AdminDashboard = () => {
       fetchTutorials();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to delete tutorial');
+    }
+  };
+
+  // FAQ Functions
+  const fetchFaqs = async () => {
+    try {
+      const res = await axios.get(`${API}/faqs`);
+      setFaqs(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch FAQs');
+    }
+  };
+
+  const handleAddFaq = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/master-admin/faqs`, faqForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('FAQ added successfully!');
+      setFaqDialogOpen(false);
+      setFaqForm({ question: '', answer: '', order: 0 });
+      fetchFaqs();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add FAQ');
+    }
+  };
+
+  const handleUpdateFaq = async (e) => {
+    e.preventDefault();
+    if (!editingFaq) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/master-admin/faqs/${editingFaq.id}`, faqForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('FAQ updated successfully!');
+      setEditingFaq(null);
+      setFaqForm({ question: '', answer: '', order: 0 });
+      fetchFaqs();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update FAQ');
+    }
+  };
+
+  const handleDeleteFaq = async (faqId) => {
+    if (!confirm('Are you sure you want to delete this FAQ?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/master-admin/faqs/${faqId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('FAQ deleted successfully!');
+      fetchFaqs();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to delete FAQ');
+    }
+  };
+
+  const openEditFaq = (faq) => {
+    setEditingFaq(faq);
+    setFaqForm({ question: faq.question, answer: faq.answer, order: faq.order || 0 });
+  };
+
+  // Matrix Member Edit Functions (Master Admin)
+  const openEditMatrixMember = (member) => {
+    setEditingMatrixMember(member);
+    setMatrixEditForm({
+      name: member.name,
+      email: member.email,
+      college: member.college,
+      interests: member.interests
+    });
+    setMatrixEditDialogOpen(true);
+  };
+
+  const handleUpdateMatrixMember = async (e) => {
+    e.preventDefault();
+    if (!editingMatrixMember) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API}/master-admin/matrix-members/${editingMatrixMember.id}`, matrixEditForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Matrix member updated successfully!');
+      setMatrixEditDialogOpen(false);
+      setEditingMatrixMember(null);
+      setMatrixEditForm({ name: '', email: '', college: '', interests: '' });
+      fetchMatrixMembers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update Matrix member');
     }
   };
 
@@ -1637,6 +1737,171 @@ const AdminDashboard = () => {
                   )}
                 </CardContent>
               </Card>
+
+              {/* FAQ Management Section */}
+              <Card className="bg-slate-800/50 border-slate-700">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <HelpCircle className="w-6 h-6 text-amber-400" />
+                      <div>
+                        <CardTitle className="text-white">FAQ Management</CardTitle>
+                        <CardDescription className="text-slate-400">Manage frequently asked questions for the About Us page</CardDescription>
+                      </div>
+                    </div>
+                    <Dialog open={faqDialogOpen} onOpenChange={setFaqDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          className="bg-amber-600 hover:bg-amber-700"
+                          onClick={() => {
+                            setEditingFaq(null);
+                            setFaqForm({ question: '', answer: '', order: 0 });
+                          }}
+                          data-testid="add-faq-btn"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add FAQ
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-slate-800 border-slate-700 max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle className="text-white">Add New FAQ</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleAddFaq} className="space-y-4">
+                          <div>
+                            <Label className="text-slate-300">Question</Label>
+                            <Input
+                              value={faqForm.question}
+                              onChange={(e) => setFaqForm({ ...faqForm, question: e.target.value })}
+                              className="bg-slate-900 border-slate-700 text-white mt-1"
+                              placeholder="Enter the question..."
+                              required
+                              data-testid="faq-question-input"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-slate-300">Answer</Label>
+                            <Textarea
+                              value={faqForm.answer}
+                              onChange={(e) => setFaqForm({ ...faqForm, answer: e.target.value })}
+                              className="bg-slate-900 border-slate-700 text-white mt-1 min-h-[120px]"
+                              placeholder="Enter the answer..."
+                              required
+                              data-testid="faq-answer-input"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-slate-300">Display Order</Label>
+                            <Input
+                              type="number"
+                              value={faqForm.order}
+                              onChange={(e) => setFaqForm({ ...faqForm, order: parseInt(e.target.value) || 0 })}
+                              className="bg-slate-900 border-slate-700 text-white mt-1"
+                              placeholder="0"
+                              data-testid="faq-order-input"
+                            />
+                          </div>
+                          <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700">
+                            Add FAQ
+                          </Button>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {faqs.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed border-slate-700 rounded-lg">
+                      <HelpCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                      <p className="text-slate-400">No FAQs added yet. Add your first FAQ!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {faqs.map((faq, index) => (
+                        <div key={faq.id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                          {editingFaq?.id === faq.id ? (
+                            <form onSubmit={handleUpdateFaq} className="space-y-3">
+                              <Input
+                                value={faqForm.question}
+                                onChange={(e) => setFaqForm({ ...faqForm, question: e.target.value })}
+                                className="bg-slate-800 border-slate-600 text-white"
+                                placeholder="Question"
+                                required
+                              />
+                              <Textarea
+                                value={faqForm.answer}
+                                onChange={(e) => setFaqForm({ ...faqForm, answer: e.target.value })}
+                                className="bg-slate-800 border-slate-600 text-white min-h-[100px]"
+                                placeholder="Answer"
+                                required
+                              />
+                              <Input
+                                type="number"
+                                value={faqForm.order}
+                                onChange={(e) => setFaqForm({ ...faqForm, order: parseInt(e.target.value) || 0 })}
+                                className="bg-slate-800 border-slate-600 text-white w-24"
+                                placeholder="Order"
+                              />
+                              <div className="flex gap-2">
+                                <Button type="submit" size="sm" className="bg-green-600 hover:bg-green-700">
+                                  <Save className="w-3 h-3 mr-2" />
+                                  Save
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingFaq(null);
+                                    setFaqForm({ question: '', answer: '', order: 0 });
+                                  }}
+                                  className="border-slate-600"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </form>
+                          ) : (
+                            <>
+                              <div className="flex items-start justify-between gap-4 mb-2">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge variant="outline" className="text-amber-400 border-amber-500/50 text-xs">
+                                      #{faq.order || index + 1}
+                                    </Badge>
+                                  </div>
+                                  <h4 className="text-white font-semibold">{faq.question}</h4>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openEditFaq(faq)}
+                                    className="border-slate-600 hover:bg-slate-700"
+                                    data-testid={`edit-faq-${index}`}
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteFaq(faq.id)}
+                                    className="bg-red-600/80 hover:bg-red-600"
+                                    data-testid={`delete-faq-${index}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <p className="text-slate-400 text-sm whitespace-pre-wrap">{faq.answer}</p>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
           )}
@@ -1683,15 +1948,28 @@ const AdminDashboard = () => {
                             {new Date(member.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteMatrixMember(member.id, member.email)}
-                              className="bg-red-600 hover:bg-red-700"
-                              data-testid="delete-matrix-member-btn"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            <div className="flex gap-2">
+                              {currentUser?.role === 'master_admin' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openEditMatrixMember(member)}
+                                  className="border-slate-600 hover:bg-slate-700"
+                                  data-testid="edit-matrix-member-btn"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteMatrixMember(member.id, member.email)}
+                                className="bg-red-600 hover:bg-red-700"
+                                data-testid="delete-matrix-member-btn"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1911,6 +2189,76 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Matrix Member Edit Dialog */}
+        <Dialog open={matrixEditDialogOpen} onOpenChange={setMatrixEditDialogOpen}>
+          <DialogContent className="bg-slate-800 border-slate-700 max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-white">Edit Matrix Member</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdateMatrixMember} className="space-y-4">
+              <div>
+                <Label className="text-slate-300">Name</Label>
+                <Input
+                  value={matrixEditForm.name}
+                  onChange={(e) => setMatrixEditForm({ ...matrixEditForm, name: e.target.value.toUpperCase() })}
+                  className="bg-slate-900 border-slate-700 text-white mt-1 uppercase"
+                  placeholder="Member name"
+                  required
+                  data-testid="matrix-edit-name"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">Email</Label>
+                <Input
+                  type="email"
+                  value={matrixEditForm.email}
+                  onChange={(e) => setMatrixEditForm({ ...matrixEditForm, email: e.target.value })}
+                  className="bg-slate-900 border-slate-700 text-white mt-1"
+                  placeholder="member@email.com"
+                  required
+                  data-testid="matrix-edit-email"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">Organization</Label>
+                <Input
+                  value={matrixEditForm.college}
+                  onChange={(e) => setMatrixEditForm({ ...matrixEditForm, college: e.target.value.toUpperCase() })}
+                  className="bg-slate-900 border-slate-700 text-white mt-1 uppercase"
+                  placeholder="Organization name"
+                  required
+                  data-testid="matrix-edit-college"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">Interests</Label>
+                <Textarea
+                  value={matrixEditForm.interests}
+                  onChange={(e) => setMatrixEditForm({ ...matrixEditForm, interests: e.target.value })}
+                  className="bg-slate-900 border-slate-700 text-white mt-1 min-h-[100px]"
+                  placeholder="Mathematical interests..."
+                  required
+                  data-testid="matrix-edit-interests"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700">
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMatrixEditDialogOpen(false)}
+                  className="border-slate-600 hover:bg-slate-700"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
         </motion.div>
       </div>
     </div>

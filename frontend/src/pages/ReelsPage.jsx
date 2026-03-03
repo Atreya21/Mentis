@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '@/App';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,9 +22,12 @@ const API = `${BACKEND_URL}/api`;
 
 const ReelsPage = () => {
   const { user } = useContext(AuthContext);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [reels, setReels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewReelModalOpen, setViewReelModalOpen] = useState(false);
+  const [viewReel, setViewReel] = useState(null);
   const [formData, setFormData] = useState({
     video_url: '',
     caption: ''
@@ -32,6 +36,36 @@ const ReelsPage = () => {
   useEffect(() => {
     fetchReels();
   }, []);
+
+  // Handle deep link
+  useEffect(() => {
+    const viewId = searchParams.get('view');
+    if (viewId && reels.length > 0) {
+      const reel = reels.find(r => r.id === viewId);
+      if (reel) {
+        setViewReel(reel);
+        setViewReelModalOpen(true);
+        setSearchParams({});
+      } else {
+        fetchSingleReel(viewId);
+      }
+    }
+  }, [searchParams, reels]);
+
+  const fetchSingleReel = async (reelId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/reels/${reelId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setViewReel(res.data);
+      setViewReelModalOpen(true);
+      setSearchParams({});
+    } catch (err) {
+      toast.error('Reel not found or not available');
+      setSearchParams({});
+    }
+  };
 
   const fetchReels = async () => {
     try {
@@ -342,6 +376,76 @@ const ReelsPage = () => {
         )}
       </div>
     </div>
+
+    {/* View Reel Modal (for deep links) */}
+    <Dialog open={viewReelModalOpen} onOpenChange={(open) => {
+      setViewReelModalOpen(open);
+      if (!open) setViewReel(null);
+    }}>
+      <DialogContent className="max-w-2xl bg-slate-800 border-slate-700">
+        <DialogHeader>
+          <DialogTitle className="font-heading text-xl text-white">
+            Educational Reel
+          </DialogTitle>
+        </DialogHeader>
+        {viewReel && (
+          <div className="space-y-4">
+            <div className="aspect-video bg-black rounded-lg overflow-hidden">
+              {viewReel.video_type === 'youtube' || viewReel.video_url.includes('youtube.com') || viewReel.video_url.includes('youtu.be') ? (
+                <iframe
+                  src={viewReel.video_url}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : viewReel.video_type === 'googledrive' || viewReel.video_url.includes('drive.google.com') ? (
+                <iframe
+                  src={viewReel.video_url}
+                  className="w-full h-full"
+                  allow="autoplay"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <a 
+                    href={viewReel.original_url || viewReel.video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-pink-400 hover:text-pink-300 flex items-center gap-2"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                    Open Video
+                  </a>
+                </div>
+              )}
+            </div>
+            <p className="text-slate-300">{viewReel.caption}</p>
+            {viewReel.user_name && (
+              <p className="text-slate-400 text-sm flex items-center gap-2">
+                <User className="w-4 h-4" />
+                {viewReel.user_name}
+              </p>
+            )}
+            <div className="flex gap-3 pt-4 border-t border-slate-700">
+              <Button
+                variant="outline"
+                onClick={() => handleShareReel(viewReel)}
+                className="flex-1 border-slate-600 hover:bg-slate-700"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
+              <Button
+                onClick={() => setViewReelModalOpen(false)}
+                className="bg-gradient-to-r from-pink-500 to-purple-600"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
     </TooltipProvider>
   );
 };

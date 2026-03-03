@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { AuthContext } from '@/App';
@@ -52,6 +53,7 @@ const convertGoogleDriveUrl = (url, forceDownload = false) => {
 
 const ResourceHub = () => {
   const { user } = useContext(AuthContext);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [resources, setResources] = useState([]);
   const [filter, setFilter] = useState('approved');
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,6 +65,8 @@ const ResourceHub = () => {
   const [likes, setLikes] = useState({});
   const [savedResources, setSavedResources] = useState([]);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [viewResourceModalOpen, setViewResourceModalOpen] = useState(false);
+  const [viewResource, setViewResource] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -98,6 +102,38 @@ const ResourceHub = () => {
     fetchResources();
     fetchSavedResources();
   }, [filter]);
+
+  // Handle deep link - check for view parameter
+  useEffect(() => {
+    const viewId = searchParams.get('view');
+    if (viewId && resources.length > 0) {
+      const resource = resources.find(r => r.id === viewId);
+      if (resource) {
+        setViewResource(resource);
+        setViewResourceModalOpen(true);
+        // Clear the URL parameter
+        setSearchParams({});
+      } else {
+        // Try to fetch the resource directly
+        fetchSingleResource(viewId);
+      }
+    }
+  }, [searchParams, resources]);
+
+  const fetchSingleResource = async (resourceId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/resources/${resourceId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setViewResource(res.data);
+      setViewResourceModalOpen(true);
+      setSearchParams({});
+    } catch (err) {
+      toast.error('Resource not found or not available');
+      setSearchParams({});
+    }
+  };
 
   // Fetch saved resources
   const fetchSavedResources = async () => {
@@ -597,6 +633,58 @@ const ResourceHub = () => {
                 </Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Resource Modal (for deep links) */}
+        <Dialog open={viewResourceModalOpen} onOpenChange={(open) => {
+          setViewResourceModalOpen(open);
+          if (!open) setViewResource(null);
+        }}>
+          <DialogContent className="max-w-2xl bg-slate-800 border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="font-heading text-2xl text-white">
+                {viewResource?.title}
+              </DialogTitle>
+            </DialogHeader>
+            {viewResource && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm">
+                    {viewResource.topic}
+                  </span>
+                  <span className="px-3 py-1 bg-slate-700 text-slate-300 rounded-full text-sm">
+                    {viewResource.content_type}
+                  </span>
+                </div>
+                <p className="text-slate-300 whitespace-pre-wrap">{viewResource.description}</p>
+                {viewResource.uploader_name && (
+                  <p className="text-slate-400 text-sm">
+                    Uploaded by: <span className="text-white">{viewResource.uploader_name}</span>
+                  </p>
+                )}
+                <div className="flex gap-3 pt-4">
+                  <a 
+                    href={viewResource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1"
+                  >
+                    <Button className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600">
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Open Resource
+                    </Button>
+                  </a>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleShareResource(viewResource)}
+                    className="border-slate-600 hover:bg-slate-700"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 

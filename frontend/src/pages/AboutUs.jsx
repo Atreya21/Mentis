@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Info, Users, BookOpen, Play, ChevronRight, 
+  Info, Users, BookOpen, Play, ChevronRight, ChevronDown,
   Target, Heart, Lightbulb, GraduationCap, Sparkles,
-  ArrowRight, Mail, Globe, Star
+  ArrowRight, Mail, Globe, Star, HelpCircle
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -15,12 +15,15 @@ const API = `${BACKEND_URL}/api`;
 const AboutUs = () => {
   const [aboutContent, setAboutContent] = useState(null);
   const [tutorials, setTutorials] = useState([]);
+  const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTutorial, setSelectedTutorial] = useState(null);
+  const [expandedFaq, setExpandedFaq] = useState(null);
 
   useEffect(() => {
     fetchAboutContent();
     fetchTutorials();
+    fetchFaqs();
   }, []);
 
   const fetchAboutContent = async () => {
@@ -40,6 +43,15 @@ const AboutUs = () => {
       setTutorials(res.data);
     } catch (err) {
       console.error('Failed to fetch tutorials');
+    }
+  };
+
+  const fetchFaqs = async () => {
+    try {
+      const res = await axios.get(`${API}/faqs`);
+      setFaqs(res.data);
+    } catch (err) {
+      console.error('Failed to fetch FAQs');
     }
   };
 
@@ -449,6 +461,73 @@ Join us to connect with like-minded individuals, share resources, and grow toget
             </motion.div>
           )}
         </motion.section>
+
+        {/* FAQ Section */}
+        {faqs.length > 0 && (
+          <motion.section className="mb-20" variants={itemVariants}>
+            <div className="flex items-center gap-4 mb-8">
+              <motion.div 
+                className="p-3 bg-amber-500/10 rounded-xl"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <HelpCircle className="w-8 h-8 text-amber-400" />
+              </motion.div>
+              <h2 className="font-heading text-3xl md:text-4xl font-bold text-white">Frequently Asked Questions</h2>
+            </div>
+            
+            <div className="space-y-4">
+              {faqs.map((faq, index) => (
+                <motion.div
+                  key={faq.id}
+                  variants={cardVariants}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <Card 
+                    className={`bg-slate-800/50 border-slate-700/50 cursor-pointer transition-all duration-300 ${
+                      expandedFaq === faq.id ? 'border-orange-500/50' : 'hover:border-slate-600'
+                    }`}
+                    onClick={() => setExpandedFaq(expandedFaq === faq.id ? null : faq.id)}
+                    data-testid={`faq-item-${index}`}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between gap-4">
+                        <h3 className="font-heading text-lg font-semibold text-white">
+                          {faq.question}
+                        </h3>
+                        <motion.div
+                          animate={{ rotate: expandedFaq === faq.id ? 180 : 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="flex-shrink-0"
+                        >
+                          <ChevronDown className="w-5 h-5 text-orange-400" />
+                        </motion.div>
+                      </div>
+                      <AnimatePresence>
+                        {expandedFaq === faq.id && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <p className="text-slate-400 mt-4 pt-4 border-t border-slate-700 whitespace-pre-wrap">
+                              {faq.answer}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
         {/* Contact Section */}
         <motion.section variants={itemVariants}>

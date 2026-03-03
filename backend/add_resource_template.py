@@ -45,6 +45,6 @@ print(f"\nTitle: {new_resource['title']}")
 print(f"Type: {new_resource['content_type']}")
 print(f"Topic: {new_resource['topic']}")
 print(f"Status: {new_resource['status']}")
-print(f"\nView it at: https://mentis-dev-1.preview.emergentagent.com/resources\n")
+print(f"\nView it at: https://math-collab-space.preview.emergentagent.com/resources\n")
 
 client.close()

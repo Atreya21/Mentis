@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '@/App';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ const API = `${BACKEND_URL}/api`;
 
 const Curiofacts = () => {
   const { user } = useContext(AuthContext);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [facts, setFacts] = useState([]);
   const [likes, setLikes] = useState({});
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
@@ -25,10 +27,39 @@ const Curiofacts = () => {
   const [newComment, setNewComment] = useState('');
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [submitForm, setSubmitForm] = useState({ title: '', content: '', image_url: '' });
+  const [viewFactModalOpen, setViewFactModalOpen] = useState(false);
+  const [viewFact, setViewFact] = useState(null);
 
   useEffect(() => {
     fetchFacts();
   }, []);
+
+  // Handle deep link
+  useEffect(() => {
+    const viewId = searchParams.get('view');
+    if (viewId && facts.length > 0) {
+      const fact = facts.find(f => f.id === viewId);
+      if (fact) {
+        setViewFact(fact);
+        setViewFactModalOpen(true);
+        setSearchParams({});
+      } else {
+        fetchSingleFact(viewId);
+      }
+    }
+  }, [searchParams, facts]);
+
+  const fetchSingleFact = async (factId) => {
+    try {
+      const res = await axios.get(`${API}/curiofacts/${factId}`);
+      setViewFact(res.data);
+      setViewFactModalOpen(true);
+      setSearchParams({});
+    } catch (err) {
+      toast.error('Curiofact not found');
+      setSearchParams({});
+    }
+  };
 
   const fetchLikes = async (factList) => {
     const likesData = {};
@@ -421,6 +452,58 @@ const Curiofacts = () => {
                 <p className="text-center text-slate-400 text-sm">Login to add comments</p>
               )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Fact Modal (for deep links) */}
+        <Dialog open={viewFactModalOpen} onOpenChange={(open) => {
+          setViewFactModalOpen(open);
+          if (!open) setViewFact(null);
+        }}>
+          <DialogContent className="max-w-xl bg-slate-800 border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="font-heading text-2xl text-white">
+                {viewFact?.title}
+              </DialogTitle>
+            </DialogHeader>
+            {viewFact && (
+              <div className="space-y-4">
+                {viewFact.image_url && (
+                  <div className="rounded-lg overflow-hidden">
+                    <img 
+                      src={viewFact.image_url} 
+                      alt={viewFact.title}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  </div>
+                )}
+                <p className="text-slate-300 whitespace-pre-wrap text-lg leading-relaxed">
+                  {viewFact.content}
+                </p>
+                {viewFact.uploader_name && (
+                  <p className="text-slate-400 text-sm">
+                    Shared by: <span className="text-orange-400">{viewFact.uploader_name}</span>
+                  </p>
+                )}
+                <div className="flex gap-3 pt-4 border-t border-slate-700">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleShareFact(viewFact)}
+                    className="flex-1 border-slate-600 hover:bg-slate-700"
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Share
+                  </Button>
+                  <Button
+                    onClick={() => setViewFactModalOpen(false)}
+                    className="bg-gradient-to-r from-orange-500 to-pink-500"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 

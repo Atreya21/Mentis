@@ -36,6 +36,6 @@ db.curiofacts.insert_one(new_fact)
 print(f"\n✓ Successfully published curiofact!")
 print(f"\nTitle: {new_fact['title']}")
 print(f"Published at: {datetime.now(timezone.utc).strftime('%B %d, %Y at %H:%M UTC')}")
-print(f"\nView it at: https://mentis-dev-1.preview.emergentagent.com/curiofacts\n")
+print(f"\nView it at: https://math-collab-space.preview.emergentagent.com/curiofacts\n")
 
 client.close()

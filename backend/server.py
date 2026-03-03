@@ -354,6 +354,33 @@ class TutorialCreate(BaseModel):
     video_url: str
     order: Optional[int] = 0
 
+# FAQ Model for About Us section
+class FAQ(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    question: str
+    answer: str
+    order: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_by: Optional[str] = None
+
+class FAQCreate(BaseModel):
+    question: str
+    answer: str
+    order: Optional[int] = 0
+
+class FAQUpdate(BaseModel):
+    question: Optional[str] = None
+    answer: Optional[str] = None
+    order: Optional[int] = None
+
+# Matrix Member Update Model (for Master Admin)
+class MatrixMemberUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    college: Optional[str] = None
+    interests: Optional[str] = None
+
 # WebSocket Connection Manager for real-time chat
 class ConnectionManager:
     def __init__(self):
@@ -558,11 +585,27 @@ async def create_curiofact(fact_data: CuriofactCreate, admin: User = Depends(get
 
 @api_router.post("/matrix/register", response_model=MatrixRegistration)
 async def register_matrix(registration_data: MatrixRegistrationCreate):
-    existing = await db.matrix_registrations.find_one({"email": registration_data.email})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    # Check for existing email (case-insensitive)
+    existing_email = await db.matrix_registrations.find_one({
+        "email": {"$regex": f"^{registration_data.email}$", "$options": "i"}
+    })
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email already registered in Matrix")
     
-    registration = MatrixRegistration(**registration_data.model_dump())
+    # Check for existing name (case-insensitive, after uppercase conversion)
+    name_upper = registration_data.name.upper().strip()
+    existing_name = await db.matrix_registrations.find_one({
+        "name": {"$regex": f"^{name_upper}$", "$options": "i"}
+    })
+    if existing_name:
+        raise HTTPException(status_code=400, detail="Name already registered in Matrix. Please use a unique name.")
+    
+    # Create registration with uppercase name and college
+    reg_data = registration_data.model_dump()
+    reg_data['name'] = name_upper
+    reg_data['college'] = registration_data.college.upper().strip()
+    
+    registration = MatrixRegistration(**reg_data)
     doc = registration.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.matrix_registrations.insert_one(doc)
@@ -2225,6 +2268,164 @@ async def delete_tutorial(tutorial_id: str, admin: User = Depends(get_master_adm
         raise HTTPException(status_code=404, detail="Tutorial not found")
     
     return {"message": "Tutorial deleted successfully"}
+
+# ============== FAQ ENDPOINTS ==============
+
+@api_router.get("/faqs")
+async def get_faqs():
+    """Get all FAQs (public)"""
+    faqs = await db.faqs.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+    for faq in faqs:
+        if isinstance(faq.get('created_at'), str):
+            faq['created_at'] = datetime.fromisoformat(faq['created_at'])
+    return faqs
+
+@api_router.post("/master-admin/faqs")
+async def create_faq(faq_data: FAQCreate, admin: User = Depends(get_master_admin_user)):
+    """Create a new FAQ (Master Admin only)"""
+    faq = FAQ(
+        question=faq_data.question,
+        answer=faq_data.answer,
+        order=faq_data.order or 0,
+        created_by=admin.id
+    )
+    doc = faq.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.faqs.insert_one(doc)
+    return {"message": "FAQ created successfully", "id": faq.id}
+
+@api_router.patch("/master-admin/faqs/{faq_id}")
+async def update_faq(faq_id: str, faq_data: FAQUpdate, admin: User = Depends(get_master_admin_user)):
+    """Update a FAQ (Master Admin only)"""
+    update_data = {k: v for k, v in faq_data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No update data provided")
+    
+    result = await db.faqs.update_one(
+        {"id": faq_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    
+    return {"message": "FAQ updated successfully"}
+
+@api_router.delete("/master-admin/faqs/{faq_id}")
+async def delete_faq(faq_id: str, admin: User = Depends(get_master_admin_user)):
+    """Delete a FAQ (Master Admin only)"""
+    result = await db.faqs.delete_one({"id": faq_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    
+    return {"message": "FAQ deleted successfully"}
+
+# ============== MATRIX MEMBER MANAGEMENT (Master Admin) ==============
+
+@api_router.patch("/master-admin/matrix-members/{member_id}")
+async def update_matrix_member(member_id: str, update_data: MatrixMemberUpdate, admin: User = Depends(get_master_admin_user)):
+    """Update a Matrix member's details (Master Admin only)"""
+    updates = {}
+    
+    if update_data.name is not None:
+        new_name = update_data.name.upper().strip()
+        # Check if name is already taken by another member
+        existing = await db.matrix_registrations.find_one({
+            "name": {"$regex": f"^{new_name}$", "$options": "i"},
+            "id": {"$ne": member_id}
+        })
+        if existing:
+            raise HTTPException(status_code=400, detail="Name already exists for another member")
+        updates['name'] = new_name
+    
+    if update_data.email is not None:
+        # Check if email is already taken by another member
+        existing = await db.matrix_registrations.find_one({
+            "email": {"$regex": f"^{update_data.email}$", "$options": "i"},
+            "id": {"$ne": member_id}
+        })
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already exists for another member")
+        updates['email'] = update_data.email
+    
+    if update_data.college is not None:
+        updates['college'] = update_data.college.upper().strip()
+    
+    if update_data.interests is not None:
+        updates['interests'] = update_data.interests
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="No update data provided")
+    
+    result = await db.matrix_registrations.update_one(
+        {"id": member_id},
+        {"$set": updates}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Matrix member not found")
+    
+    return {"message": "Matrix member updated successfully"}
+
+# ============== SINGLE ITEM FETCH FOR DEEP LINKING ==============
+
+@api_router.get("/resources/{resource_id}")
+async def get_single_resource(resource_id: str):
+    """Get a single resource by ID (for deep linking)"""
+    resource = await db.resources.find_one({"id": resource_id, "status": "approved"}, {"_id": 0})
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    
+    if isinstance(resource.get('created_at'), str):
+        resource['created_at'] = datetime.fromisoformat(resource['created_at'])
+    
+    # Get uploader info
+    if resource.get('submitted_by'):
+        uploader = await db.users.find_one({"id": resource['submitted_by']}, {"_id": 0, "password": 0})
+        if uploader:
+            resource['uploader_name'] = uploader.get('name', 'Unknown')
+    
+    return resource
+
+@api_router.get("/curiofacts/{fact_id}")
+async def get_single_curiofact(fact_id: str):
+    """Get a single curiofact by ID (for deep linking)"""
+    fact = await db.curiofacts.find_one({"id": fact_id}, {"_id": 0})
+    if not fact:
+        raise HTTPException(status_code=404, detail="Curiofact not found")
+    
+    if isinstance(fact.get('published_at'), str):
+        fact['published_at'] = datetime.fromisoformat(fact['published_at'])
+    
+    return fact
+
+@api_router.get("/reels/{reel_id}")
+async def get_single_reel(reel_id: str, current_user: User = Depends(get_current_user)):
+    """Get a single reel by ID (for deep linking)"""
+    reel = await db.reels.find_one({"id": reel_id, "status": "approved"}, {"_id": 0})
+    if not reel:
+        raise HTTPException(status_code=404, detail="Reel not found")
+    
+    if isinstance(reel.get('created_at'), str):
+        reel['created_at'] = datetime.fromisoformat(reel['created_at'])
+    
+    # Get like count
+    like_count = await db.likes.count_documents({
+        "target_id": reel['id'],
+        "target_type": "reels"
+    })
+    reel['like_count'] = like_count
+    
+    # Check if current user liked
+    user_liked = await db.likes.find_one({
+        "user_id": current_user.id,
+        "target_id": reel['id'],
+        "target_type": "reels"
+    })
+    reel['user_liked'] = user_liked is not None
+    
+    return reel
 
 app.include_router(api_router)
 

@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://mentis-dev-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://math-collab-space.preview.emergentagent.com')
 
 # Test credentials
 MASTER_ADMIN_EMAIL = "atreyaghoshal.68@gmail.com"

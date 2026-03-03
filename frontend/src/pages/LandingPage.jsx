@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Gamepad2, Sparkles, Network } from 'lucide-react';
+import { BookOpen, Gamepad2, Sparkles, Network, Users, Video, Info } from 'lucide-react';
 import axios from 'axios';
 import { AuthContext } from '@/App';
 
@@ -24,6 +24,7 @@ const LandingPage = () => {
     };
     fetchSiteSettings();
   }, []);
+
   const features = [
     {
       icon: BookOpen,
@@ -52,6 +53,27 @@ const LandingPage = () => {
       description: 'Join our growing community of mathematics enthusiasts and professionals.',
       link: '/matrix',
       color: 'from-green-500 to-emerald-500'
+    },
+    {
+      icon: Users,
+      title: 'Mathmate',
+      description: 'Connect with fellow math enthusiasts, find study partners, and chat in real-time.',
+      link: '/connect',
+      color: 'from-pink-500 to-rose-500'
+    },
+    {
+      icon: Video,
+      title: 'Reels',
+      description: 'Watch and share short educational videos on mathematical concepts.',
+      link: '/reels',
+      color: 'from-red-500 to-orange-500'
+    },
+    {
+      icon: Info,
+      title: 'About Us',
+      description: 'Learn about our mission, vision, and the team behind Mentis.',
+      link: '/about',
+      color: 'from-teal-500 to-cyan-500'
     }
   ];
 
@@ -166,11 +188,11 @@ const LandingPage = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               viewport={{ once: true }}
             >
-              Four powerful sections designed to enhance your mathematical journey
+              Seven powerful sections designed to enhance your mathematical journey
             </motion.p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
@@ -181,9 +203,10 @@ const LandingPage = () => {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
                   whileHover={{ scale: 1.02 }}
+                  className={index === 6 ? 'md:col-span-2 lg:col-span-1 lg:col-start-2' : ''}
                 >
                   <Link to={feature.link}>
-                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-8 rounded-2xl hover-lift card-hover shine-effect group relative overflow-hidden">
+                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-8 rounded-2xl hover-lift card-hover shine-effect group relative overflow-hidden h-full">
                       <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${feature.color} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`}></div>
                       <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative z-10`}>
                         <Icon className="w-7 h-7 text-white" />

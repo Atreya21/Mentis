@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -7,6 +7,7 @@ import os
 import logging
 import re
 import json
+import asyncio
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict
@@ -1164,6 +1165,64 @@ async def get_sent_requests(current_user: User = Depends(get_current_user)):
     
     return connections
 
+# ============== UNREAD MESSAGES COUNT ==============
+# NOTE: This endpoint MUST be defined BEFORE /messages/{connection_id} to avoid route conflict
+
+@api_router.get("/messages/unread/count")
+async def get_unread_messages_count(current_user: User = Depends(get_current_user)):
+    """Get total count of unread messages for the current user across all connections"""
+    # Get all connections where the user is involved
+    connections = await db.connections.find({
+        "$or": [
+            {"requester_id": current_user.id},
+            {"receiver_id": current_user.id}
+        ],
+        "status": "accepted"
+    }, {"_id": 0, "id": 1}).to_list(1000)
+    
+    connection_ids = [c['id'] for c in connections]
+    
+    if not connection_ids:
+        return {"unread_count": 0, "connections_with_unread": []}
+    
+    # Count unread messages where sender is not the current user
+    unread_count = await db.messages.count_documents({
+        "connection_id": {"$in": connection_ids},
+        "sender_id": {"$ne": current_user.id},
+        "read": False
+    })
+    
+    # Get connections with unread messages for notification details
+    pipeline = [
+        {
+            "$match": {
+                "connection_id": {"$in": connection_ids},
+                "sender_id": {"$ne": current_user.id},
+                "read": False
+            }
+        },
+        {
+            "$group": {
+                "_id": "$connection_id",
+                "count": {"$sum": 1},
+                "latest_message": {"$last": "$created_at"}
+            }
+        }
+    ]
+    
+    connections_with_unread = []
+    async for doc in db.messages.aggregate(pipeline):
+        connections_with_unread.append({
+            "connection_id": doc["_id"],
+            "unread_count": doc["count"],
+            "latest_message": doc["latest_message"]
+        })
+    
+    return {
+        "unread_count": unread_count,
+        "connections_with_unread": connections_with_unread
+    }
+
 @api_router.get("/messages/{connection_id}")
 async def get_messages(connection_id: str, current_user: User = Depends(get_current_user)):
     """Get all messages for a connection"""
@@ -1236,6 +1295,26 @@ async def send_message(connection_id: str, message: MessageCreate, current_user:
     }, other_user_id)
     
     return {"message": "Message sent", "id": new_message.id}
+
+@api_router.post("/messages/{connection_id}/mark-read")
+async def mark_messages_as_read(connection_id: str, current_user: User = Depends(get_current_user)):
+    """Explicitly mark all messages in a connection as read"""
+    # Verify user is part of this connection
+    connection = await db.connections.find_one({"id": connection_id}, {"_id": 0})
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['requester_id'] != current_user.id and connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Mark messages as read (messages not sent by current user)
+    result = await db.messages.update_many(
+        {"connection_id": connection_id, "sender_id": {"$ne": current_user.id}, "read": False},
+        {"$set": {"read": True}}
+    )
+    
+    return {"message": "Messages marked as read", "marked_count": result.modified_count}
 
 # ============== LIKE & COMMENT FEATURE ==============
 
@@ -2267,6 +2346,168 @@ async def send_resource_rejection_email(user_email: str, user_name: str, resourc
     except Exception as e:
         logger.error(f"Failed to send resource rejection email to {user_email}: {str(e)}")
         return False
+
+async def send_unread_messages_notification_email(user_email: str, user_name: str, unread_count: int, sender_names: List[str]):
+    """Send email notification when user has unread messages for more than 24 hours"""
+    try:
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        from_email = os.environ.get('FROM_EMAIL', 'noreply@mentis.com')
+        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+        
+        if not sendgrid_api_key:
+            logger.warning(f"SendGrid not configured. Cannot send unread messages email to {user_email}")
+            return False
+            
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Email, To
+        
+        senders_text = ", ".join(sender_names[:3])
+        if len(sender_names) > 3:
+            senders_text += f" and {len(sender_names) - 3} others"
+        
+        message = Mail(
+            from_email=Email(from_email),
+            to_emails=To(user_email),
+            subject=f'💬 You have {unread_count} unread message{"s" if unread_count > 1 else ""} on Mentis!',
+            html_content=f'''
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 10px;">
+                <h2 style="color: #f97316; margin-bottom: 20px;">Hey {user_name}! 💬</h2>
+                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
+                    You have <strong style="color: #f97316;">{unread_count} unread message{"s" if unread_count > 1 else ""}</strong> waiting for you on Mathmate!
+                </p>
+                <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">
+                    Messages from: <strong style="color: #e2e8f0;">{senders_text}</strong>
+                </p>
+                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
+                    Don't keep your math buddies waiting! Log in to continue your conversations.
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{frontend_url}/connect" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">View Messages</a>
+                </div>
+                <hr style="border: none; border-top: 1px solid #374151; margin: 30px 0;">
+                <p style="color: #64748b; font-size: 12px; text-align: center;">
+                    Mentis - Mathematics Community Platform<br>
+                    <a href="mailto:mentis.mathematics@gmail.com" style="color: #f97316;">mentis.mathematics@gmail.com</a>
+                </p>
+            </div>
+            '''
+        )
+        
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        logger.info(f"Unread messages notification email sent to {user_email}, status: {response.status_code}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send unread messages email to {user_email}: {str(e)}")
+        return False
+
+async def check_and_notify_unread_messages():
+    """Background task to check for unread messages older than 24 hours and send notifications"""
+    try:
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
+        
+        # Find all unread messages older than 24 hours
+        pipeline = [
+            {
+                "$match": {
+                    "read": False,
+                    "created_at": {"$lt": cutoff_time}
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "connections",
+                    "localField": "connection_id",
+                    "foreignField": "id",
+                    "as": "connection"
+                }
+            },
+            {"$unwind": "$connection"},
+            {
+                "$project": {
+                    "sender_id": 1,
+                    "receiver_id": {
+                        "$cond": [
+                            {"$eq": ["$sender_id", "$connection.requester_id"]},
+                            "$connection.receiver_id",
+                            "$connection.requester_id"
+                        ]
+                    },
+                    "connection_id": 1
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$receiver_id",
+                    "unread_count": {"$sum": 1},
+                    "sender_ids": {"$addToSet": "$sender_id"}
+                }
+            }
+        ]
+        
+        # Track which users we've already notified today
+        today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        
+        async for doc in db.messages.aggregate(pipeline):
+            receiver_id = doc["_id"]
+            unread_count = doc["unread_count"]
+            sender_ids = doc["sender_ids"]
+            
+            # Check if we already sent notification today for this user
+            existing_notification = await db.message_notifications.find_one({
+                "user_id": receiver_id,
+                "date_key": today_key
+            })
+            
+            if existing_notification:
+                continue  # Already notified today
+            
+            # Get user and sender details
+            user = await db.users.find_one({"id": receiver_id}, {"_id": 0})
+            if not user or not user.get('email'):
+                continue
+            
+            # Get sender names
+            sender_names = []
+            for sid in sender_ids[:5]:
+                sender = await db.users.find_one({"id": sid}, {"_id": 0, "name": 1})
+                if sender:
+                    sender_names.append(sender.get('name', 'Someone'))
+            
+            # Send email notification
+            await send_unread_messages_notification_email(
+                user_email=user['email'],
+                user_name=user.get('name', 'Mentis User'),
+                unread_count=unread_count,
+                sender_names=sender_names
+            )
+            
+            # Record that we sent notification
+            await db.message_notifications.insert_one({
+                "id": str(uuid.uuid4()),
+                "user_id": receiver_id,
+                "date_key": today_key,
+                "sent_at": datetime.now(timezone.utc)
+            })
+            
+        logger.info("Completed checking for unread messages notifications")
+        
+    except Exception as e:
+        logger.error(f"Error in check_and_notify_unread_messages: {str(e)}")
+
+# Background task scheduler
+async def scheduled_notification_checker():
+    """Run the unread messages check every hour"""
+    while True:
+        await asyncio.sleep(3600)  # Wait 1 hour
+        await check_and_notify_unread_messages()
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background tasks on app startup"""
+    asyncio.create_task(scheduled_notification_checker())
+    logger.info("Started scheduled notification checker background task")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

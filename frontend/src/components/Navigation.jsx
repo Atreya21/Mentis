@@ -1,8 +1,8 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/App';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Shield, Users } from 'lucide-react';
+import { LogOut, User, Shield, MessageCircle } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -12,10 +12,44 @@ const Navigation = () => {
   const { user, logout } = useContext(AuthContext);
   const location = useLocation();
   const [logoUrl, setLogoUrl] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/messages/unread/count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUnreadCount(res.data.unread_count || 0);
+    } catch (err) {
+      console.error('Failed to fetch unread count');
+    }
+  }, [user]);
 
   useEffect(() => {
     fetchLogo();
   }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    
+    // Poll for unread messages every 30 seconds when user is logged in
+    if (user) {
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, fetchUnreadCount]);
+
+  // Refresh unread count when navigating away from Mathmate
+  useEffect(() => {
+    if (location.pathname !== '/connect' && user) {
+      fetchUnreadCount();
+    }
+  }, [location.pathname, user, fetchUnreadCount]);
 
   const fetchLogo = async () => {
     try {
@@ -35,7 +69,7 @@ const Navigation = () => {
     { name: 'Curiofacts', path: '/curiofacts' },
     { name: 'Matrix', path: '/matrix' },
     { name: 'Reels', path: '/reels', requiresAuth: true },
-    { name: 'Mathmate', path: '/connect', requiresAuth: true },
+    { name: 'Mathmate', path: '/connect', requiresAuth: true, hasNotification: true },
     { name: 'About us', path: '/about' },
   ];
 
@@ -64,11 +98,23 @@ const Navigation = () => {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`font-body text-sm font-medium transition-all hover:text-orange-400 hover:scale-105 ${
+                  className={`relative font-body text-sm font-medium transition-all hover:text-orange-400 hover:scale-105 ${
                     location.pathname === link.path ? 'text-orange-500' : 'text-slate-300'
                   }`}
+                  data-testid={link.hasNotification ? 'mathmate-nav-link' : undefined}
                 >
-                  {link.name}
+                  <span className="flex items-center gap-1">
+                    {link.name}
+                    {/* Notification bubble for Mathmate */}
+                    {link.hasNotification && unreadCount > 0 && (
+                      <span 
+                        className="absolute -top-2 -right-4 min-w-[20px] h-5 flex items-center justify-center bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full px-1.5 animate-pulse shadow-lg shadow-red-500/50"
+                        data-testid="mathmate-notification-badge"
+                      >
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </span>
                 </Link>
               )
             ))}

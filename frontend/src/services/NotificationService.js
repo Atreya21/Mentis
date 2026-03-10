@@ -1,25 +1,35 @@
 // Mentis Notification Service
-// Handles browser notifications for messages, connection requests, etc.
+// Enhanced for PWA and mobile browser support
 
 class NotificationService {
   constructor() {
     this.permission = 'default';
     this.supported = 'Notification' in window;
+    this.swRegistration = null;
   }
 
   // Check if notifications are supported and get permission status
   async init() {
     if (!this.supported) {
-      console.log('Notifications not supported in this browser');
+      console.log('Mentis Notifications: Not supported in this browser');
       return false;
     }
     
     this.permission = Notification.permission;
     
+    // Get service worker registration for PWA notifications
+    if ('serviceWorker' in navigator) {
+      try {
+        this.swRegistration = await navigator.serviceWorker.ready;
+        console.log('Mentis Notifications: Service Worker ready');
+      } catch (err) {
+        console.log('Mentis Notifications: Service Worker not ready', err);
+      }
+    }
+    
     if (this.permission === 'default') {
-      // Request permission
-      const result = await this.requestPermission();
-      return result === 'granted';
+      // Don't auto-request, wait for user action
+      return false;
     }
     
     return this.permission === 'granted';
@@ -31,9 +41,10 @@ class NotificationService {
     
     try {
       this.permission = await Notification.requestPermission();
+      console.log('Mentis Notifications: Permission', this.permission);
       return this.permission;
     } catch (err) {
-      console.error('Error requesting notification permission:', err);
+      console.error('Mentis Notifications: Error requesting permission:', err);
       return 'denied';
     }
   }
@@ -43,10 +54,10 @@ class NotificationService {
     return this.supported && this.permission === 'granted';
   }
 
-  // Show a notification
-  show(title, options = {}) {
+  // Show a notification (works for both PWA and regular browser)
+  async show(title, options = {}) {
     if (!this.isEnabled()) {
-      console.log('Notifications not enabled');
+      console.log('Mentis Notifications: Not enabled');
       return null;
     }
 
@@ -56,12 +67,21 @@ class NotificationService {
       vibrate: [100, 50, 100],
       requireInteraction: false,
       silent: false,
-      tag: 'mentis-notification',
+      tag: options.tag || 'mentis-notification',
       renotify: true,
+      data: options.data || {},
       ...options
     };
 
     try {
+      // Try using service worker for PWA (more reliable on mobile)
+      if (this.swRegistration) {
+        await this.swRegistration.showNotification(title, defaultOptions);
+        console.log('Mentis Notifications: Shown via Service Worker');
+        return true;
+      }
+      
+      // Fallback to regular Notification API
       const notification = new Notification(title, defaultOptions);
       
       notification.onclick = (event) => {
@@ -73,22 +93,45 @@ class NotificationService {
         notification.close();
       };
 
-      // Auto-close after 5 seconds
-      setTimeout(() => notification.close(), 5000);
+      // Auto-close after 5 seconds on desktop
+      if (!this.isMobile()) {
+        setTimeout(() => notification.close(), 5000);
+      }
       
+      console.log('Mentis Notifications: Shown via Notification API');
       return notification;
     } catch (err) {
-      console.error('Error showing notification:', err);
+      console.error('Mentis Notifications: Error showing notification:', err);
       return null;
     }
   }
 
+  // Check if running on mobile
+  isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+
+  // Check if running as installed PWA
+  isPWA() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true ||
+           document.referrer.includes('android-app://');
+  }
+
   // Show new message notification
   showNewMessage(senderName, messagePreview, connectionId) {
+    const truncatedMessage = messagePreview.length > 100 
+      ? messagePreview.substring(0, 100) + '...' 
+      : messagePreview;
+      
     return this.show(`New message from ${senderName}`, {
-      body: messagePreview.length > 100 ? messagePreview.substring(0, 100) + '...' : messagePreview,
+      body: truncatedMessage,
       tag: `message-${connectionId}`,
-      data: { type: 'message', connectionId },
+      data: { 
+        type: 'message', 
+        connectionId,
+        url: `/connect?chat=${connectionId}`
+      },
       onClick: () => {
         window.location.href = `/connect?chat=${connectionId}`;
       }
@@ -97,10 +140,14 @@ class NotificationService {
 
   // Show connection request notification
   showConnectionRequest(requesterName, requesterId) {
-    return this.show(`Connection Request`, {
+    return this.show('Connection Request', {
       body: `${requesterName} wants to connect with you!`,
       tag: `connection-request-${requesterId}`,
-      data: { type: 'connection_request', requesterId },
+      data: { 
+        type: 'connection_request', 
+        requesterId,
+        url: '/connect'
+      },
       onClick: () => {
         window.location.href = '/connect';
       }
@@ -109,10 +156,13 @@ class NotificationService {
 
   // Show connection accepted notification
   showConnectionAccepted(userName) {
-    return this.show(`Connection Accepted`, {
+    return this.show('Connection Accepted', {
       body: `${userName} accepted your connection request!`,
       tag: 'connection-accepted',
-      data: { type: 'connection_accepted' },
+      data: { 
+        type: 'connection_accepted',
+        url: '/connect'
+      },
       onClick: () => {
         window.location.href = '/connect';
       }
@@ -121,10 +171,13 @@ class NotificationService {
 
   // Show resource approved notification
   showResourceApproved(resourceTitle) {
-    return this.show(`Resource Approved!`, {
+    return this.show('Resource Approved!', {
       body: `Your resource "${resourceTitle}" has been approved and is now live!`,
       tag: 'resource-approved',
-      data: { type: 'resource_approved' },
+      data: { 
+        type: 'resource_approved',
+        url: '/resources'
+      },
       onClick: () => {
         window.location.href = '/resources';
       }
@@ -133,14 +186,40 @@ class NotificationService {
 
   // Show VEX approved notification
   showVEXApproved(caption) {
-    return this.show(`VEX Approved!`, {
-      body: `Your VEX "${caption.substring(0, 50)}..." has been approved!`,
+    const truncatedCaption = caption.length > 50 
+      ? caption.substring(0, 50) + '...' 
+      : caption;
+      
+    return this.show('VEX Approved!', {
+      body: `Your VEX "${truncatedCaption}" has been approved!`,
       tag: 'vex-approved',
-      data: { type: 'vex_approved' },
+      data: { 
+        type: 'vex_approved',
+        url: '/reels'
+      },
       onClick: () => {
         window.location.href = '/reels';
       }
     });
+  }
+
+  // Trigger update check for PWA
+  async checkForUpdates() {
+    if (this.swRegistration) {
+      try {
+        await this.swRegistration.update();
+        console.log('Mentis: Checked for updates');
+      } catch (err) {
+        console.log('Mentis: Update check failed', err);
+      }
+    }
+  }
+
+  // Skip waiting for new service worker
+  async skipWaiting() {
+    if (this.swRegistration && this.swRegistration.waiting) {
+      this.swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
   }
 }
 

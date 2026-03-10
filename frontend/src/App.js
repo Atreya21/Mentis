@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
@@ -157,6 +158,7 @@ function App() {
           </div>
           <ConditionalFooter />
           <Toaster position="top-right" />
+          <PWAUpdatePrompt />
         </div>
       </BrowserRouter>
     </AuthContext.Provider>

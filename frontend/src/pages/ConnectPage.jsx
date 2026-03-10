@@ -13,11 +13,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import axios from 'axios';
+import notificationService from '@/services/NotificationService';
 import { 
   Search, UserPlus, Check, X, MessageCircle, Send, 
   Users, Bell, Clock, UserCheck, Filter, Loader2,
   ArrowLeft, Circle, BookOpen, Calendar, Link2, Eye, Award,
-  Flag, Pin, Trash2, RotateCcw, Reply, MoreVertical
+  Flag, Pin, Trash2, RotateCcw, Reply, MoreVertical, BellRing
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -91,6 +92,11 @@ const ConnectPage = () => {
   const [emailRequestDialogOpen, setEmailRequestDialogOpen] = useState(false);
   const [emailRequests, setEmailRequests] = useState([]);
   
+  // Notification state
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const lastMessageCountRef = useRef({});
+  const lastPendingCountRef = useRef(0);
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [matrixPage, setMatrixPage] = useState(1);
@@ -99,6 +105,26 @@ const ConnectPage = () => {
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  // Initialize notifications
+  useEffect(() => {
+    const initNotifications = async () => {
+      const enabled = await notificationService.init();
+      setNotificationsEnabled(enabled);
+    };
+    initNotifications();
+  }, []);
+
+  // Request notification permission
+  const requestNotificationPermission = async () => {
+    const permission = await notificationService.requestPermission();
+    setNotificationsEnabled(permission === 'granted');
+    if (permission === 'granted') {
+      toast.success('Notifications enabled!');
+    } else if (permission === 'denied') {
+      toast.error('Notifications blocked. Please enable in browser settings.');
+    }
+  };
 
   // Fetch colleges for filter
   const fetchColleges = async () => {
@@ -148,6 +174,24 @@ const ConnectPage = () => {
         return timeB - timeA; // Descending order (recent first)
       });
       
+      // Check for new messages and send notifications
+      if (notificationsEnabled && document.hidden) {
+        sortedConnections.forEach(conn => {
+          const prevUnread = lastMessageCountRef.current[conn.id] || 0;
+          const currentUnread = conn.unread_count || 0;
+          
+          if (currentUnread > prevUnread && conn.last_message) {
+            // New unread message - show notification
+            notificationService.showNewMessage(
+              conn.other_user?.name || 'Someone',
+              conn.last_message.content || 'New message',
+              conn.id
+            );
+          }
+          lastMessageCountRef.current[conn.id] = currentUnread;
+        });
+      }
+      
       setConnections(sortedConnections);
     } catch (err) {
       console.error('Failed to fetch connections:', err);
@@ -161,6 +205,21 @@ const ConnectPage = () => {
       const res = await axios.get(`${API}/connections/pending`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Check for new connection requests and send notifications
+      if (notificationsEnabled && document.hidden) {
+        const currentCount = res.data.length;
+        if (currentCount > lastPendingCountRef.current && res.data.length > 0) {
+          // New connection request - show notification for the most recent one
+          const latestRequest = res.data[0];
+          notificationService.showConnectionRequest(
+            latestRequest.requester?.name || 'Someone',
+            latestRequest.requester?.id
+          );
+        }
+        lastPendingCountRef.current = currentCount;
+      }
+      
       setPendingRequests(res.data);
     } catch (err) {
       console.error('Failed to fetch pending requests:', err);
@@ -407,6 +466,21 @@ const ConnectPage = () => {
     setActiveTab('chat');
   };
 
+  // Auto-refresh messages when in active chat
+  useEffect(() => {
+    if (!activeChat) return;
+    
+    // Fetch messages immediately
+    fetchMessages(activeChat.id);
+    
+    // Auto-refresh messages every 1 second for real-time updates
+    const messageRefreshInterval = setInterval(() => {
+      fetchMessages(activeChat.id);
+    }, 1000);
+    
+    return () => clearInterval(messageRefreshInterval);
+  }, [activeChat]);
+
   // WebSocket connection
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -479,10 +553,11 @@ const ConnectPage = () => {
     // Auto-refresh connections every 1 second for real-time updates
     const refreshInterval = setInterval(() => {
       fetchConnections();
+      fetchPendingRequests(); // Also check for new connection requests
     }, 1000);
     
     return () => clearInterval(refreshInterval);
-  }, []);
+  }, [notificationsEnabled]);
 
   const fetchMatrixMembers = async () => {
     try {
@@ -571,12 +646,31 @@ const ConnectPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="font-heading text-4xl md:text-5xl font-bold text-gradient mb-4">
-            Mathmate
-          </h1>
-          <p className="text-slate-400 text-lg">
-            Find and connect with fellow mathematics enthusiasts
-          </p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="font-heading text-4xl md:text-5xl font-bold text-gradient mb-4">
+                Mathmate
+              </h1>
+              <p className="text-slate-400 text-lg">
+                Find and connect with fellow mathematics enthusiasts
+              </p>
+            </div>
+            
+            {/* Notification Toggle */}
+            <Button
+              variant={notificationsEnabled ? "default" : "outline"}
+              size="sm"
+              onClick={requestNotificationPermission}
+              className={notificationsEnabled 
+                ? "bg-green-600 hover:bg-green-700 text-white" 
+                : "border-slate-600 text-slate-300 hover:bg-slate-700"
+              }
+              data-testid="notification-toggle-btn"
+            >
+              <BellRing className={`w-4 h-4 mr-2 ${notificationsEnabled ? 'animate-pulse' : ''}`} />
+              {notificationsEnabled ? 'Notifications On' : 'Enable Notifications'}
+            </Button>
+          </div>
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-6">

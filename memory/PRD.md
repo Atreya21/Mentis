@@ -274,6 +274,31 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Web app built and synced with Capacitor
    - Package: `com.mentismathematicsfoundation.app`
 
+3. ✅ **PWA Support for PWABuilder**
+   - Added `manifest.json` with app icons, shortcuts, and metadata
+   - Implemented service worker for caching and offline support
+   - Generated app icons in all required sizes (72x72 to 512x512)
+   - Added meta tags for iOS and Android PWA support
+   - Ready for PWABuilder packaging
+
+4. ✅ **Renamed "Reels" to "VEX"**
+   - Updated navigation menu, page titles, buttons
+   - Updated all toast messages and share text
+   - Updated admin dashboard tabs
+   - Updated user dashboard references
+
+5. ✅ **Push Notifications System**
+   - Created NotificationService (`/app/frontend/src/services/NotificationService.js`)
+   - Notifications for new messages when tab is in background
+   - Notifications for new connection requests
+   - "Enable Notifications" button in Mathmate header
+   - Notifications auto-trigger when browser tab is hidden
+
+6. ✅ **Real-time Chat Auto-refresh**
+   - Chat messages auto-refresh every 1 second when a chat is open
+   - Connection list auto-refreshes every 1 second
+   - Pending requests also auto-refresh for real-time updates
+
 ### Pending/Future Tasks
 1. **P1**: Implement "Reply to Message" in Mathmate chat
 2. **P1**: Refactor AdminDashboard.jsx into smaller components

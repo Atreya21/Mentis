@@ -265,6 +265,15 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Fix location: `/app/frontend/src/pages/ConnectPage.jsx` lines 144-149
    - Connections now correctly display with most recent chats at top
 
+2. ✅ **Android Mobile App Setup**
+   - Configured Capacitor for Android build
+   - Updated `capacitor.config.json` with proper splash screen and status bar settings
+   - Enhanced `AndroidManifest.xml` with required permissions and deep linking
+   - Configured `build.gradle` for both debug and release builds with signing support
+   - Created comprehensive build guide: `README-ANDROID.md`
+   - Web app built and synced with Capacitor
+   - Package: `com.mentismathematicsfoundation.app`
+
 ### Pending/Future Tasks
 1. **P1**: Implement "Reply to Message" in Mathmate chat
 2. **P1**: Refactor AdminDashboard.jsx into smaller components

@@ -105,6 +105,8 @@ const ConnectPage = () => {
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const prevMessageCountRef = useRef(0);
+  const shouldScrollRef = useRef(true);
 
   // Initialize notifications
   useEffect(() => {
@@ -461,6 +463,9 @@ const ConnectPage = () => {
 
   // Open chat
   const openChat = (connection) => {
+    // Reset scroll tracking when opening a new chat
+    prevMessageCountRef.current = 0;
+    shouldScrollRef.current = true;
     setActiveChat(connection);
     fetchMessages(connection.id);
     setActiveTab('chat');
@@ -469,6 +474,10 @@ const ConnectPage = () => {
   // Auto-refresh messages when in active chat
   useEffect(() => {
     if (!activeChat) return;
+    
+    // Reset message count for new chat to allow initial scroll
+    prevMessageCountRef.current = 0;
+    shouldScrollRef.current = true;
     
     // Fetch messages immediately
     fetchMessages(activeChat.id);
@@ -623,9 +632,17 @@ const ConnectPage = () => {
     return () => clearTimeout(debounce);
   }, [searchQuery, collegeFilter, searchUsers]);
 
-  // Scroll to bottom of messages
+  // Scroll to bottom of messages - only when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const currentCount = messages.length;
+    const prevCount = prevMessageCountRef.current;
+    
+    // Only scroll if there are new messages (not just a refresh)
+    if (currentCount > prevCount && shouldScrollRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    prevMessageCountRef.current = currentCount;
   }, [messages]);
 
   // Send typing indicator

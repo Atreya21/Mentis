@@ -108,7 +108,7 @@ Follow these exact steps to integrate SendGrid email for password reset function
    ```
    SENDGRID_API_KEY="SG.paste-your-actual-api-key-here"
    FROM_EMAIL="mentis.mathematics@gmail.com"
-   FRONTEND_URL="https://math-collab-space.preview.emergentagent.com"
+   FRONTEND_URL="https://mentis-chat-fix.preview.emergentagent.com"
    ```
 
 4. **Save and exit:**
@@ -186,7 +186,7 @@ EOF
 ### Test 2: Password Reset Test
 
 1. **Go to your website:**
-   - Open: https://math-collab-space.preview.emergentagent.com/forgot-password
+   - Open: https://mentis-chat-fix.preview.emergentagent.com/forgot-password
 
 2. **Request password reset:**
    - Enter: mentis.mathematics@gmail.com

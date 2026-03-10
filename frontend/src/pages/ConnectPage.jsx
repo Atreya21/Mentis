@@ -141,10 +141,10 @@ const ConnectPage = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Sort connections by last_message timestamp (most recent first)
+      // Sort connections by last_message created_at (most recent first)
       const sortedConnections = res.data.sort((a, b) => {
-        const timeA = a.last_message?.timestamp ? new Date(a.last_message.timestamp).getTime() : 0;
-        const timeB = b.last_message?.timestamp ? new Date(b.last_message.timestamp).getTime() : 0;
+        const timeA = a.last_message?.created_at ? new Date(a.last_message.created_at).getTime() : 0;
+        const timeB = b.last_message?.created_at ? new Date(b.last_message.created_at).getTime() : 0;
         return timeB - timeA; // Descending order (recent first)
       });
       

@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'build',
   server: {
     // For development, you can use the live server
-    // url: 'https://math-collab-space.preview.emergentagent.com',
+    // url: 'https://mentis-chat-fix.preview.emergentagent.com',
     // cleartext: true,
     androidScheme: 'https'
   },

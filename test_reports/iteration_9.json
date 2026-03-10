@@ -50,7 +50,7 @@
     "deep_linking": {
       "status": "PASS",
       "resources": {
-        "test_url": "/resources?view=361231f6-4f23-4117-8ba7-9555161c9575",
+        "test_url": "/resources?view=mentis-chat-fix",
         "result": "Modal opens with 'Khan Academy Calculus' content",
         "implementation": "ResourceHub.jsx uses useSearchParams to detect ?view= param and opens modal"
       },

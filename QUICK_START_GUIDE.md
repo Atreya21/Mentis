@@ -70,7 +70,7 @@ cd /app/backend && python3 add_resource_template.py
 
 ## 🎯 Admin Dashboard Access
 
-**URL:** https://math-collab-space.preview.emergentagent.com/admin
+**URL:** https://mentis-chat-fix.preview.emergentagent.com/admin
 
 **Credentials:**
 - Email: `admin@mentis.com`
@@ -106,8 +106,8 @@ Then download `/app/users_export.csv` and `/app/matrix_members_export.csv`
 
 ## 🔗 Important Links
 
-- **Platform:** https://math-collab-space.preview.emergentagent.com
-- **Admin Dashboard:** https://math-collab-space.preview.emergentagent.com/admin
+- **Platform:** https://mentis-chat-fix.preview.emergentagent.com
+- **Admin Dashboard:** https://mentis-chat-fix.preview.emergentagent.com/admin
 - **WhatsApp Community Form:** https://docs.google.com/forms/d/e/1FAIpQLSfR6H5KD8WIhl3OfMhuDMib7Z-VzjqYb6AWZkz9Q33cfSFu7g/viewform
 
 ---

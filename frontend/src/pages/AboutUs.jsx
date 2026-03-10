@@ -361,7 +361,7 @@ Join us to connect with like-minded individuals, share resources, and grow toget
                 ) : (
                   <div className="space-y-6">
                     {[
-                      { step: 1, title: 'Create Your Account', desc: 'Sign up to access all features including Resource Hub, Funamatics, Reels, and Mathmate.', color: 'orange' },
+                      { step: 1, title: 'Create Your Account', desc: 'Sign up to access all features including Resource Hub, Funamatics, VEX, and Mathmate.', color: 'orange' },
                       { step: 2, title: 'Explore Resources', desc: 'Browse through curated notes, playlists, and educational content in the Resource Hub.', color: 'pink' },
                       { step: 3, title: 'Connect with Others', desc: 'Use Mathmate to find and connect with fellow mathematics enthusiasts.', color: 'purple' },
                       { step: 4, title: 'Contribute', desc: 'Share your own resources, reels, and curiofacts to help the community grow.', color: 'blue' },

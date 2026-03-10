@@ -287,17 +287,17 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* Pending Reels */}
+              {/* Pending VEX */}
               <Card className="bg-slate-800/50 border-slate-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white text-lg">
                     <Video className="w-5 h-5 text-pink-400" />
-                    Reels ({pendingReels.length})
+                    VEX ({pendingReels.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {pendingReels.length === 0 ? (
-                    <p className="text-slate-400 text-sm">No pending reels</p>
+                    <p className="text-slate-400 text-sm">No pending VEX</p>
                   ) : (
                     <div className="space-y-3">
                       {pendingReels.map(function(item) {

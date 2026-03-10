@@ -63,7 +63,7 @@ const LandingPage = () => {
     },
     {
       icon: Video,
-      title: 'Reels',
+      title: 'VEX',
       description: 'Watch and share short educational videos on mathematical concepts.',
       link: '/reels',
       color: 'from-red-500 to-orange-500'
@@ -124,7 +124,7 @@ const LandingPage = () => {
                 transition={{ duration: 0.8, delay: 0.55 }}
               >
                 <p className="text-orange-400 text-xs sm:text-sm font-medium">
-                  Sign up to unlock all features including Resource Hub, Funamatics, Reels, and Mathmate!
+                  Sign up to unlock all features including Resource Hub, Funamatics, VEX, and Mathmate!
                 </p>
               </motion.div>
             )}

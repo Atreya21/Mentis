@@ -68,7 +68,7 @@ const ReelsPage = () => {
       setViewReelModalOpen(true);
       setSearchParams({});
     } catch (err) {
-      toast.error('Reel not found or not available');
+      toast.error('VEX not found or not available');
       setSearchParams({});
     }
   };
@@ -81,7 +81,7 @@ const ReelsPage = () => {
       });
       setReels(res.data);
     } catch (err) {
-      toast.error('Failed to fetch reels');
+      toast.error('Failed to fetch VEX');
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ const ReelsPage = () => {
       });
       setSavedReels(res.data.map(s => s.reel_id));
     } catch (err) {
-      console.error('Failed to fetch saved reels');
+      console.error('Failed to fetch saved VEX');
     }
   };
 
@@ -107,13 +107,13 @@ const ReelsPage = () => {
       });
       if (res.data.saved) {
         setSavedReels([...savedReels, reelId]);
-        toast.success('Reel saved!');
+        toast.success('VEX saved!');
       } else {
         setSavedReels(savedReels.filter(id => id !== reelId));
-        toast.success('Reel unsaved');
+        toast.success('VEX unsaved');
       }
     } catch (err) {
-      toast.error('Failed to save reel');
+      toast.error('Failed to save VEX');
     }
   };
 
@@ -128,12 +128,12 @@ const ReelsPage = () => {
       await axios.post(`${API}/reels`, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Reel submitted for approval!');
+      toast.success('VEX submitted for approval!');
       setDialogOpen(false);
       setFormData({ video_url: '', caption: '' });
       fetchReels();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to submit reel');
+      toast.error(err.response?.data?.detail || 'Failed to submit VEX');
     }
   };
 
@@ -155,17 +155,17 @@ const ReelsPage = () => {
         return r;
       }));
     } catch (err) {
-      toast.error('Failed to like reel');
+      toast.error('Failed to like VEX');
     }
   };
 
   const handleShareReel = (reel) => {
     const shareUrl = `${window.location.origin}/reels?view=${reel.id}`;
-    const shareText = `🎬 Check out this educational reel on Mentis!\n\n"${reel.caption.substring(0, 100)}..."\n\n🔗 ${shareUrl}\n\n━━━━━━━━━━━━━━━━━\n✨ MENTIS - Where Minds Meet Mathematics ✨\n🎯 Join the premier platform for mathematics enthusiasts!\n📖 Resources • 🎮 Games • 🎬 Reels • 💬 Connect\n🌐 ${window.location.origin}\n━━━━━━━━━━━━━━━━━`;
+    const shareText = `🎬 Check out this educational VEX on Mentis!\n\n"${reel.caption.substring(0, 100)}..."\n\n🔗 ${shareUrl}\n\n━━━━━━━━━━━━━━━━━\n✨ MENTIS - Where Minds Meet Mathematics ✨\n🎯 Join the premier platform for mathematics enthusiasts!\n📖 Resources • 🎮 Games • 🎬 VEX • 💬 Connect\n🌐 ${window.location.origin}\n━━━━━━━━━━━━━━━━━`;
     
     if (navigator.share) {
       navigator.share({
-        title: 'Mentis Reel',
+        title: 'Mentis VEX',
         text: shareText,
         url: shareUrl
       }).catch(() => {
@@ -208,7 +208,7 @@ const ReelsPage = () => {
                 <Video className="w-8 h-8 text-white" />
               </div>
               <h1 className="font-heading text-5xl md:text-6xl font-bold text-white">
-                Reels
+                VEX
               </h1>
             </div>
             <p className="text-lg text-slate-400">
@@ -223,7 +223,7 @@ const ReelsPage = () => {
                 data-testid="upload-reel-btn"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Upload Reel
+                Upload VEX
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl bg-slate-800 border-slate-700">
@@ -441,10 +441,10 @@ const ReelsPage = () => {
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-12 border-2 border-dashed border-slate-700 max-w-lg mx-auto">
               <Video className="w-16 h-16 text-slate-600 mx-auto mb-4" />
               <h3 className="font-heading text-2xl font-semibold text-white mb-2">
-                {showSavedOnly ? 'No Saved Reels' : 'No Reels Yet'}
+                {showSavedOnly ? 'No Saved VEX' : 'No VEX Yet'}
               </h3>
               <p className="text-slate-400 mb-6">
-                {showSavedOnly ? 'Save some reels to see them here!' : 'Be the first to share an educational short video with the community!'}
+                {showSavedOnly ? 'Save some VEX to see them here!' : 'Be the first to share an educational short video with the community!'}
               </p>
               {!showSavedOnly && (
                 <Button 

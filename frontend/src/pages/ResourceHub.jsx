@@ -175,7 +175,7 @@ const ResourceHub = () => {
   // Share resource with promotional message
   const handleShareResource = (resource) => {
     const shareUrl = `${window.location.origin}/resources?view=${resource.id}`;
-    const shareText = `📚 Check out "${resource.title}" on Mentis!\n\n${resource.description?.substring(0, 100)}...\n\n🔗 ${shareUrl}\n\n━━━━━━━━━━━━━━━━━\n✨ MENTIS - Where Minds Meet Mathematics ✨\n🎯 Join the premier platform for mathematics enthusiasts!\n📖 Resources • 🎮 Games • 🎬 Reels • 💬 Connect\n🌐 ${window.location.origin}\n━━━━━━━━━━━━━━━━━`;
+    const shareText = `📚 Check out "${resource.title}" on Mentis!\n\n${resource.description?.substring(0, 100)}...\n\n🔗 ${shareUrl}\n\n━━━━━━━━━━━━━━━━━\n✨ MENTIS - Where Minds Meet Mathematics ✨\n🎯 Join the premier platform for mathematics enthusiasts!\n📖 Resources • 🎮 Games • 🎬 VEX • 💬 Connect\n🌐 ${window.location.origin}\n━━━━━━━━━━━━━━━━━`;
     
     if (navigator.share) {
       navigator.share({

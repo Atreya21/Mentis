@@ -828,7 +828,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="users" data-testid="admin-tab-users">User Management</TabsTrigger>
             <TabsTrigger value="content" data-testid="admin-tab-content">Manage Content</TabsTrigger>
             <TabsTrigger value="upload" data-testid="admin-tab-upload">Upload New</TabsTrigger>
-            <TabsTrigger value="reels" data-testid="admin-tab-reels">Pending Reels</TabsTrigger>
+            <TabsTrigger value="reels" data-testid="admin-tab-reels">Pending VEX</TabsTrigger>
             <TabsTrigger value="curiofacts-pending" data-testid="admin-tab-curiofacts">Pending Curiofacts</TabsTrigger>
             <TabsTrigger value="reports" data-testid="admin-tab-reports">User Reports</TabsTrigger>
             <TabsTrigger value="settings" data-testid="admin-tab-settings">Site Settings</TabsTrigger>
@@ -1980,11 +1980,11 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Pending Reels Tab */}
+          {/* Pending VEX Tab */}
           <TabsContent value="reels">
             <Card className="bg-slate-800/50 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-white">Pending Reels</CardTitle>
+                <CardTitle className="text-white">Pending VEX</CardTitle>
                 <CardDescription className="text-slate-400">Review and approve user-submitted educational videos</CardDescription>
               </CardHeader>
               <CardContent>

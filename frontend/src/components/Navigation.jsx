@@ -74,7 +74,7 @@ const Navigation = () => {
     { name: 'Funamatics', path: '/funamatics', requiresAuth: true },
     { name: 'Curiofacts', path: '/curiofacts', requiresAuth: true },
     { name: 'Matrix', path: '/matrix', requiresAuth: true },
-    { name: 'Reels', path: '/reels', requiresAuth: true },
+    { name: 'VEX', path: '/reels', requiresAuth: true },
     { name: 'Mathmate', path: '/connect', requiresAuth: true, hasNotification: true },
     { name: 'About us', path: '/about' },
   ];

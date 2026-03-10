@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { 
-  Play, Plus, Heart, MessageCircle, Share2, Send,
+  Play, Plus, Heart, MessageCircle, Share2, Send, Bookmark,
   User, Calendar, ExternalLink, Video, AlertTriangle
 } from 'lucide-react';
 import ShareToChat from '@/components/ShareToChat';
@@ -31,6 +31,8 @@ const ReelsPage = () => {
   const [viewReel, setViewReel] = useState(null);
   const [shareToChatOpen, setShareToChatOpen] = useState(false);
   const [shareContent, setShareContent] = useState(null);
+  const [savedReels, setSavedReels] = useState([]);
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [formData, setFormData] = useState({
     video_url: '',
     caption: ''
@@ -38,6 +40,7 @@ const ReelsPage = () => {
 
   useEffect(() => {
     fetchReels();
+    fetchSavedReels();
   }, []);
 
   // Handle deep link
@@ -83,6 +86,40 @@ const ReelsPage = () => {
       setLoading(false);
     }
   };
+
+  const fetchSavedReels = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/saved-reels`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSavedReels(res.data.map(s => s.reel_id));
+    } catch (err) {
+      console.error('Failed to fetch saved reels');
+    }
+  };
+
+  const handleSaveReel = async (reelId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API}/reels/${reelId}/save`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.saved) {
+        setSavedReels([...savedReels, reelId]);
+        toast.success('Reel saved!');
+      } else {
+        setSavedReels(savedReels.filter(id => id !== reelId));
+        toast.success('Reel unsaved');
+      }
+    } catch (err) {
+      toast.error('Failed to save reel');
+    }
+  };
+
+  const filteredReels = showSavedOnly 
+    ? reels.filter(r => savedReels.includes(r.id))
+    : reels;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -250,6 +287,17 @@ const ReelsPage = () => {
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* Saved Filter Toggle */}
+          <Button
+            variant={showSavedOnly ? "default" : "outline"}
+            onClick={() => setShowSavedOnly(!showSavedOnly)}
+            className={`rounded-full ${showSavedOnly ? 'bg-yellow-500 hover:bg-yellow-600 text-black' : 'border-slate-700 hover:bg-slate-800'}`}
+            data-testid="show-saved-reels-btn"
+          >
+            <Bookmark className={`w-4 h-4 mr-2 ${showSavedOnly ? 'fill-current' : ''}`} />
+            {showSavedOnly ? 'Showing Saved' : 'Show Saved'}
+          </Button>
         </div>
 
         {loading ? (
@@ -257,10 +305,10 @@ const ReelsPage = () => {
             <div className="animate-spin w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full mx-auto"></div>
             <p className="text-slate-400 mt-4">Loading reels...</p>
           </div>
-        ) : reels.length > 0 ? (
+        ) : filteredReels.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence>
-              {reels.map((reel, index) => (
+              {filteredReels.map((reel, index) => (
                 <motion.div
                   key={reel.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -348,6 +396,16 @@ const ReelsPage = () => {
                         <Heart className={`w-5 h-5 ${reel.user_liked ? 'fill-current' : ''}`} />
                         <span>{reel.like_count || 0}</span>
                       </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSaveReel(reel.id); }}
+                        className={`flex items-center gap-2 border-slate-600 hover:border-yellow-500 ${savedReels.includes(reel.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-slate-400'} hover:text-yellow-400 hover:bg-yellow-500/10 cursor-pointer`}
+                        data-testid="save-reel-btn"
+                      >
+                        <Bookmark className={`w-4 h-4 ${savedReels.includes(reel.id) ? 'fill-current' : ''}`} />
+                      </Button>
                       
                       <Button
                         variant="outline"
@@ -383,18 +441,20 @@ const ReelsPage = () => {
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-12 border-2 border-dashed border-slate-700 max-w-lg mx-auto">
               <Video className="w-16 h-16 text-slate-600 mx-auto mb-4" />
               <h3 className="font-heading text-2xl font-semibold text-white mb-2">
-                No Reels Yet
+                {showSavedOnly ? 'No Saved Reels' : 'No Reels Yet'}
               </h3>
               <p className="text-slate-400 mb-6">
-                Be the first to share an educational short video with the community!
+                {showSavedOnly ? 'Save some reels to see them here!' : 'Be the first to share an educational short video with the community!'}
               </p>
-              <Button 
-                onClick={() => setDialogOpen(true)}
-                className="rounded-full bg-gradient-to-r from-pink-500 to-purple-600"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Upload First Reel
-              </Button>
+              {!showSavedOnly && (
+                <Button 
+                  onClick={() => setDialogOpen(true)}
+                  className="rounded-full bg-gradient-to-r from-pink-500 to-purple-600"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Upload First Reel
+                </Button>
+              )}
             </div>
           </div>
         )}

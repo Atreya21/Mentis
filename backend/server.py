@@ -1922,6 +1922,36 @@ async def get_saved_resources(current_user: User = Depends(get_current_user)):
     saved = await db.saved_resources.find({"user_id": current_user.id}, {"_id": 0}).to_list(500)
     return saved
 
+# ============== SAVED REELS ==============
+
+@api_router.post("/reels/{reel_id}/save")
+async def save_reel(reel_id: str, current_user: User = Depends(get_current_user)):
+    """Save or unsave a reel"""
+    existing = await db.saved_reels.find_one({
+        "user_id": current_user.id,
+        "reel_id": reel_id
+    })
+    
+    if existing:
+        await db.saved_reels.delete_one({"id": existing['id']})
+        return {"message": "Reel unsaved", "saved": False}
+    
+    saved = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user.id,
+        "reel_id": reel_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.saved_reels.insert_one(saved)
+    
+    return {"message": "Reel saved", "saved": True}
+
+@api_router.get("/saved-reels")
+async def get_saved_reels(current_user: User = Depends(get_current_user)):
+    """Get all saved reels for current user"""
+    saved = await db.saved_reels.find({"user_id": current_user.id}, {"_id": 0}).to_list(500)
+    return saved
+
 # ============== EMAIL REQUESTS ==============
 
 @api_router.post("/users/{user_id}/request-email")

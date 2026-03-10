@@ -133,14 +133,22 @@ const ConnectPage = () => {
     }
   }, [searchQuery, collegeFilter]);
 
-  // Fetch connections
+  // Fetch connections - sorted by last message time (recent first)
   const fetchConnections = async () => {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(`${API}/connections`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setConnections(res.data);
+      
+      // Sort connections by last_message timestamp (most recent first)
+      const sortedConnections = res.data.sort((a, b) => {
+        const timeA = a.last_message?.timestamp ? new Date(a.last_message.timestamp).getTime() : 0;
+        const timeB = b.last_message?.timestamp ? new Date(b.last_message.timestamp).getTime() : 0;
+        return timeB - timeA; // Descending order (recent first)
+      });
+      
+      setConnections(sortedConnections);
     } catch (err) {
       console.error('Failed to fetch connections:', err);
     }
@@ -467,6 +475,13 @@ const ConnectPage = () => {
     fetchMatrixMembers();
     fetchEmailRequests();
     searchUsers();
+    
+    // Auto-refresh connections every 1 second for real-time updates
+    const refreshInterval = setInterval(() => {
+      fetchConnections();
+    }, 1000);
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const fetchMatrixMembers = async () => {

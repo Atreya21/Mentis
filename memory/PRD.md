@@ -258,16 +258,24 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Auto-capitalization of name and organization fields
    - Clear error messages for duplicates
 
+### Completed (December 10, 2026)
+1. ✅ **Mathmate Chat List Sorting Bug Fix**
+   - Fixed bug where chat connections were not sorted by most recent message
+   - Root cause: Frontend was looking for `last_message.timestamp` but backend returns `last_message.created_at`
+   - Fix location: `/app/frontend/src/pages/ConnectPage.jsx` lines 144-149
+   - Connections now correctly display with most recent chats at top
+
 ### Pending/Future Tasks
 1. **P1**: Implement "Reply to Message" in Mathmate chat
 2. **P1**: Refactor AdminDashboard.jsx into smaller components
-3. **P2**: Implement email verification for new signups
-4. **P2**: Add drag-and-drop uploads in admin dashboard
-5. **P2**: Add `data-testid` attributes to new interactive elements
+3. **P1**: Optimize N+1 database queries for better performance
+4. **P2**: Implement email verification for new signups
+5. **P2**: Add drag-and-drop uploads in admin dashboard
+6. **P2**: Add `data-testid` attributes to new interactive elements
 
 ## Master Admin Credentials
 - Email: atreyaghoshal.68@gmail.com
 - Password: 4tr3y4@54N14
 
 ---
-Last Updated: December 3, 2026
+Last Updated: December 10, 2026

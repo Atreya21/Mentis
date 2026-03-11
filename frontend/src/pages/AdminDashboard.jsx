@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -573,12 +574,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteResource = async (resourceId, e) => {
-    if (e) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-    if (!window.confirm('Are you sure you want to delete this resource?')) return;
+  const handleDeleteResource = async (resourceId) => {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API}/admin/delete-resource/${resourceId}`, {
@@ -593,12 +589,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteGame = async (gameId, e) => {
-    if (e) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-    if (!window.confirm('Are you sure you want to delete this game?')) return;
+  const handleDeleteGame = async (gameId) => {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API}/admin/delete-game/${gameId}`, {
@@ -613,12 +604,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteFact = async (factId, e) => {
-    if (e) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-    if (!window.confirm('Are you sure you want to delete this curiofact?')) return;
+  const handleDeleteFact = async (factId) => {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API}/admin/delete-curiofact/${factId}`, {
@@ -803,15 +789,35 @@ const AdminDashboard = () => {
                     <div key={resource.id} className="bg-slate-900/50 border border-slate-700 p-4 rounded-lg" data-testid="resource-manage-card">
                       <div className="flex justify-between items-start mb-2">
                         <Badge className="bg-slate-600">{resource.content_type}</Badge>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={(e) => handleDeleteResource(resource.id, e)}
-                          data-testid="delete-resource-btn"
-                          className="flex-shrink-0"
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              data-testid="delete-resource-btn"
+                              className="flex-shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-slate-900 border-slate-700">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-white">Delete Resource</AlertDialogTitle>
+                              <AlertDialogDescription className="text-slate-400">
+                                Are you sure you want to delete "{resource.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-slate-700 text-white hover:bg-slate-600">Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                className="bg-red-600 hover:bg-red-700"
+                                onClick={() => handleDeleteResource(resource.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                       <h4 className="font-semibold text-white text-sm mb-1">{resource.title}</h4>
                       <p className="text-xs text-slate-400 mb-2 line-clamp-2">{resource.description}</p>
@@ -836,15 +842,35 @@ const AdminDashboard = () => {
                         <Badge className={game.difficulty === 'easy' ? 'bg-green-600' : game.difficulty === 'medium' ? 'bg-orange-600' : 'bg-red-600'}>
                           {game.difficulty}
                         </Badge>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={(e) => handleDeleteGame(game.id, e)}
-                          data-testid="delete-game-btn"
-                          className="flex-shrink-0"
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              data-testid="delete-game-btn"
+                              className="flex-shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-slate-900 border-slate-700">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-white">Delete Game</AlertDialogTitle>
+                              <AlertDialogDescription className="text-slate-400">
+                                Are you sure you want to delete "{game.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-slate-700 text-white hover:bg-slate-600">Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                className="bg-red-600 hover:bg-red-700"
+                                onClick={() => handleDeleteGame(game.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                       <h4 className="font-semibold text-white text-sm mb-1">{game.title}</h4>
                       <p className="text-xs text-slate-400 line-clamp-2">{game.description}</p>
@@ -870,15 +896,35 @@ const AdminDashboard = () => {
                           <p className="text-sm text-slate-400 line-clamp-3">{fact.content}</p>
                           <p className="text-xs text-slate-500 mt-2">{new Date(fact.published_at).toLocaleDateString()}</p>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={(e) => handleDeleteFact(fact.id, e)}
-                          data-testid="delete-fact-btn"
-                          className="ml-2 flex-shrink-0"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              data-testid="delete-fact-btn"
+                              className="ml-2 flex-shrink-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-slate-900 border-slate-700">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-white">Delete Curiofact</AlertDialogTitle>
+                              <AlertDialogDescription className="text-slate-400">
+                                Are you sure you want to delete "{fact.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-slate-700 text-white hover:bg-slate-600">Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                className="bg-red-600 hover:bg-red-700"
+                                onClick={() => handleDeleteFact(fact.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   ))}

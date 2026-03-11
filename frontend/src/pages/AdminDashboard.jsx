@@ -573,7 +573,11 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteResource = async (resourceId) => {
+  const handleDeleteResource = async (resourceId, e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     if (!window.confirm('Are you sure you want to delete this resource?')) return;
     try {
       const token = localStorage.getItem('token');
@@ -584,11 +588,16 @@ const AdminDashboard = () => {
       fetchAllResources();
       fetchStats();
     } catch (err) {
+      console.error('Delete error:', err);
       toast.error('Failed to delete resource');
     }
   };
 
-  const handleDeleteGame = async (gameId) => {
+  const handleDeleteGame = async (gameId, e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     if (!window.confirm('Are you sure you want to delete this game?')) return;
     try {
       const token = localStorage.getItem('token');
@@ -599,11 +608,16 @@ const AdminDashboard = () => {
       fetchAllGames();
       fetchStats();
     } catch (err) {
+      console.error('Delete error:', err);
       toast.error('Failed to delete game');
     }
   };
 
-  const handleDeleteFact = async (factId) => {
+  const handleDeleteFact = async (factId, e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     if (!window.confirm('Are you sure you want to delete this curiofact?')) return;
     try {
       const token = localStorage.getItem('token');
@@ -614,6 +628,7 @@ const AdminDashboard = () => {
       fetchAllFacts();
       fetchStats();
     } catch (err) {
+      console.error('Delete error:', err);
       toast.error('Failed to delete curiofact');
     }
   };
@@ -791,8 +806,9 @@ const AdminDashboard = () => {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleDeleteResource(resource.id)}
+                          onClick={(e) => handleDeleteResource(resource.id, e)}
                           data-testid="delete-resource-btn"
+                          className="flex-shrink-0"
                         >
                           <X className="w-3 h-3" />
                         </Button>
@@ -823,8 +839,9 @@ const AdminDashboard = () => {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleDeleteGame(game.id)}
+                          onClick={(e) => handleDeleteGame(game.id, e)}
                           data-testid="delete-game-btn"
+                          className="flex-shrink-0"
                         >
                           <X className="w-3 h-3" />
                         </Button>
@@ -856,8 +873,9 @@ const AdminDashboard = () => {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleDeleteFact(fact.id)}
+                          onClick={(e) => handleDeleteFact(fact.id, e)}
                           data-testid="delete-fact-btn"
+                          className="ml-2 flex-shrink-0"
                         >
                           <X className="w-4 h-4" />
                         </Button>

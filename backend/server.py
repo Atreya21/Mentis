@@ -16,9 +16,15 @@ from datetime import datetime, timezone, timedelta
 import jwt
 from passlib.context import CryptContext
 import secrets
+from pywebpush import webpush, WebPushException
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# VAPID keys for Web Push Notifications
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_EMAIL = os.environ.get('VAPID_EMAIL', 'mentis.mathematics@gmail.com')
 
 # Helper function to convert Google Drive URLs to direct image URLs
 def convert_google_drive_url(url: str, for_download: bool = False) -> str:
@@ -382,6 +388,14 @@ class MatrixMemberUpdate(BaseModel):
     college: Optional[str] = None
     interests: Optional[str] = None
 
+# Push Subscription Model
+class PushSubscription(BaseModel):
+    endpoint: str
+    keys: Dict[str, str]
+
+class PushSubscriptionRequest(BaseModel):
+    subscription: PushSubscription
+
 # WebSocket Connection Manager for real-time chat
 class ConnectionManager:
     def __init__(self):
@@ -441,6 +455,131 @@ async def get_master_admin_user(user: User = Depends(get_current_user)):
     if user.role != "master_admin":
         raise HTTPException(status_code=403, detail="Master Admin access required")
     return user
+
+# Helper function to send push notification to a user
+async def send_push_notification(user_id: str, title: str, body: str, url: str = "/", tag: str = "mentis"):
+    """Send push notification to all subscriptions for a user"""
+    if not VAPID_PUBLIC_KEY or not VAPID_PRIVATE_KEY:
+        logger.warning("VAPID keys not configured, skipping push notification")
+        return
+    
+    try:
+        # Get all subscriptions for this user
+        subscriptions = await db.push_subscriptions.find({"user_id": user_id}).to_list(100)
+        
+        if not subscriptions:
+            logger.debug(f"No push subscriptions found for user {user_id}")
+            return
+        
+        notification_data = json.dumps({
+            "title": title,
+            "body": body,
+            "icon": "/icons/icon-192x192.png",
+            "badge": "/icons/icon-72x72.png",
+            "tag": tag,
+            "data": {"url": url}
+        })
+        
+        for sub in subscriptions:
+            try:
+                webpush(
+                    subscription_info={
+                        "endpoint": sub["endpoint"],
+                        "keys": sub["keys"]
+                    },
+                    data=notification_data,
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims={
+                        "sub": f"mailto:{VAPID_EMAIL}"
+                    }
+                )
+                logger.info(f"Push notification sent to user {user_id}")
+            except WebPushException as e:
+                logger.error(f"Push notification failed: {e}")
+                # If subscription is invalid, remove it
+                if e.response and e.response.status_code in [404, 410]:
+                    await db.push_subscriptions.delete_one({"_id": sub["_id"]})
+                    logger.info(f"Removed invalid subscription for user {user_id}")
+            except Exception as e:
+                logger.error(f"Push notification error: {e}")
+    except Exception as e:
+        logger.error(f"Error sending push notification: {e}")
+
+# Push notification endpoints
+@api_router.get("/push/vapid-public-key")
+async def get_vapid_public_key():
+    """Get the VAPID public key for push subscriptions"""
+    return {"publicKey": VAPID_PUBLIC_KEY}
+
+@api_router.post("/push/subscribe")
+async def subscribe_to_push(
+    request: PushSubscriptionRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Subscribe user to push notifications"""
+    try:
+        subscription = request.subscription
+        
+        # Check if subscription already exists
+        existing = await db.push_subscriptions.find_one({
+            "user_id": current_user.id,
+            "endpoint": subscription.endpoint
+        })
+        
+        if existing:
+            return {"message": "Already subscribed"}
+        
+        # Store subscription
+        sub_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user.id,
+            "endpoint": subscription.endpoint,
+            "keys": subscription.keys,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.push_subscriptions.insert_one(sub_doc)
+        logger.info(f"Push subscription added for user {current_user.id}")
+        
+        return {"message": "Subscribed successfully"}
+    except Exception as e:
+        logger.error(f"Error subscribing to push: {e}")
+        raise HTTPException(status_code=500, detail="Failed to subscribe")
+
+@api_router.post("/push/unsubscribe")
+async def unsubscribe_from_push(
+    request: PushSubscriptionRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Unsubscribe user from push notifications"""
+    try:
+        subscription = request.subscription
+        
+        result = await db.push_subscriptions.delete_one({
+            "user_id": current_user.id,
+            "endpoint": subscription.endpoint
+        })
+        
+        if result.deleted_count > 0:
+            logger.info(f"Push subscription removed for user {current_user.id}")
+            return {"message": "Unsubscribed successfully"}
+        else:
+            return {"message": "Subscription not found"}
+    except Exception as e:
+        logger.error(f"Error unsubscribing from push: {e}")
+        raise HTTPException(status_code=500, detail="Failed to unsubscribe")
+
+@api_router.post("/push/test")
+async def test_push_notification(current_user: User = Depends(get_current_user)):
+    """Send a test push notification to the current user"""
+    await send_push_notification(
+        user_id=current_user.id,
+        title="Test Notification",
+        body="Push notifications are working! 🎉",
+        url="/dashboard",
+        tag="test"
+    )
+    return {"message": "Test notification sent"}
 
 @api_router.post("/auth/signup", response_model=Token)
 async def signup(user_data: UserCreate):
@@ -1078,6 +1217,15 @@ async def send_connection_request(request: ConnectionRequest, current_user: User
         "connection_id": connection.id
     }, request.receiver_id)
     
+    # Send push notification for connection request
+    asyncio.create_task(send_push_notification(
+        user_id=request.receiver_id,
+        title="New Connection Request",
+        body=f"{current_user.name} wants to connect with you!",
+        url="/connect",
+        tag=f"connection-request-{current_user.id}"
+    ))
+    
     return {"message": "Connection request sent", "connection_id": connection.id}
 
 @api_router.post("/connections/{connection_id}/accept")
@@ -1105,6 +1253,15 @@ async def accept_connection(connection_id: str, current_user: User = Depends(get
         "from_user": {"id": current_user.id, "name": current_user.name},
         "connection_id": connection_id
     }, connection['requester_id'])
+    
+    # Send push notification for connection acceptance
+    asyncio.create_task(send_push_notification(
+        user_id=connection['requester_id'],
+        title="Connection Accepted!",
+        body=f"{current_user.name} accepted your connection request!",
+        url="/connect",
+        tag="connection-accepted"
+    ))
     
     return {"message": "Connection accepted"}
 
@@ -1350,6 +1507,15 @@ async def send_message(connection_id: str, message: MessageCreate, current_user:
             "created_at": doc['created_at']
         }
     }, other_user_id)
+    
+    # Send push notification to the other user
+    asyncio.create_task(send_push_notification(
+        user_id=other_user_id,
+        title=f"New message from {current_user.name}",
+        body=message.content[:100] + "..." if len(message.content) > 100 else message.content,
+        url=f"/connect?chat={connection_id}",
+        tag=f"message-{connection_id}"
+    ))
     
     return {"message": "Message sent", "id": new_message.id}
 

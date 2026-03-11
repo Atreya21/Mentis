@@ -13,12 +13,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import axios from 'axios';
-import notificationService from '@/services/NotificationService';
+import pushService from '@/services/PushNotificationService';
 import { 
   Search, UserPlus, Check, X, MessageCircle, Send, 
   Users, Bell, Clock, UserCheck, Filter, Loader2,
   ArrowLeft, Circle, BookOpen, Calendar, Link2, Eye, Award,
-  Flag, Pin, Trash2, RotateCcw, Reply, MoreVertical, BellRing
+  Flag, Pin, Trash2, RotateCcw, Reply, MoreVertical, BellRing, BellOff
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -94,6 +94,7 @@ const ConnectPage = () => {
   
   // Notification state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const lastMessageCountRef = useRef({});
   const lastPendingCountRef = useRef(0);
   
@@ -108,23 +109,46 @@ const ConnectPage = () => {
   const prevMessageCountRef = useRef(0);
   const shouldScrollRef = useRef(true);
 
-  // Initialize notifications
+  // Initialize push notifications
   useEffect(() => {
-    const initNotifications = async () => {
-      const enabled = await notificationService.init();
-      setNotificationsEnabled(enabled);
+    const initPush = async () => {
+      const isEnabled = await pushService.init();
+      setNotificationsEnabled(isEnabled);
     };
-    initNotifications();
+    initPush();
   }, []);
 
-  // Request notification permission
-  const requestNotificationPermission = async () => {
-    const permission = await notificationService.requestPermission();
-    setNotificationsEnabled(permission === 'granted');
-    if (permission === 'granted') {
-      toast.success('Notifications enabled!');
-    } else if (permission === 'denied') {
-      toast.error('Notifications blocked. Please enable in browser settings.');
+  // Toggle push notifications
+  const togglePushNotifications = async () => {
+    setNotificationsLoading(true);
+    try {
+      if (notificationsEnabled) {
+        await pushService.unsubscribe();
+        setNotificationsEnabled(false);
+        toast.success('Push notifications disabled');
+      } else {
+        await pushService.subscribe();
+        setNotificationsEnabled(true);
+        toast.success('Push notifications enabled! You will receive notifications even when the app is closed.');
+        
+        // Send a test notification
+        setTimeout(async () => {
+          try {
+            await pushService.sendTestNotification();
+          } catch (e) {
+            console.log('Test notification skipped');
+          }
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Push toggle error:', err);
+      if (err.message.includes('denied')) {
+        toast.error('Notifications blocked. Please enable in browser settings.');
+      } else {
+        toast.error('Failed to toggle notifications');
+      }
+    } finally {
+      setNotificationsLoading(false);
     }
   };
 
@@ -176,24 +200,6 @@ const ConnectPage = () => {
         return timeB - timeA; // Descending order (recent first)
       });
       
-      // Check for new messages and send notifications
-      if (notificationsEnabled && document.hidden) {
-        sortedConnections.forEach(conn => {
-          const prevUnread = lastMessageCountRef.current[conn.id] || 0;
-          const currentUnread = conn.unread_count || 0;
-          
-          if (currentUnread > prevUnread && conn.last_message) {
-            // New unread message - show notification
-            notificationService.showNewMessage(
-              conn.other_user?.name || 'Someone',
-              conn.last_message.content || 'New message',
-              conn.id
-            );
-          }
-          lastMessageCountRef.current[conn.id] = currentUnread;
-        });
-      }
-      
       setConnections(sortedConnections);
     } catch (err) {
       console.error('Failed to fetch connections:', err);
@@ -207,20 +213,6 @@ const ConnectPage = () => {
       const res = await axios.get(`${API}/connections/pending`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      // Check for new connection requests and send notifications
-      if (notificationsEnabled && document.hidden) {
-        const currentCount = res.data.length;
-        if (currentCount > lastPendingCountRef.current && res.data.length > 0) {
-          // New connection request - show notification for the most recent one
-          const latestRequest = res.data[0];
-          notificationService.showConnectionRequest(
-            latestRequest.requester?.name || 'Someone',
-            latestRequest.requester?.id
-          );
-        }
-        lastPendingCountRef.current = currentCount;
-      }
       
       setPendingRequests(res.data);
     } catch (err) {
@@ -566,7 +558,7 @@ const ConnectPage = () => {
     }, 1000);
     
     return () => clearInterval(refreshInterval);
-  }, [notificationsEnabled]);
+  }, []);
 
   const fetchMatrixMembers = async () => {
     try {
@@ -673,18 +665,25 @@ const ConnectPage = () => {
               </p>
             </div>
             
-            {/* Notification Toggle */}
+            {/* Push Notification Toggle */}
             <Button
               variant={notificationsEnabled ? "default" : "outline"}
               size="sm"
-              onClick={requestNotificationPermission}
+              onClick={togglePushNotifications}
+              disabled={notificationsLoading}
               className={notificationsEnabled 
                 ? "bg-green-600 hover:bg-green-700 text-white" 
                 : "border-slate-600 text-slate-300 hover:bg-slate-700"
               }
               data-testid="notification-toggle-btn"
             >
-              <BellRing className={`w-4 h-4 mr-2 ${notificationsEnabled ? 'animate-pulse' : ''}`} />
+              {notificationsLoading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : notificationsEnabled ? (
+                <BellRing className="w-4 h-4 mr-2" />
+              ) : (
+                <BellOff className="w-4 h-4 mr-2" />
+              )}
               {notificationsEnabled ? 'Notifications On' : 'Enable Notifications'}
             </Button>
           </div>

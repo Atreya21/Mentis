@@ -60,9 +60,22 @@ def convert_google_drive_url(url: str, for_download: bool = False) -> str:
     
     return url
 
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+mongo_url = os.environ.get('MONGO_URL', '')
+if not mongo_url:
+    raise ValueError("MONGO_URL environment variable is required")
+
+# MongoDB connection with retry and timeout settings for production
+client = AsyncIOMotorClient(
+    mongo_url,
+    serverSelectionTimeoutMS=5000,
+    connectTimeoutMS=10000,
+    socketTimeoutMS=30000,
+    maxPoolSize=50,
+    minPoolSize=10,
+    retryWrites=True,
+    w='majority'
+)
+db = client[os.environ.get('DB_NAME', 'mentis_db')]
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -3179,13 +3192,14 @@ async def setup_master_admin():
     # Check if user exists
     user = await db.users.find_one({"email": master_admin_email})
     if user:
-        # Update role to master_admin if not already
-        if user.get('role') != 'master_admin':
+        # Update role to master_admin and ensure email is verified
+        updates = {"role": "master_admin", "email_verified": True}
+        if user.get('role') != 'master_admin' or not user.get('email_verified'):
             await db.users.update_one(
                 {"email": master_admin_email},
-                {"$set": {"role": "master_admin"}}
+                {"$set": updates}
             )
-            logger.info(f"Updated {master_admin_email} to master_admin role")
+            logger.info(f"Updated {master_admin_email} to master_admin role with verified email")
     else:
         logger.info(f"Master admin user {master_admin_email} not found yet - will be set on first login")
 
@@ -3484,6 +3498,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Health check endpoint for Kubernetes
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for Kubernetes liveness/readiness probes"""
+    try:
+        # Quick database ping to verify connectivity
+        await db.command('ping')
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
+
+@app.get("/health")
+async def health_check_root():
+    """Root health check endpoint"""
+    return {"status": "ok"}
 
 logging.basicConfig(
     level=logging.INFO,

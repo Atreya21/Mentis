@@ -1,84 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from '@/App';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
-import { toast } from 'sonner';
-import axios from 'axios';
-import { Mail, CheckCircle, Loader2 } from 'lucide-react';
-
-const API = process.env.REACT_APP_BACKEND_URL;
 
 const SignupPage = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [signupComplete, setSignupComplete] = useState(false);
+  const { signup } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    try {
-      const response = await axios.post(`${API}/api/auth/signup`, {
-        name,
-        email,
-        password
-      });
-      
-      setSignupComplete(true);
-      toast.success('Account created! Please check your email to verify.');
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to create account');
-    } finally {
-      setLoading(false);
+    const success = await signup(name, email, password);
+    setLoading(false);
+    if (success) {
+      navigate('/dashboard');
     }
   };
-
-  // Show verification message after signup
-  if (signupComplete) {
-    return (
-      <div className="min-h-screen pt-20 flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-        <div className="w-full max-w-md px-6">
-          <motion.div 
-            className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-slate-700 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h1 className="font-heading text-2xl font-bold text-white mb-4">Check Your Email!</h1>
-            <p className="text-slate-400 mb-6">
-              We've sent a verification link to <span className="text-orange-400 font-medium">{email}</span>. 
-              Please click the link to verify your account.
-            </p>
-            <div className="space-y-3">
-              <p className="text-slate-500 text-sm">
-                Didn't receive the email? Check your spam folder or
-              </p>
-              <Button
-                onClick={() => navigate('/resend-verification')}
-                variant="outline"
-                className="border-slate-600 text-slate-300 hover:bg-slate-800"
-              >
-                <Mail className="w-4 h-4 mr-2" />
-                Resend Verification Email
-              </Button>
-            </div>
-            <p className="text-slate-400 mt-6 text-sm">
-              Already verified?{' '}
-              <Link to="/login" className="text-orange-400 hover:text-orange-300 font-medium">
-                Login here
-              </Link>
-            </p>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen pt-20 flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -141,14 +85,7 @@ const SignupPage = () => {
               disabled={loading}
               data-testid="signup-submit-btn"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Sign Up'
-              )}
+              {loading ? 'Creating account...' : 'Sign Up'}
             </Button>
           </form>
 

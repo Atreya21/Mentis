@@ -741,19 +741,19 @@ const AdminDashboard = () => {
           <AdminStatsOverview stats={stats} />
 
         <Tabs defaultValue="pending" className="space-y-8">
-          <TabsList className="bg-slate-800 border border-slate-700 flex-wrap">
-            <TabsTrigger value="pending" data-testid="admin-tab-pending">Pending Approvals</TabsTrigger>
-            <TabsTrigger value="users" data-testid="admin-tab-users">User Management</TabsTrigger>
-            <TabsTrigger value="content" data-testid="admin-tab-content">Manage Content</TabsTrigger>
-            <TabsTrigger value="upload" data-testid="admin-tab-upload">Upload New</TabsTrigger>
-            <TabsTrigger value="reels" data-testid="admin-tab-reels">Pending VEX</TabsTrigger>
-            <TabsTrigger value="curiofacts-pending" data-testid="admin-tab-curiofacts">Pending Curiofacts</TabsTrigger>
-            <TabsTrigger value="reports" data-testid="admin-tab-reports">User Reports</TabsTrigger>
-            <TabsTrigger value="settings" data-testid="admin-tab-settings">Site Settings</TabsTrigger>
+          <TabsList className="bg-slate-800 border border-slate-700 h-auto flex flex-wrap gap-1 p-2 justify-start w-full">
+            <TabsTrigger value="pending" data-testid="admin-tab-pending" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Pending Approvals</TabsTrigger>
+            <TabsTrigger value="users" data-testid="admin-tab-users" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">User Management</TabsTrigger>
+            <TabsTrigger value="content" data-testid="admin-tab-content" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Manage Content</TabsTrigger>
+            <TabsTrigger value="upload" data-testid="admin-tab-upload" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Upload New</TabsTrigger>
+            <TabsTrigger value="reels" data-testid="admin-tab-reels" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Pending VEX</TabsTrigger>
+            <TabsTrigger value="curiofacts-pending" data-testid="admin-tab-curiofacts" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Pending Curiofacts</TabsTrigger>
+            <TabsTrigger value="reports" data-testid="admin-tab-reports" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">User Reports</TabsTrigger>
+            <TabsTrigger value="settings" data-testid="admin-tab-settings" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Site Settings</TabsTrigger>
             {currentUser?.role === 'master_admin' && (
-              <TabsTrigger value="about-us" data-testid="admin-tab-about-us">About Us</TabsTrigger>
+              <TabsTrigger value="about-us" data-testid="admin-tab-about-us" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">About Us</TabsTrigger>
             )}
-            <TabsTrigger value="matrix" data-testid="admin-tab-matrix">Matrix Members</TabsTrigger>
+            <TabsTrigger value="matrix" data-testid="admin-tab-matrix" className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 whitespace-nowrap">Matrix Members</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending">

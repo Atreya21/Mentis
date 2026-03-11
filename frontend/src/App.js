@@ -14,6 +14,8 @@ import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import VerifyEmailPage from '@/pages/VerifyEmailPage';
+import ResendVerificationPage from '@/pages/ResendVerificationPage';
 import ResourceHub from '@/pages/ResourceHub';
 import Funamatics from '@/pages/Funamatics';
 import Curiofacts from '@/pages/Curiofacts';
@@ -101,17 +103,24 @@ function App() {
       toast.success('Welcome back!');
       return true;
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Login failed');
+      const errorMessage = err.response?.data?.detail || 'Login failed';
+      
+      // Check if it's an email verification error (403)
+      if (err.response?.status === 403 && errorMessage.includes('verify')) {
+        toast.error('Please verify your email before logging in');
+        return 'needs_verification';
+      }
+      
+      toast.error(errorMessage);
       return false;
     }
   };
 
+  // Signup function is no longer used directly - SignupPage handles it
   const signup = async (name, email, password) => {
     try {
-      const res = await axios.post(`${API}/auth/signup`, { name, email, password });
-      localStorage.setItem('token', res.data.access_token);
-      setUser(res.data.user);
-      toast.success('Account created successfully!');
+      await axios.post(`${API}/auth/signup`, { name, email, password });
+      // Don't auto-login - user needs to verify email first
       return true;
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Signup failed');
@@ -145,6 +154,8 @@ function App() {
               <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/resend-verification" element={<ResendVerificationPage />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/resources" element={user ? <ResourceHub /> : <Navigate to="/login" />} />
               <Route path="/funamatics" element={user ? <Funamatics /> : <Navigate to="/login" />} />

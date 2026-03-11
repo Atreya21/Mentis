@@ -725,13 +725,18 @@ async def login(login_data: UserLogin):
     
     # Check if email is verified
     # Allow login if:
-    # 1. email_verified is True, OR
-    # 2. email_verified field doesn't exist (legacy users before verification was implemented)
+    # 1. User is the Master Admin (always allowed)
+    # 2. email_verified is True
+    # 3. email_verified field doesn't exist (legacy users before verification was implemented)
+    master_admin_email = "atreyaghoshal.68@gmail.com"
     email_verified = user_doc.get('email_verified')
     has_verification_token = user_doc.get('verification_token') is not None
     
+    # Always allow Master Admin to login
+    if user_doc.get('email') == master_admin_email:
+        pass  # Skip verification check for master admin
     # Block only if explicitly unverified (False) AND has a verification token (new signup)
-    if email_verified is False and has_verification_token:
+    elif email_verified is False and has_verification_token:
         raise HTTPException(
             status_code=403, 
             detail="Please verify your email before logging in. Check your inbox for the verification link."

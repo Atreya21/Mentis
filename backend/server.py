@@ -1,5 +1,6 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, BackgroundTasks
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, BackgroundTasks, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,6 +9,8 @@ import logging
 import re
 import json
 import asyncio
+import shutil
+import mimetypes
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict
@@ -19,6 +22,8 @@ import secrets
 from pywebpush import webpush, WebPushException
 
 ROOT_DIR = Path(__file__).parent
+UPLOADS_DIR = ROOT_DIR / "uploads"
+UPLOADS_DIR.mkdir(exist_ok=True)
 load_dotenv(ROOT_DIR / '.env')
 
 # VAPID keys for Web Push Notifications
@@ -207,12 +212,15 @@ class Message(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     connection_id: str
     sender_id: str
+    sender_name: Optional[str] = None
     content: str
+    attachment: Optional[dict] = None  # File attachment info
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     read: bool = False
 
 class MessageCreate(BaseModel):
     content: str
+    attachment: Optional[dict] = None
 
 class UserPublic(BaseModel):
     id: str
@@ -318,6 +326,50 @@ class CuriofactCreate(BaseModel):
     title: str
     content: str
     image_url: Optional[str] = None
+
+# File Attachment Model for Chat
+class FileAttachment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    filename: str
+    original_filename: str
+    file_type: str  # image, document, video, audio, other
+    mime_type: str
+    size: int  # in bytes
+    url: str
+
+# Group Chat Models
+class GroupChat(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: Optional[str] = None
+    created_by: str
+    members: List[str] = []  # List of user IDs
+    admins: List[str] = []  # List of admin user IDs (creator is always admin)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GroupChatCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    member_ids: List[str]  # Initial members to add
+
+class GroupChatUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+class GroupMessage(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    group_id: str
+    sender_id: str
+    sender_name: str
+    content: str
+    attachment: Optional[FileAttachment] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GroupMessageCreate(BaseModel):
+    content: str
+    attachment: Optional[dict] = None
 
 # About Us Content Model
 class AboutUsContent(BaseModel):
@@ -1538,6 +1590,561 @@ async def mark_messages_as_read(connection_id: str, current_user: User = Depends
     )
     
     return {"message": "Messages marked as read", "marked_count": result.modified_count}
+
+# ============== FILE UPLOAD FOR CHAT ==============
+
+ALLOWED_FILE_TYPES = {
+    'image': ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    'document': ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                 'text/plain', 'text/csv'],
+    'video': ['video/mp4', 'video/webm', 'video/quicktime'],
+    'audio': ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3']
+}
+
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+
+def get_file_type(mime_type: str) -> str:
+    for file_type, mimes in ALLOWED_FILE_TYPES.items():
+        if mime_type in mimes:
+            return file_type
+    return 'other'
+
+@api_router.post("/chat/upload")
+async def upload_chat_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload a file for chat attachment"""
+    try:
+        # Check file size
+        content = await file.read()
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File too large. Max size is 50MB")
+        
+        # Get mime type
+        mime_type = file.content_type or mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
+        file_type = get_file_type(mime_type)
+        
+        # Generate unique filename
+        ext = os.path.splitext(file.filename)[1] if file.filename else ''
+        unique_filename = f"{uuid.uuid4()}{ext}"
+        
+        # Create user upload directory
+        user_dir = UPLOADS_DIR / current_user.id
+        user_dir.mkdir(exist_ok=True)
+        
+        # Save file
+        file_path = user_dir / unique_filename
+        with open(file_path, 'wb') as f:
+            f.write(content)
+        
+        # Generate URL
+        file_url = f"/api/files/{current_user.id}/{unique_filename}"
+        
+        attachment = {
+            "id": str(uuid.uuid4()),
+            "filename": unique_filename,
+            "original_filename": file.filename or unique_filename,
+            "file_type": file_type,
+            "mime_type": mime_type,
+            "size": len(content),
+            "url": file_url
+        }
+        
+        return attachment
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"File upload error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload file")
+
+@api_router.get("/files/{user_id}/{filename}")
+async def get_file(user_id: str, filename: str):
+    """Serve uploaded files"""
+    file_path = UPLOADS_DIR / user_id / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Determine mime type
+    mime_type = mimetypes.guess_type(str(file_path))[0] or 'application/octet-stream'
+    
+    return FileResponse(
+        path=file_path,
+        media_type=mime_type,
+        filename=filename
+    )
+
+@api_router.post("/messages/{connection_id}/with-file")
+async def send_message_with_file(
+    connection_id: str,
+    content: str = Form(""),
+    file: UploadFile = File(None),
+    current_user: User = Depends(get_current_user)
+):
+    """Send a message with optional file attachment"""
+    # Verify connection
+    connection = await db.connections.find_one({"id": connection_id, "status": "accepted"}, {"_id": 0})
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    
+    if connection['requester_id'] != current_user.id and connection['receiver_id'] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    attachment = None
+    if file and file.filename:
+        # Upload the file
+        file_content = await file.read()
+        if len(file_content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File too large. Max size is 50MB")
+        
+        mime_type = file.content_type or mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
+        file_type = get_file_type(mime_type)
+        
+        ext = os.path.splitext(file.filename)[1] if file.filename else ''
+        unique_filename = f"{uuid.uuid4()}{ext}"
+        
+        user_dir = UPLOADS_DIR / current_user.id
+        user_dir.mkdir(exist_ok=True)
+        
+        file_path = user_dir / unique_filename
+        with open(file_path, 'wb') as f:
+            f.write(file_content)
+        
+        file_url = f"/api/files/{current_user.id}/{unique_filename}"
+        
+        attachment = {
+            "id": str(uuid.uuid4()),
+            "filename": unique_filename,
+            "original_filename": file.filename,
+            "file_type": file_type,
+            "mime_type": mime_type,
+            "size": len(file_content),
+            "url": file_url
+        }
+    
+    if not content and not attachment:
+        raise HTTPException(status_code=400, detail="Message must have content or attachment")
+    
+    # Create message
+    new_message = Message(
+        connection_id=connection_id,
+        sender_id=current_user.id,
+        sender_name=current_user.name,
+        content=content or "",
+        attachment=attachment
+    )
+    
+    doc = new_message.model_dump()
+    doc['created_at'] = datetime.now(timezone.utc).isoformat()
+    await db.messages.insert_one(doc)
+    
+    # Notify the other user
+    other_user_id = connection['receiver_id'] if connection['requester_id'] == current_user.id else connection['requester_id']
+    await manager.send_personal_message({
+        "type": "new_message",
+        "message": {
+            "id": new_message.id,
+            "connection_id": connection_id,
+            "sender_id": current_user.id,
+            "sender_name": current_user.name,
+            "content": content,
+            "attachment": attachment,
+            "created_at": doc['created_at']
+        }
+    }, other_user_id)
+    
+    # Send push notification
+    notification_body = content[:100] if content else f"Sent a {attachment['file_type'] if attachment else 'file'}"
+    asyncio.create_task(send_push_notification(
+        user_id=other_user_id,
+        title=f"New message from {current_user.name}",
+        body=notification_body,
+        url=f"/connect?chat={connection_id}",
+        tag=f"message-{connection_id}"
+    ))
+    
+    return {"message": "Message sent", "id": new_message.id, "attachment": attachment}
+
+# ============== GROUP CHAT FEATURE ==============
+
+@api_router.post("/groups")
+async def create_group(group_data: GroupChatCreate, current_user: User = Depends(get_current_user)):
+    """Create a new group chat"""
+    # Validate member IDs - they must be connections of the current user
+    connections = await db.connections.find({
+        "status": "accepted",
+        "$or": [
+            {"requester_id": current_user.id},
+            {"receiver_id": current_user.id}
+        ]
+    }, {"_id": 0}).to_list(1000)
+    
+    connected_user_ids = set()
+    for conn in connections:
+        connected_user_ids.add(conn['requester_id'])
+        connected_user_ids.add(conn['receiver_id'])
+    connected_user_ids.discard(current_user.id)
+    
+    # Verify all members are connections
+    invalid_members = set(group_data.member_ids) - connected_user_ids
+    if invalid_members:
+        raise HTTPException(status_code=400, detail="All members must be your connections")
+    
+    if len(group_data.member_ids) < 1:
+        raise HTTPException(status_code=400, detail="Group must have at least one other member")
+    
+    # Create group
+    group = GroupChat(
+        name=group_data.name,
+        description=group_data.description,
+        created_by=current_user.id,
+        members=[current_user.id] + group_data.member_ids,
+        admins=[current_user.id]
+    )
+    
+    doc = group.model_dump()
+    doc['created_at'] = datetime.now(timezone.utc).isoformat()
+    await db.groups.insert_one(doc)
+    
+    # Notify members
+    for member_id in group_data.member_ids:
+        asyncio.create_task(send_push_notification(
+            user_id=member_id,
+            title="Added to Group",
+            body=f"{current_user.name} added you to '{group.name}'",
+            url="/connect?tab=groups",
+            tag=f"group-{group.id}"
+        ))
+    
+    logger.info(f"Group '{group.name}' created by {current_user.id}")
+    return {"message": "Group created", "group_id": group.id}
+
+@api_router.get("/groups")
+async def get_user_groups(current_user: User = Depends(get_current_user)):
+    """Get all groups the user is a member of"""
+    groups = await db.groups.find(
+        {"members": current_user.id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Enrich with member info and last message
+    enriched_groups = []
+    for group in groups:
+        # Get member info
+        members = await db.users.find(
+            {"id": {"$in": group['members']}},
+            {"_id": 0, "password": 0}
+        ).to_list(100)
+        
+        # Get last message
+        last_message = await db.group_messages.find_one(
+            {"group_id": group['id']},
+            {"_id": 0},
+            sort=[("created_at", -1)]
+        )
+        
+        group['member_info'] = members
+        group['last_message'] = last_message
+        group['member_count'] = len(group['members'])
+        enriched_groups.append(group)
+    
+    # Sort by last message
+    enriched_groups.sort(
+        key=lambda g: g.get('last_message', {}).get('created_at', '') if g.get('last_message') else '',
+        reverse=True
+    )
+    
+    return enriched_groups
+
+@api_router.get("/groups/{group_id}")
+async def get_group(group_id: str, current_user: User = Depends(get_current_user)):
+    """Get group details"""
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    if current_user.id not in group['members']:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+    
+    # Get member info
+    members = await db.users.find(
+        {"id": {"$in": group['members']}},
+        {"_id": 0, "password": 0}
+    ).to_list(100)
+    
+    group['member_info'] = members
+    return group
+
+@api_router.patch("/groups/{group_id}")
+async def update_group(group_id: str, update: GroupChatUpdate, current_user: User = Depends(get_current_user)):
+    """Update group name/description (admins only)"""
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    if current_user.id not in group.get('admins', []):
+        raise HTTPException(status_code=403, detail="Only admins can update group")
+    
+    update_data = {}
+    if update.name:
+        update_data['name'] = update.name
+    if update.description is not None:
+        update_data['description'] = update.description
+    
+    if update_data:
+        await db.groups.update_one({"id": group_id}, {"$set": update_data})
+    
+    return {"message": "Group updated"}
+
+@api_router.post("/groups/{group_id}/members")
+async def add_group_members(group_id: str, member_ids: List[str], current_user: User = Depends(get_current_user)):
+    """Add members to group (admins only)"""
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    if current_user.id not in group.get('admins', []):
+        raise HTTPException(status_code=403, detail="Only admins can add members")
+    
+    # Validate new members are connections
+    connections = await db.connections.find({
+        "status": "accepted",
+        "$or": [
+            {"requester_id": current_user.id},
+            {"receiver_id": current_user.id}
+        ]
+    }, {"_id": 0}).to_list(1000)
+    
+    connected_user_ids = set()
+    for conn in connections:
+        connected_user_ids.add(conn['requester_id'])
+        connected_user_ids.add(conn['receiver_id'])
+    
+    valid_new_members = [m for m in member_ids if m in connected_user_ids and m not in group['members']]
+    
+    if valid_new_members:
+        await db.groups.update_one(
+            {"id": group_id},
+            {"$addToSet": {"members": {"$each": valid_new_members}}}
+        )
+        
+        # Notify new members
+        for member_id in valid_new_members:
+            asyncio.create_task(send_push_notification(
+                user_id=member_id,
+                title="Added to Group",
+                body=f"You were added to '{group['name']}'",
+                url="/connect?tab=groups",
+                tag=f"group-{group_id}"
+            ))
+    
+    return {"message": f"Added {len(valid_new_members)} members"}
+
+@api_router.delete("/groups/{group_id}/leave")
+async def leave_group(group_id: str, current_user: User = Depends(get_current_user)):
+    """Leave a group chat"""
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    if current_user.id not in group['members']:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+    
+    # Remove from members and admins
+    await db.groups.update_one(
+        {"id": group_id},
+        {
+            "$pull": {
+                "members": current_user.id,
+                "admins": current_user.id
+            }
+        }
+    )
+    
+    # If no members left, delete the group
+    updated_group = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    if not updated_group or len(updated_group.get('members', [])) == 0:
+        await db.groups.delete_one({"id": group_id})
+        await db.group_messages.delete_many({"group_id": group_id})
+        logger.info(f"Group {group_id} deleted - no members left")
+    elif len(updated_group.get('admins', [])) == 0 and len(updated_group.get('members', [])) > 0:
+        # Promote first member to admin
+        new_admin = updated_group['members'][0]
+        await db.groups.update_one({"id": group_id}, {"$addToSet": {"admins": new_admin}})
+    
+    return {"message": "Left the group"}
+
+@api_router.get("/groups/{group_id}/messages")
+async def get_group_messages(group_id: str, current_user: User = Depends(get_current_user)):
+    """Get messages from a group chat"""
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    if current_user.id not in group['members']:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+    
+    messages = await db.group_messages.find(
+        {"group_id": group_id},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(500)
+    
+    return messages
+
+@api_router.post("/groups/{group_id}/messages")
+async def send_group_message(
+    group_id: str,
+    message: GroupMessageCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Send a message to a group chat"""
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    if current_user.id not in group['members']:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+    
+    # Create message
+    new_message = GroupMessage(
+        group_id=group_id,
+        sender_id=current_user.id,
+        sender_name=current_user.name,
+        content=message.content,
+        attachment=message.attachment
+    )
+    
+    doc = new_message.model_dump()
+    doc['created_at'] = datetime.now(timezone.utc).isoformat()
+    await db.group_messages.insert_one(doc)
+    
+    # Notify all other members
+    for member_id in group['members']:
+        if member_id != current_user.id:
+            await manager.send_personal_message({
+                "type": "group_message",
+                "group_id": group_id,
+                "group_name": group['name'],
+                "message": {
+                    "id": new_message.id,
+                    "sender_id": current_user.id,
+                    "sender_name": current_user.name,
+                    "content": message.content,
+                    "attachment": message.attachment,
+                    "created_at": doc['created_at']
+                }
+            }, member_id)
+            
+            # Send push notification
+            asyncio.create_task(send_push_notification(
+                user_id=member_id,
+                title=f"{group['name']}",
+                body=f"{current_user.name}: {message.content[:50]}..." if len(message.content) > 50 else f"{current_user.name}: {message.content}",
+                url=f"/connect?group={group_id}",
+                tag=f"group-message-{group_id}"
+            ))
+    
+    return {"message": "Message sent", "id": new_message.id}
+
+@api_router.post("/groups/{group_id}/messages/with-file")
+async def send_group_message_with_file(
+    group_id: str,
+    content: str = Form(""),
+    file: UploadFile = File(None),
+    current_user: User = Depends(get_current_user)
+):
+    """Send a message with file to a group chat"""
+    group = await db.groups.find_one({"id": group_id}, {"_id": 0})
+    
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    
+    if current_user.id not in group['members']:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+    
+    attachment = None
+    if file and file.filename:
+        file_content = await file.read()
+        if len(file_content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File too large. Max size is 50MB")
+        
+        mime_type = file.content_type or mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
+        file_type = get_file_type(mime_type)
+        
+        ext = os.path.splitext(file.filename)[1] if file.filename else ''
+        unique_filename = f"{uuid.uuid4()}{ext}"
+        
+        user_dir = UPLOADS_DIR / current_user.id
+        user_dir.mkdir(exist_ok=True)
+        
+        file_path = user_dir / unique_filename
+        with open(file_path, 'wb') as f:
+            f.write(file_content)
+        
+        file_url = f"/api/files/{current_user.id}/{unique_filename}"
+        
+        attachment = {
+            "id": str(uuid.uuid4()),
+            "filename": unique_filename,
+            "original_filename": file.filename,
+            "file_type": file_type,
+            "mime_type": mime_type,
+            "size": len(file_content),
+            "url": file_url
+        }
+    
+    if not content and not attachment:
+        raise HTTPException(status_code=400, detail="Message must have content or attachment")
+    
+    # Create message
+    new_message = GroupMessage(
+        group_id=group_id,
+        sender_id=current_user.id,
+        sender_name=current_user.name,
+        content=content or "",
+        attachment=attachment
+    )
+    
+    doc = new_message.model_dump()
+    doc['created_at'] = datetime.now(timezone.utc).isoformat()
+    await db.group_messages.insert_one(doc)
+    
+    # Notify all other members
+    for member_id in group['members']:
+        if member_id != current_user.id:
+            await manager.send_personal_message({
+                "type": "group_message",
+                "group_id": group_id,
+                "group_name": group['name'],
+                "message": {
+                    "id": new_message.id,
+                    "sender_id": current_user.id,
+                    "sender_name": current_user.name,
+                    "content": content,
+                    "attachment": attachment,
+                    "created_at": doc['created_at']
+                }
+            }, member_id)
+            
+            notification_body = content[:50] if content else f"Sent a {attachment['file_type']}"
+            asyncio.create_task(send_push_notification(
+                user_id=member_id,
+                title=f"{group['name']}",
+                body=f"{current_user.name}: {notification_body}",
+                url=f"/connect?group={group_id}",
+                tag=f"group-message-{group_id}"
+            ))
+    
+    return {"message": "Message sent", "id": new_message.id, "attachment": attachment}
 
 # ============== LIKE & COMMENT FEATURE ==============
 

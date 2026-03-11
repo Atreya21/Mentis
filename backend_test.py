@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 class MentisAPITester:
-    def __init__(self, base_url="https://mentis-chat-fix.preview.emergentagent.com"):
+    def __init__(self, base_url="https://mathmate-preview.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.token = None

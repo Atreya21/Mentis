@@ -14,16 +14,62 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import axios from 'axios';
 import pushService from '@/services/PushNotificationService';
+import GroupChat from '@/components/GroupChat';
 import { 
   Search, UserPlus, Check, X, MessageCircle, Send, 
   Users, Bell, Clock, UserCheck, Filter, Loader2,
   ArrowLeft, Circle, BookOpen, Calendar, Link2, Eye, Award,
-  Flag, Pin, Trash2, RotateCcw, Reply, MoreVertical, BellRing, BellOff
+  Flag, Pin, Trash2, RotateCcw, Reply, MoreVertical, BellRing, BellOff,
+  Paperclip, Image, FileText, Video, Music, File, Download, UsersRound
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+
+// Get file icon based on type
+const getFileIcon = (fileType) => {
+  switch (fileType) {
+    case 'image': return <Image className="w-4 h-4" />;
+    case 'video': return <Video className="w-4 h-4" />;
+    case 'audio': return <Music className="w-4 h-4" />;
+    case 'document': return <FileText className="w-4 h-4" />;
+    default: return <File className="w-4 h-4" />;
+  }
+};
+
+// Render attachment in message
+const renderAttachment = (attachment) => {
+  if (!attachment) return null;
+  
+  const fullUrl = `${BACKEND_URL}${attachment.url}`;
+  
+  if (attachment.file_type === 'image') {
+    return (
+      <div className="mt-2">
+        <img 
+          src={fullUrl} 
+          alt={attachment.original_filename}
+          className="max-w-xs rounded-lg cursor-pointer hover:opacity-90"
+          onClick={() => window.open(fullUrl, '_blank')}
+        />
+      </div>
+    );
+  }
+  
+  return (
+    <a
+      href={fullUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-2 flex items-center gap-2 bg-slate-700/50 rounded-lg p-2 hover:bg-slate-700 transition-colors max-w-xs"
+    >
+      {getFileIcon(attachment.file_type)}
+      <span className="text-sm text-white truncate flex-1">{attachment.original_filename}</span>
+      <Download className="w-4 h-4 text-slate-400 flex-shrink-0" />
+    </a>
+  );
+};
 
 // Helper function to render message content with clickable links
 const renderMessageContent = (content) => {
@@ -91,6 +137,14 @@ const ConnectPage = () => {
   const [matrixSearch, setMatrixSearch] = useState('');
   const [emailRequestDialogOpen, setEmailRequestDialogOpen] = useState(false);
   const [emailRequests, setEmailRequests] = useState([]);
+  
+  // File attachment state
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  
+  // Group chat state
+  const [showGroupChat, setShowGroupChat] = useState(false);
   
   // Notification state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -313,12 +367,26 @@ const ConnectPage = () => {
 
   // Send message
   const sendMessage = async () => {
-    if (!newMessage.trim() || !activeChat) return;
+    if ((!newMessage.trim() && !selectedFile) || !activeChat) return;
     
     try {
+      setUploading(true);
       const token = localStorage.getItem('token');
       
-      if (replyingTo) {
+      if (selectedFile) {
+        // Send with file attachment
+        const formData = new FormData();
+        formData.append('content', newMessage);
+        formData.append('file', selectedFile);
+        
+        await axios.post(`${API}/messages/${activeChat.id}/with-file`, formData, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        setSelectedFile(null);
+      } else if (replyingTo) {
         // Send as reply
         await axios.post(`${API}/messages/${replyingTo.id}/reply`, 
           { content: newMessage },
@@ -336,6 +404,20 @@ const ConnectPage = () => {
       fetchMessages(activeChat.id);
     } catch (err) {
       toast.error('Failed to send message');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error('File too large. Max size is 50MB');
+        return;
+      }
+      setSelectedFile(file);
     }
   };
 
@@ -666,29 +748,48 @@ const ConnectPage = () => {
             </div>
             
             {/* Push Notification Toggle */}
-            <Button
-              variant={notificationsEnabled ? "default" : "outline"}
-              size="sm"
-              onClick={togglePushNotifications}
-              disabled={notificationsLoading}
-              className={notificationsEnabled 
-                ? "bg-green-600 hover:bg-green-700 text-white" 
-                : "border-slate-600 text-slate-300 hover:bg-slate-700"
-              }
-              data-testid="notification-toggle-btn"
-            >
-              {notificationsLoading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : notificationsEnabled ? (
-                <BellRing className="w-4 h-4 mr-2" />
-              ) : (
-                <BellOff className="w-4 h-4 mr-2" />
-              )}
-              {notificationsEnabled ? 'Notifications On' : 'Enable Notifications'}
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowGroupChat(true)}
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                data-testid="group-chat-btn"
+              >
+                <UsersRound className="w-4 h-4 mr-2" />
+                Group Chats
+              </Button>
+              <Button
+                variant={notificationsEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={togglePushNotifications}
+                disabled={notificationsLoading}
+                className={notificationsEnabled 
+                  ? "bg-green-600 hover:bg-green-700 text-white" 
+                  : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                }
+                data-testid="notification-toggle-btn"
+              >
+                {notificationsLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : notificationsEnabled ? (
+                  <BellRing className="w-4 h-4 mr-2" />
+                ) : (
+                  <BellOff className="w-4 h-4 mr-2" />
+                )}
+                {notificationsEnabled ? 'Notifications On' : 'Enable Notifications'}
+              </Button>
+            </div>
           </div>
         </motion.div>
 
+        {/* Show Group Chat or Main Content */}
+        {showGroupChat ? (
+          <GroupChat 
+            onBack={() => setShowGroupChat(false)} 
+            connections={connections}
+          />
+        ) : (
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Sidebar - Connections & Requests */}
           <div className="lg:col-span-1 space-y-4">
@@ -1174,7 +1275,8 @@ const ConnectPage = () => {
                                         : 'bg-slate-700 text-white'
                                     }`}
                                   >
-                                    <p className="whitespace-pre-wrap">{renderMessageContent(msg.content)}</p>
+                                    {msg.content && <p className="whitespace-pre-wrap">{renderMessageContent(msg.content)}</p>}
+                                    {msg.attachment && renderAttachment(msg.attachment)}
                                     <p className={`text-xs mt-1 ${msg.sender_id === user?.id ? 'text-white/70' : 'text-slate-400'}`}>
                                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>
@@ -1239,8 +1341,44 @@ const ConnectPage = () => {
                           </div>
                         )}
 
+                        {/* Selected file preview */}
+                        {selectedFile && (
+                          <div className="flex items-center justify-between px-3 py-2 bg-slate-800 border-t border-slate-700">
+                            <div className="flex items-center gap-2 text-sm text-slate-400">
+                              <Paperclip className="w-4 h-4 text-orange-400" />
+                              <span className="truncate max-w-[200px]">{selectedFile.name}</span>
+                              <span className="text-xs">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedFile(null)}
+                              className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+
                         {/* Message Input */}
                         <div className="flex gap-2 pt-4 border-t border-slate-700">
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            className="hidden"
+                            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-slate-400 hover:text-white hover:bg-slate-700"
+                            disabled={uploading}
+                            data-testid="attach-file-btn"
+                          >
+                            <Paperclip className="w-5 h-5" />
+                          </Button>
                           <Input
                             placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
                             value={newMessage}
@@ -1249,15 +1387,17 @@ const ConnectPage = () => {
                               handleTyping();
                             }}
                             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                            className="bg-slate-900 border-slate-700 text-white"
+                            className="bg-slate-900 border-slate-700 text-white flex-1"
                             data-testid="message-input"
+                            disabled={uploading}
                           />
                           <Button 
                             onClick={sendMessage}
                             className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
                             data-testid="send-message-btn"
+                            disabled={uploading || (!newMessage.trim() && !selectedFile)}
                           >
-                            <Send className="w-4 h-4" />
+                            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                           </Button>
                         </div>
                       </div>
@@ -1268,6 +1408,7 @@ const ConnectPage = () => {
             </Card>
           </div>
         </div>
+        )}
 
         {/* User Profile Dialog */}
         <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>

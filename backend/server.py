@@ -724,7 +724,14 @@ async def login(login_data: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Check if email is verified
-    if not user_doc.get('email_verified', False):
+    # Allow login if:
+    # 1. email_verified is True, OR
+    # 2. email_verified field doesn't exist (legacy users before verification was implemented)
+    email_verified = user_doc.get('email_verified')
+    has_verification_token = user_doc.get('verification_token') is not None
+    
+    # Block only if explicitly unverified (False) AND has a verification token (new signup)
+    if email_verified is False and has_verification_token:
         raise HTTPException(
             status_code=403, 
             detail="Please verify your email before logging in. Check your inbox for the verification link."
@@ -855,6 +862,37 @@ async def resend_verification(email: EmailStr):
         logger.error(f"Failed to resend verification email: {e}")
     
     return {"message": "If your email is registered, you will receive a verification link shortly"}
+
+
+@api_router.post("/admin/migrate-verify-existing-users")
+async def migrate_verify_existing_users(user: User = Depends(get_current_user)):
+    """
+    One-time migration endpoint to mark all existing users as email verified.
+    This should be called after deploying the email verification feature.
+    Only admins can run this migration.
+    """
+    if user.role not in ['admin', 'master_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Mark all users without email_verified field as verified
+    result = await db.users.update_many(
+        {"email_verified": {"$exists": False}},
+        {"$set": {"email_verified": True}}
+    )
+    
+    # Also update users where email_verified might be False but they existed before verification was implemented
+    result2 = await db.users.update_many(
+        {"email_verified": False, "verification_token": {"$exists": False}},
+        {"$set": {"email_verified": True}}
+    )
+    
+    total_updated = result.modified_count + result2.modified_count
+    logger.info(f"Migration: Updated {total_updated} existing users to email_verified=True")
+    
+    return {
+        "message": f"Migration complete. Updated {total_updated} existing users to verified status.",
+        "users_updated": total_updated
+    }
 
 
 @api_router.post("/resources", response_model=Resource)

@@ -35,6 +35,7 @@ const GroupChat = ({ onBack, connections }) => {
   
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const prevMessageCountRef = useRef(0);
 
   // Fetch groups
   const fetchGroups = async () => {
@@ -72,6 +73,9 @@ const GroupChat = ({ onBack, connections }) => {
 
   useEffect(() => {
     if (activeGroup) {
+      // Reset message count for new group to allow initial scroll
+      prevMessageCountRef.current = 0;
+      
       fetchMessages(activeGroup.id);
       
       // Auto-refresh messages
@@ -80,9 +84,18 @@ const GroupChat = ({ onBack, connections }) => {
     }
   }, [activeGroup]);
 
+  // Scroll to bottom only when new messages arrive (not on refresh)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+    const currentCount = messages.length;
+    const prevCount = prevMessageCountRef.current;
+    
+    // Only scroll if there are new messages
+    if (currentCount > prevCount) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    prevMessageCountRef.current = currentCount;
+  }, [messages]);
 
   // Create new group
   const createGroup = async () => {

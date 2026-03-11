@@ -186,8 +186,10 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-gradient">{user?.total_resources || approvedCount}</p>
-              <p className="text-sm text-slate-400 mt-2">Approved contributions</p>
+              <p className="text-3xl font-bold text-gradient">{user?.mentis_score || 0}</p>
+              <p className="text-sm text-slate-400 mt-2">
+                +5 Resources • +3 VEX • +1 Curiofacts
+              </p>
             </CardContent>
           </Card>
 

@@ -258,7 +258,7 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Auto-capitalization of name and organization fields
    - Clear error messages for duplicates
 
-### Completed (December 10, 2026)
+### Completed (December 10-11, 2026)
 1. ✅ **Mathmate Chat List Sorting Bug Fix**
    - Fixed bug where chat connections were not sorted by most recent message
    - Root cause: Frontend was looking for `last_message.timestamp` but backend returns `last_message.created_at`
@@ -298,6 +298,20 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Chat messages auto-refresh every 1 second when a chat is open
    - Connection list auto-refreshes every 1 second
    - Pending requests also auto-refresh for real-time updates
+   - Fixed scroll bug that was auto-scrolling page to bottom
+
+7. ✅ **PWA Auto-Update System**
+   - Service Worker v2 with cache versioning
+   - PWAUpdatePrompt component shows toast when new version available
+   - Auto-checks for updates every 5 minutes
+   - "Update Now" button for immediate refresh
+
+8. ✅ **Mentis Score System**
+   - Resource Hub upload (approved): +5 points
+   - VEX upload (approved): +3 points
+   - Curiofacts upload (approved): +1 point
+   - Score displayed in user dashboard with breakdown
+   - Added `mentis_score` field to User model
 
 ### Pending/Future Tasks
 1. **P1**: Implement "Reply to Message" in Mathmate chat

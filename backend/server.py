@@ -67,6 +67,7 @@ class User(BaseModel):
     email: EmailStr
     name: str
     role: str = "user"
+    mentis_score: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
@@ -529,6 +530,11 @@ async def update_resource_status(resource_id: str, update: ResourceApprove, admi
         submitter = await db.users.find_one({"id": submitter_id}, {"_id": 0})
         if submitter and submitter.get('email'):
             if update.status == 'approved':
+                # Increment mentis_score by 5 for approved resource
+                await db.users.update_one(
+                    {"id": submitter_id},
+                    {"$inc": {"mentis_score": 5, "total_resources": 1}}
+                )
                 await send_resource_approval_email(
                     user_email=submitter['email'],
                     user_name=submitter.get('name', 'Mentis User'),
@@ -974,6 +980,10 @@ async def get_user_profile(user_id: str, current_user: User = Depends(get_curren
     
     if isinstance(user.get('created_at'), str):
         user['created_at'] = datetime.fromisoformat(user['created_at'])
+    
+    # Ensure mentis_score exists (default to 0 for existing users)
+    if 'mentis_score' not in user:
+        user['mentis_score'] = 0
     
     # Count approved resources submitted by this user
     resources_count = await db.resources.count_documents({
@@ -1670,11 +1680,11 @@ async def update_reel_status(reel_id: str, status: str, admin: User = Depends(ge
         {"$set": {"status": status}}
     )
     
-    # If approved, increment user's mentis score
+    # If approved, increment user's mentis score by 3 for VEX
     if status == 'approved' and reel.get('status') != 'approved':
         await db.users.update_one(
             {"id": reel['user_id']},
-            {"$inc": {"total_resources": 1}}
+            {"$inc": {"mentis_score": 3, "total_resources": 1}}
         )
     
     return {"message": f"Reel status updated to {status}"}
@@ -2071,10 +2081,10 @@ async def approve_curiofact(submission_id: str, status: str, admin: User = Depen
         }
         await db.curiofacts.insert_one(new_fact)
         
-        # Update user's mentis score
+        # Update user's mentis score by 1 for curiofact
         await db.users.update_one(
             {"id": submission['user_id']},
-            {"$inc": {"total_resources": 1}}
+            {"$inc": {"mentis_score": 1, "total_resources": 1}}
         )
     
     await db.curiofact_submissions.update_one(

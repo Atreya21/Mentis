@@ -134,7 +134,7 @@ function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, setUser, login, signup, logout }}>
       <BrowserRouter>
         <div className="App min-h-screen flex flex-col bg-slate-950">
           <Navigation />

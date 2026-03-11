@@ -24,13 +24,37 @@ const Dashboard = () => {
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
 
+  // Function to refresh user data from backend
+  const refreshUserData = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      const res = await axios.get(`${API}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data && setUser) {
+        setUser(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to refresh user data');
+    }
+  };
+
   useEffect(() => {
     if (user) {
       setEditName(user.name || '');
       setEditEmail(user.email || '');
       loadData();
+      
+      // Refresh user data every 5 seconds to get updated Mentis Score
+      const refreshInterval = setInterval(() => {
+        refreshUserData();
+      }, 5000);
+      
+      return () => clearInterval(refreshInterval);
     }
-  }, [user]);
+  }, [user?.id]); // Only re-run when user id changes, not on every user update
 
   const loadData = async () => {
     const token = localStorage.getItem('token');

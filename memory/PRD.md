@@ -313,9 +313,41 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Score displayed in user dashboard with breakdown
    - Added `mentis_score` field to User model
 
+### Completed (March 11, 2026)
+1. ✅ **File Sharing in Mathmate Chat**
+   - Backend: `/api/messages/{connection_id}/with-file` endpoint for file uploads
+   - Backend: `/api/upload-file` general file upload endpoint
+   - Files stored in `/app/uploads/files/` directory
+   - Supports images, videos, audio, documents (PDF, DOC, XLS, etc.)
+   - Max file size: 50MB
+   - Files render inline for images, as download links for documents
+
+2. ✅ **Group Chat Feature in Mathmate**
+   - Backend: Full CRUD for group chats (`/api/groups`)
+   - Create groups with name, description, and member selection from connections
+   - Send text and file messages to groups
+   - Leave group functionality
+   - Group list shows member count and last message preview
+   - Real-time message refresh in group chats
+
+3. ✅ **Auto-scroll Bug Fix**
+   - Fixed issue where chat would forcibly scroll to bottom on every refresh
+   - Implemented smart scrolling: only scrolls when NEW messages arrive
+   - Uses `prevMessageCountRef` to track message count changes
+   - Fixed in both private chat (ChatWindow) and group chat (GroupChat) components
+
+4. ✅ **ConnectPage Refactoring**
+   - Reduced ConnectPage.jsx from 1625 lines to 1073 lines (~34% reduction)
+   - Extracted components:
+     - `ChatWindow.jsx` (458 lines) - Private chat UI, messaging, file attachments
+     - `ConnectionList.jsx` (156 lines) - Sidebar with connections and requests
+     - `UserProfileDialog.jsx` (152 lines) - User profile modal
+   - Created `/app/frontend/src/components/connect/` directory with index.js
+   - All components properly export and function correctly
+
 ### Pending/Future Tasks
 1. **P1**: Implement "Reply to Message" in Mathmate chat
-2. **P1**: Refactor AdminDashboard.jsx into smaller components
+2. **P1**: Complete AdminDashboard.jsx refactoring (partially done)
 3. **P1**: Optimize N+1 database queries for better performance
 4. **P2**: Implement email verification for new signups
 5. **P2**: Add drag-and-drop uploads in admin dashboard
@@ -326,4 +358,4 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 - Password: 4tr3y4@54N14
 
 ---
-Last Updated: December 10, 2026
+Last Updated: March 11, 2026

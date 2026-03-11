@@ -1671,10 +1671,16 @@ async def get_file(user_id: str, filename: str):
     # Determine mime type
     mime_type = mimetypes.guess_type(str(file_path))[0] or 'application/octet-stream'
     
+    # For images and PDFs, display inline (viewable in browser)
+    # For other files, force download
+    inline_types = ['image/', 'application/pdf', 'video/', 'audio/']
+    disposition = 'inline' if any(mime_type.startswith(t) for t in inline_types) else 'attachment'
+    
     return FileResponse(
         path=file_path,
         media_type=mime_type,
-        filename=filename
+        filename=filename,
+        content_disposition_type=disposition
     )
 
 @api_router.post("/messages/{connection_id}/with-file")

@@ -15,56 +15,20 @@ import { toast } from 'sonner';
 import { Check, X, Plus, Shield, Users, BookOpen, Sparkles, Gamepad2, Crown, Trash2, ShieldOff, Info, Play, Save, Edit, HelpCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+// Import refactored admin components
+import {
+  PendingApprovalsTab,
+  UserManagementTab,
+  PendingVEXTab,
+  PendingCuriofactsTab,
+  UserReportsTab,
+  AdminStatsOverview,
+  convertGoogleDriveUrl,
+  convertToDirectImageUrl
+} from '@/components/admin';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-
-// Utility function to convert Google Drive URLs to direct/viewable URLs
-const convertGoogleDriveUrl = (url, forceDownload = false) => {
-  if (!url) return url;
-  
-  // Google Drive file link patterns
-  // Pattern 1: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-  // Pattern 2: https://drive.google.com/open?id=FILE_ID
-  // Pattern 3: https://drive.google.com/uc?id=FILE_ID
-  // Pattern 4: https://drive.google.com/thumbnail?id=FILE_ID
-  
-  let fileId = null;
-  
-  // Extract file ID from various Google Drive URL formats
-  const patterns = [
-    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
-    /drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
-    /drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/,
-    /drive\.google\.com\/thumbnail\?.*id=([a-zA-Z0-9_-]+)/,
-    /lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/,
-  ];
-  
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) {
-      fileId = match[1];
-      break;
-    }
-  }
-  
-  // If we found a Google Drive file ID, convert to appropriate URL
-  if (fileId) {
-    if (forceDownload) {
-      // For downloads (PDFs, documents)
-      return `https://drive.google.com/uc?export=download&id=${fileId}`;
-    } else {
-      // For images - use lh3.googleusercontent.com which works better for embedding
-      // This format bypasses CORS issues and works reliably for images
-      return `https://lh3.googleusercontent.com/d/${fileId}`;
-    }
-  }
-  
-  // Return original URL if not a Google Drive link
-  return url;
-};
-
-// Alias for backward compatibility
-const convertToDirectImageUrl = (url) => convertGoogleDriveUrl(url, false);
 
 const AdminDashboard = () => {
   const { user: currentUser } = useContext(AuthContext);
@@ -774,53 +738,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Stats Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                  <div className="text-3xl font-bold text-white">{stats.users}</div>
-                  <div className="text-sm text-slate-400">Users</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <BookOpen className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                  <div className="text-3xl font-bold text-white">{stats.resources}</div>
-                  <div className="text-sm text-slate-400">Resources</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <Gamepad2 className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-                  <div className="text-3xl font-bold text-white">{stats.games}</div>
-                  <div className="text-sm text-slate-400">Games</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <Sparkles className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                  <div className="text-3xl font-bold text-white">{stats.facts}</div>
-                  <div className="text-sm text-slate-400">Curiofacts</div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <Users className="w-8 h-8 text-orange-400 mx-auto mb-2" />
-                  <div className="text-3xl font-bold text-white">{stats.matrixMembers}</div>
-                  <div className="text-sm text-slate-400">Matrix</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <AdminStatsOverview stats={stats} />
 
         <Tabs defaultValue="pending" className="space-y-8">
           <TabsList className="bg-slate-800 border border-slate-700 flex-wrap">
@@ -839,160 +757,22 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="pending">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Pending Resource Approvals</CardTitle>
-                <CardDescription className="text-slate-400">Review and approve community submissions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {pendingResources.length > 0 ? (
-                  <div className="space-y-4">
-                    {pendingResources.map((resource) => (
-                      <div
-                        key={resource.id}
-                        className="border border-slate-700 rounded-lg p-6 bg-slate-900/50"
-                        data-testid="pending-resource-card"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="font-heading text-xl font-semibold text-white mb-2">
-                              {resource.title}
-                            </h3>
-                            <p className="text-slate-400 mb-3">{resource.description}</p>
-                            <div className="flex gap-4 text-sm text-slate-500 mb-2">
-                              <span>Type: <span className="text-orange-400">{resource.content_type}</span></span>
-                              <span>Topic: <span className="text-orange-400">{resource.topic}</span></span>
-                            </div>
-                            <a
-                              href={resource.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-orange-400 hover:text-orange-300 inline-block"
-                            >
-                              View Resource →
-                            </a>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm\"
-                              className="bg-green-600 hover:bg-green-700"
-                              onClick={() => handleApproval(resource.id, 'approved')}
-                              data-testid="approve-resource-btn"
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleApproval(resource.id, 'rejected')}
-                              data-testid="reject-resource-btn"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-center py-8">No pending resources</p>
-                )}
-              </CardContent>
-            </Card>
+            <PendingApprovalsTab 
+              pendingResources={pendingResources} 
+              handleApproval={handleApproval} 
+            />
           </TabsContent>
 
           {/* User Management Tab */}
           <TabsContent value="users">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-white">Registered Users</CardTitle>
-                    <CardDescription className="text-slate-400">View all users and promote to admin</CardDescription>
-                  </div>
-                  <Button
-                    onClick={handleExportUsers}
-                    className="bg-green-600 hover:bg-green-700"
-                    data-testid="export-users-btn"
-                  >
-                    Export CSV
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-slate-700">
-                        <TableHead className="text-slate-300">Name</TableHead>
-                        <TableHead className="text-slate-300">Email</TableHead>
-                        <TableHead className="text-slate-300">Role</TableHead>
-                        <TableHead className="text-slate-300">Joined</TableHead>
-                        <TableHead className="text-slate-300">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allUsers.map((user) => (
-                        <TableRow key={user.id} className="border-slate-700" data-testid="user-row">
-                          <TableCell className="text-white font-medium">{user.name}</TableCell>
-                          <TableCell className="text-slate-400">{user.email}</TableCell>
-                          <TableCell>
-                            <Badge className={
-                              user.role === 'master_admin' ? 'bg-purple-500' :
-                              user.role === 'admin' ? 'bg-orange-500' : 'bg-slate-600'
-                            }>
-                              {(user.role === 'admin' || user.role === 'master_admin') && <Crown className="w-3 h-3 mr-1" />}
-                              {user.role === 'master_admin' ? 'Master Admin' : user.role}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-slate-400">
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              {user.role === 'user' && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handlePromoteToAdmin(user.id)}
-                                  className="bg-orange-600 hover:bg-orange-700"
-                                  data-testid="promote-admin-btn"
-                                >
-                                  <Shield className="w-3 h-3 mr-1" />
-                                  Promote
-                                </Button>
-                              )}
-                              {/* Master Admin can demote regular admins */}
-                              {currentUser?.role === 'master_admin' && user.role === 'admin' && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleDemoteAdmin(user.id, user.email)}
-                                  className="bg-yellow-600 hover:bg-yellow-700"
-                                  data-testid="demote-admin-btn"
-                                >
-                                  <ShieldOff className="w-3 h-3 mr-1" />
-                                  Demote
-                                </Button>
-                              )}
-                              {user.role !== 'admin' && user.role !== 'master_admin' && (
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => handleDeleteUser(user.id, user.email)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                  data-testid="delete-user-btn"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+            <UserManagementTab 
+              allUsers={allUsers}
+              currentUser={currentUser}
+              handleExportUsers={handleExportUsers}
+              handlePromoteToAdmin={handlePromoteToAdmin}
+              handleDemoteAdmin={handleDemoteAdmin}
+              handleDeleteUser={handleDeleteUser}
+            />
           </TabsContent>
 
           {/* Manage Content Tab */}
@@ -1982,211 +1762,26 @@ const AdminDashboard = () => {
 
           {/* Pending VEX Tab */}
           <TabsContent value="reels">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Pending VEX</CardTitle>
-                <CardDescription className="text-slate-400">Review and approve user-submitted educational videos</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {pendingReels.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-slate-400">No pending reels to review</p>
-                  </div>
-                ) : (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {pendingReels.map((reel) => (
-                      <div key={reel.id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-                        <div className="aspect-video bg-black rounded-lg mb-4 flex items-center justify-center">
-                          {reel.video_type === 'youtube' ? (
-                            <iframe
-                              src={reel.video_url}
-                              className="w-full h-full rounded-lg"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                            />
-                          ) : (
-                            <a 
-                              href={reel.original_url || reel.video_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-orange-400 hover:text-orange-300"
-                            >
-                              View Video
-                            </a>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-white font-medium">{reel.user_name}</p>
-                          <p className="text-slate-400 text-sm line-clamp-3">{reel.caption}</p>
-                          <p className="text-xs text-slate-500">
-                            Platform: {reel.video_type} | 
-                            Submitted: {new Date(reel.created_at).toLocaleDateString()}
-                          </p>
-                          <div className="flex gap-2 pt-2">
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-green-600 hover:bg-green-700"
-                              onClick={() => handleReelApproval(reel.id, 'approved')}
-                            >
-                              <Check className="w-4 h-4 mr-1" /> Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="flex-1"
-                              onClick={() => handleReelApproval(reel.id, 'rejected')}
-                            >
-                              <X className="w-4 h-4 mr-1" /> Reject
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <PendingVEXTab 
+              pendingReels={pendingReels}
+              handleReelApproval={handleReelApproval}
+            />
           </TabsContent>
 
           {/* Pending Curiofacts Tab */}
           <TabsContent value="curiofacts-pending">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Pending Curiofacts</CardTitle>
-                <CardDescription className="text-slate-400">Review user-submitted math facts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {pendingCuriofacts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-slate-400">No pending curiofacts to review</p>
-                  </div>
-                ) : (
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {pendingCuriofacts.map((submission) => (
-                      <div key={submission.id} className="bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700">
-                        {submission.image_url && (
-                          <div className="h-40 overflow-hidden">
-                            <img 
-                              src={submission.image_url} 
-                              alt={submission.title}
-                              className="w-full h-full object-cover"
-                              onError={(e) => { e.target.parentElement.style.display = 'none'; }}
-                            />
-                          </div>
-                        )}
-                        <div className="p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm text-slate-400">Submitted by: <span className="text-white">{submission.user_name}</span></p>
-                            <span className="text-xs text-slate-500">
-                              {new Date(submission.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <h3 className="text-white font-medium text-lg">{submission.title}</h3>
-                          <p className="text-slate-300 text-sm line-clamp-4">{submission.content}</p>
-                          <div className="flex gap-2 pt-2">
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-green-600 hover:bg-green-700"
-                              onClick={() => handleCuriofactApproval(submission.id, 'approved')}
-                            >
-                              <Check className="w-4 h-4 mr-1" /> Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="flex-1"
-                              onClick={() => handleCuriofactApproval(submission.id, 'rejected')}
-                            >
-                              <X className="w-4 h-4 mr-1" /> Reject
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <PendingCuriofactsTab 
+              pendingCuriofacts={pendingCuriofacts}
+              handleCuriofactApproval={handleCuriofactApproval}
+            />
           </TabsContent>
 
           {/* User Reports Tab */}
           <TabsContent value="reports">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">User Reports</CardTitle>
-                <CardDescription className="text-slate-400">Review misconduct reports from users</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {userReports.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-slate-400">No reports to review</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {userReports.map((report) => (
-                      <div key={report.id} className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-4">
-                              <Badge className={
-                                report.status === 'pending' ? 'bg-yellow-600' :
-                                report.status === 'reviewed' ? 'bg-blue-600' :
-                                'bg-green-600'
-                              }>
-                                {report.status.toUpperCase()}
-                              </Badge>
-                              <span className="text-xs text-slate-500">
-                                {new Date(report.created_at).toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="grid md:grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-xs text-slate-500">Reported User</p>
-                                <p className="text-white">{report.reported_user?.name || 'Unknown'}</p>
-                                <p className="text-slate-400 text-sm">{report.reported_user?.email || 'Unknown'}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-slate-500">Reporter</p>
-                                <p className="text-white">{report.reporter?.name || 'Unknown'}</p>
-                                <p className="text-slate-400 text-sm">{report.reporter?.email || 'Unknown'}</p>
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-xs text-slate-500">Reason</p>
-                              <Badge variant="outline" className="border-red-500 text-red-400">
-                                {report.reason?.replace('_', ' ').toUpperCase()}
-                              </Badge>
-                            </div>
-                            <div>
-                              <p className="text-xs text-slate-500">Description</p>
-                              <p className="text-slate-300">{report.description}</p>
-                            </div>
-                          </div>
-                          {report.status === 'pending' && (
-                            <div className="flex gap-2 ml-4">
-                              <Button
-                                size="sm"
-                                className="bg-blue-600 hover:bg-blue-700"
-                                onClick={() => handleReportStatus(report.id, 'reviewed')}
-                              >
-                                Mark Reviewed
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700"
-                                onClick={() => handleReportStatus(report.id, 'resolved')}
-                              >
-                                Resolve
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <UserReportsTab 
+              userReports={userReports}
+              handleReportStatus={handleReportStatus}
+            />
           </TabsContent>
         </Tabs>
 

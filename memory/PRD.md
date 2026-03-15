@@ -345,17 +345,49 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Created `/app/frontend/src/components/connect/` directory with index.js
    - All components properly export and function correctly
 
+### Completed (March 15, 2026)
+1. ✅ **Email Verification for New Signups**
+   - Backend: `/api/auth/verify-email` and `/api/auth/resend-verification` endpoints
+   - Frontend: `VerifyEmailPage.jsx` and `ResendVerificationPage.jsx` pages
+   - New users receive verification email via SendGrid
+   - Login blocked (403) until email verified
+   - **Special bypass rules**:
+     - Master Admin (`atreyaghoshal.68@gmail.com`) can login without verification
+     - Existing users (no `verification_token` field) can login without verification
+   - 24-hour token expiration
+   - User schema updated: `email_verified`, `verification_token`, `verification_token_expires` fields
+
+2. ✅ **Profile View Bug Fix**
+   - Fixed blank screen when viewing user profiles in Mathmate/Connect
+   - Root cause: Missing lucide-react icon imports
+   - Profile modal now displays correctly with all user stats
+
+3. ✅ **Chat "Unsend" Feature Removed**
+   - Removed "Unsend" option from chat message hover actions
+   - Only "Reply" and "Delete" buttons remain
+   - Backend endpoint still exists but is unused by frontend
+
+4. ✅ **Admin Content Deletion Fix**
+   - Replaced unreliable `window.confirm()` with proper `AlertDialog` component
+   - Delete confirmations now work reliably in Admin Dashboard
+
+5. ✅ **Health Check Endpoint**
+   - Added `/api/health` endpoint for Kubernetes deployment monitoring
+   - Returns `{"status": "healthy"}` for liveness/readiness probes
+
 ### Pending/Future Tasks
-1. **P1**: Implement "Reply to Message" in Mathmate chat
+1. **P1**: Implement "Reply to Message" in Mathmate chat (UI exists, needs backend)
 2. **P1**: Complete AdminDashboard.jsx refactoring (partially done)
 3. **P1**: Optimize N+1 database queries for better performance
-4. **P2**: Implement email verification for new signups
-5. **P2**: Add drag-and-drop uploads in admin dashboard
-6. **P2**: Add `data-testid` attributes to new interactive elements
+4. **P2**: Add drag-and-drop uploads in admin dashboard
+5. **P2**: Add `data-testid` attributes to new interactive elements
 
 ## Master Admin Credentials
 - Email: atreyaghoshal.68@gmail.com
 - Password: 4tr3y4@54N14
 
+## Database Schema Updates (March 15, 2026)
+- `users`: Added `email_verified` (bool), `verification_token` (str), `verification_token_expires` (datetime)
+
 ---
-Last Updated: March 11, 2026
+Last Updated: March 15, 2026

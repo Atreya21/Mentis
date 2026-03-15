@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'build',
   server: {
     // For development, you can use the live server
-    // url: 'https://mathmate-preview.preview.emergentagent.com',
+    // url: 'https://mentis-auth-test.preview.emergentagent.com',
     // cleartext: true,
     androidScheme: 'https'
   },

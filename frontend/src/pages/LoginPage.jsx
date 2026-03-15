@@ -5,21 +5,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
+import { Mail, Loader2, AlertCircle } from 'lucide-react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const success = await login(email, password);
+    setNeedsVerification(false);
+    
+    const result = await login(email, password);
     setLoading(false);
-    if (success) {
+    
+    if (result === true) {
       navigate('/dashboard');
+    } else if (result === 'needs_verification') {
+      setNeedsVerification(true);
     }
   };
 
@@ -36,6 +44,31 @@ const LoginPage = () => {
             <h1 className="font-heading text-4xl font-bold text-white mb-2">Welcome Back</h1>
             <p className="text-slate-400">Login to continue your mathematical journey</p>
           </div>
+
+          {needsVerification && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-yellow-200 text-sm font-medium">Email not verified</p>
+                  <p className="text-yellow-200/70 text-xs mt-1">
+                    Please check your inbox and click the verification link.
+                  </p>
+                  <Link 
+                    to="/resend-verification" 
+                    className="text-yellow-400 hover:text-yellow-300 text-xs font-medium mt-2 inline-flex items-center"
+                  >
+                    <Mail className="w-3 h-3 mr-1" />
+                    Resend verification email
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -70,7 +103,14 @@ const LoginPage = () => {
               disabled={loading}
               data-testid="login-submit-btn"
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                'Login'
+              )}
             </Button>
           </form>
 

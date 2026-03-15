@@ -17,7 +17,8 @@ import GroupChat from '@/components/GroupChat';
 import { ChatWindow, ConnectionList, UserProfileDialog } from '@/components/connect';
 import { 
   Search, UserPlus, Check, X, MessageCircle, 
-  Users, Loader2, Eye, Flag, BellRing, BellOff, UsersRound
+  Users, Loader2, Eye, Flag, BellRing, BellOff, UsersRound,
+  Award, Link2, Calendar, BookOpen
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -901,7 +902,7 @@ const ConnectPage = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-lg p-4 text-center border border-yellow-500/30">
                     <Award className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-gradient">{selectedUserProfile.total_resources || 0}</p>
+                    <p className="text-2xl font-bold text-gradient">{selectedUserProfile.mentis_score || 0}</p>
                     <p className="text-xs text-slate-300">Mentis Score</p>
                   </div>
                   <div className="bg-slate-800/50 rounded-lg p-4 text-center">

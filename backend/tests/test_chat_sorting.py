@@ -8,7 +8,7 @@ import requests
 import os
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://mathmate-preview.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://mentis-auth-test.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "atreyaghoshal.68@gmail.com"

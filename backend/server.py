@@ -92,6 +92,9 @@ class User(BaseModel):
     name: str
     role: str = "user"
     mentis_score: int = 0
+    email_verified: bool = False
+    verification_token: Optional[str] = None
+    verification_token_expires: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
@@ -646,21 +649,78 @@ async def test_push_notification(current_user: User = Depends(get_current_user))
     )
     return {"message": "Test notification sent"}
 
-@api_router.post("/auth/signup", response_model=Token)
+@api_router.post("/auth/signup")
 async def signup(user_data: UserCreate):
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_password = pwd_context.hash(user_data.password)
-    user = User(email=user_data.email, name=user_data.name)
+    
+    # Generate verification token
+    verification_token = str(uuid.uuid4())
+    verification_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+    
+    user = User(
+        email=user_data.email, 
+        name=user_data.name,
+        email_verified=False,
+        verification_token=verification_token,
+        verification_token_expires=verification_expires
+    )
     doc = user.model_dump()
     doc['password'] = hashed_password
     doc['created_at'] = doc['created_at'].isoformat()
+    doc['verification_token_expires'] = doc['verification_token_expires'].isoformat()
     await db.users.insert_one(doc)
     
-    token = create_access_token({"sub": user.id})
-    return Token(access_token=token, user=user)
+    # Send verification email
+    try:
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com')
+        
+        if sendgrid_api_key:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail, Email, To
+            
+            verification_link = f"{frontend_url}/verify-email?token={verification_token}"
+            
+            message = Mail(
+                from_email=Email("mentis.mathematics@gmail.com", "Mentis Mathematics"),
+                to_emails=To(user_data.email),
+                subject="Verify Your Mentis Account",
+                html_content=f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #f97316;">Welcome to Mentis!</h2>
+                    <p>Hi {user_data.name},</p>
+                    <p>Thank you for signing up. Please verify your email address to activate your account.</p>
+                    <p style="margin: 30px 0;">
+                        <a href="{verification_link}" 
+                           style="background: linear-gradient(to right, #f97316, #ec4899); 
+                                  color: white; 
+                                  padding: 12px 30px; 
+                                  text-decoration: none; 
+                                  border-radius: 25px;
+                                  display: inline-block;">
+                            Verify Email
+                        </a>
+                    </p>
+                    <p style="color: #666; font-size: 14px;">
+                        Or copy and paste this link in your browser:<br>
+                        <a href="{verification_link}" style="color: #f97316;">{verification_link}</a>
+                    </p>
+                    <p style="color: #666; font-size: 14px;">This link will expire in 24 hours.</p>
+                </div>
+                """
+            )
+            
+            sg = SendGridAPIClient(sendgrid_api_key)
+            sg.send(message)
+            logger.info(f"Verification email sent to {user_data.email}")
+    except Exception as e:
+        logger.error(f"Failed to send verification email: {e}")
+    
+    return {"message": "Account created successfully. Please check your email to verify your account.", "email": user_data.email}
 
 @api_router.post("/auth/login", response_model=Token)
 async def login(login_data: UserLogin):
@@ -672,10 +732,31 @@ async def login(login_data: UserLogin):
     if not stored_password or not pwd_context.verify(login_data.password, stored_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Email verification check
+    # Allow login if:
+    # 1. Master admin (always allowed)
+    # 2. email_verified is True
+    # 3. email_verified field doesn't exist (existing users before verification feature)
+    # 4. No verification_token (existing users)
+    master_admin_email = "atreyaghoshal.68@gmail.com"
+    email_verified = user_doc.get('email_verified')
+    has_verification_token = user_doc.get('verification_token') is not None
+    
+    # Only block if: email_verified is explicitly False AND has verification token (new signup)
+    if login_data.email != master_admin_email:
+        if email_verified is False and has_verification_token:
+            raise HTTPException(
+                status_code=403, 
+                detail="Please verify your email before logging in. Check your inbox for the verification link."
+            )
+    
     if isinstance(user_doc['created_at'], str):
         user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
     
+    # Clean up sensitive/internal fields before returning
     user_doc.pop('password', None)
+    user_doc.pop('verification_token', None)
+    user_doc.pop('verification_token_expires', None)
     user = User(**user_doc)
     token = create_access_token({"sub": user.id})
     return Token(access_token=token, user=user)
@@ -684,6 +765,116 @@ async def login(login_data: UserLogin):
 async def get_me(user: User = Depends(get_current_user)):
     return user
 
+@api_router.post("/auth/verify-email")
+async def verify_email(token: str):
+    """Verify user's email with the provided token"""
+    user_doc = await db.users.find_one({"verification_token": token}, {"_id": 0})
+    
+    if not user_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification link")
+    
+    # Check if token has expired
+    token_expires = user_doc.get('verification_token_expires')
+    if token_expires:
+        if isinstance(token_expires, str):
+            token_expires = datetime.fromisoformat(token_expires)
+        if datetime.now(timezone.utc) > token_expires:
+            raise HTTPException(status_code=400, detail="Verification link has expired. Please request a new one.")
+    
+    # Update user as verified
+    await db.users.update_one(
+        {"id": user_doc['id']},
+        {
+            "$set": {"email_verified": True},
+            "$unset": {"verification_token": "", "verification_token_expires": ""}
+        }
+    )
+    
+    # Return token so user can be logged in
+    if isinstance(user_doc['created_at'], str):
+        user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
+    
+    user_doc.pop('password', None)
+    user_doc.pop('verification_token', None)
+    user_doc.pop('verification_token_expires', None)
+    user_doc['email_verified'] = True
+    user = User(**user_doc)
+    access_token = create_access_token({"sub": user.id})
+    
+    return {"message": "Email verified successfully", "access_token": access_token, "user": user.model_dump()}
+
+@api_router.post("/auth/resend-verification")
+async def resend_verification(email: EmailStr):
+    """Resend verification email"""
+    user_doc = await db.users.find_one({"email": email}, {"_id": 0})
+    
+    if not user_doc:
+        return {"message": "If your email is registered, you will receive a verification link shortly"}
+    
+    if user_doc.get('email_verified', False):
+        raise HTTPException(status_code=400, detail="Email is already verified. You can login now.")
+    
+    # Generate new verification token
+    verification_token = str(uuid.uuid4())
+    verification_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+    
+    await db.users.update_one(
+        {"email": email},
+        {
+            "$set": {
+                "verification_token": verification_token,
+                "verification_token_expires": verification_expires.isoformat()
+            }
+        }
+    )
+    
+    # Send verification email
+    try:
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com')
+        
+        if sendgrid_api_key:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail, Email, To
+            
+            verification_link = f"{frontend_url}/verify-email?token={verification_token}"
+            
+            message = Mail(
+                from_email=Email("mentis.mathematics@gmail.com", "Mentis Mathematics"),
+                to_emails=To(email),
+                subject="Verify Your Mentis Account",
+                html_content=f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #f97316;">Verify Your Email</h2>
+                    <p>Hi {user_doc.get('name', 'there')},</p>
+                    <p>Please click the button below to verify your email address.</p>
+                    <p style="margin: 30px 0;">
+                        <a href="{verification_link}" 
+                           style="background: linear-gradient(to right, #f97316, #ec4899); 
+                                  color: white; 
+                                  padding: 12px 30px; 
+                                  text-decoration: none; 
+                                  border-radius: 25px;
+                                  display: inline-block;">
+                            Verify Email
+                        </a>
+                    </p>
+                    <p style="color: #666; font-size: 14px;">
+                        Or copy and paste this link:<br>
+                        <a href="{verification_link}" style="color: #f97316;">{verification_link}</a>
+                    </p>
+                    <p style="color: #666; font-size: 14px;">This link expires in 24 hours.</p>
+                </div>
+                """
+            )
+            
+            sg = SendGridAPIClient(sendgrid_api_key)
+            sg.send(message)
+            logger.info(f"Verification email resent to {email}")
+    except Exception as e:
+        logger.error(f"Failed to resend verification email: {e}")
+    
+    return {"message": "If your email is registered, you will receive a verification link shortly"}
 
 
 @api_router.post("/resources", response_model=Resource)

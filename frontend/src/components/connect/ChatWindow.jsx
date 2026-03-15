@@ -190,20 +190,6 @@ const ChatWindow = ({
     }
   };
 
-  // Unsend message
-  const unsendMessage = async (messageId) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.patch(`${API}/messages/${messageId}/unsend`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Message unsent');
-      fetchMessages(activeChat.id);
-    } catch (err) {
-      toast.error('Failed to unsend message');
-    }
-  };
-
   // Clear chat history
   const clearChatHistory = async () => {
     if (!activeChat) return;
@@ -319,9 +305,7 @@ const ChatWindow = ({
                   )}
                   <div
                     className={`px-4 py-2 rounded-2xl relative ${
-                      msg.unsent
-                        ? 'bg-slate-800 text-slate-500 italic'
-                        : msg.sender_id === user?.id
+                      msg.sender_id === user?.id
                         ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white'
                         : 'bg-slate-700 text-white'
                     }`}
@@ -333,8 +317,7 @@ const ChatWindow = ({
                     </p>
                     
                     {/* Message actions */}
-                    {!msg.unsent && (
-                      <div className={`absolute ${msg.sender_id === user?.id ? '-left-24' : '-right-24'} top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-slate-800/90 rounded-lg px-1 py-0.5`}>
+                    <div className={`absolute ${msg.sender_id === user?.id ? '-left-24' : '-right-24'} top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-slate-800/90 rounded-lg px-1 py-0.5`}>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -344,27 +327,16 @@ const ChatWindow = ({
                           <Reply className="w-3 h-3" />
                         </Button>
                         {msg.sender_id === user?.id && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => unsendMessage(msg.id)}
-                              className="h-6 w-6 p-0 text-slate-400 hover:text-yellow-400"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteMessage(msg.id)}
-                              className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteMessage(msg.id)}
+                            className="h-6 w-6 p-0 text-slate-400 hover:text-red-400"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
                         )}
                       </div>
-                    )}
                   </div>
                 </div>
               </div>

@@ -58,7 +58,7 @@ This guide will help you set up email integration for password reset functionali
    ```
    SENDGRID_API_KEY="SG.your-actual-api-key-here"
    FROM_EMAIL="your-verified-email@domain.com"
-   FRONTEND_URL="https://mathmate-preview.preview.emergentagent.com"
+   FRONTEND_URL="https://mentis-auth-test.preview.emergentagent.com"
    ```
 4. Save and exit (Ctrl+X, then Y, then Enter)
 
@@ -165,7 +165,7 @@ SMTP_PORT="587"
 SMTP_USER="your-gmail@gmail.com"
 SMTP_PASSWORD="your-16-char-app-password"
 FROM_EMAIL="your-gmail@gmail.com"
-FRONTEND_URL="https://mathmate-preview.preview.emergentagent.com"
+FRONTEND_URL="https://mentis-auth-test.preview.emergentagent.com"
 ```
 
 #### 5. Restart Backend

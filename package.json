@@ -5,6 +5,6 @@
     "build": "cd frontend && npm install --legacy-peer-deps && CI=false npm run build"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   }
 }

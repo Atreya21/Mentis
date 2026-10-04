@@ -152,6 +152,7 @@ self.addEventListener('notificationclick', (event) => {
   }
 
   const urlToOpen = event.notification.data?.url || '/';
+  const targetUrl = new URL(urlToOpen, self.location.origin).href;
   
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
@@ -159,13 +160,15 @@ self.addEventListener('notificationclick', (event) => {
         // Check if there's already a window open
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
-            client.navigate(urlToOpen);
+            if ('navigate' in client) {
+              client.navigate(targetUrl);
+            }
             return client.focus();
           }
         }
         // Open new window if none exists
         if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
+          return clients.openWindow(targetUrl);
         }
       })
   );

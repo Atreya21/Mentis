@@ -44,10 +44,24 @@ class PushNotificationService {
   // Request permission and subscribe
   async subscribe() {
     if (!this.supported) {
-      throw new Error('Push notifications not supported');
+      throw new Error('Push notifications not supported in this browser');
     }
 
     try {
+      // Ensure service worker is registered and ready
+      if (!this.swRegistration && ('serviceWorker' in navigator)) {
+        try {
+          await navigator.serviceWorker.register('/service-worker.js');
+        } catch (e) {
+          console.warn('SW register error:', e);
+        }
+        this.swRegistration = await navigator.serviceWorker.ready;
+      }
+
+      if (!this.swRegistration || !this.swRegistration.pushManager) {
+        throw new Error('Service Worker or PushManager is not available');
+      }
+
       // Request notification permission
       this.permission = await Notification.requestPermission();
       
@@ -62,25 +76,31 @@ class PushNotificationService {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to get VAPID key');
+        throw new Error('Failed to get VAPID key from server');
       }
       
       const { publicKey } = await response.json();
       
       if (!publicKey) {
-        throw new Error('VAPID public key not configured');
+        throw new Error('VAPID public key not configured on server');
       }
+
+      // Check existing subscription
+      let subscription = await this.swRegistration.pushManager.getSubscription();
 
       // Convert VAPID key to Uint8Array
       const applicationServerKey = this.urlBase64ToUint8Array(publicKey);
 
-      // Subscribe to push
-      this.subscription = await this.swRegistration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: applicationServerKey
-      });
+      // If existing subscription has different key or none exists, subscribe
+      if (!subscription) {
+        subscription = await this.swRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: applicationServerKey
+        });
+      }
 
-      console.log('Push subscription created:', this.subscription);
+      this.subscription = subscription;
+      console.log('Push subscription active:', this.subscription);
 
       // Send subscription to server
       await this.sendSubscriptionToServer(this.subscription);

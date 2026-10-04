@@ -110,10 +110,10 @@ const ConnectPage = () => {
       }
     } catch (err) {
       console.error('Push toggle error:', err);
-      if (err.message.includes('denied')) {
-        toast.error('Notifications blocked. Please enable in browser settings.');
+      if (err.message && err.message.includes('denied')) {
+        toast.error('Notifications blocked. Please click the site settings icon in your browser address bar to allow notifications.');
       } else {
-        toast.error('Failed to toggle notifications');
+        toast.error(err.message || 'Failed to toggle notifications');
       }
     } finally {
       setNotificationsLoading(false);

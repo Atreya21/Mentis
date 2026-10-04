@@ -38,6 +38,7 @@ logger = logging.getLogger("mentis.backend")
 VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
 VAPID_EMAIL = os.environ.get('VAPID_EMAIL', 'mentis.mathematics@gmail.com')
+VAPID_INSTANCE = None
 
 # Helper function to convert Google Drive URLs to direct image URLs
 def convert_google_drive_url(url: str, for_download: bool = False) -> str:
@@ -807,10 +808,69 @@ async def send_system_email(to_email: str, subject: str, html_content: str, text
     logger.warning(f"No configured email transport succeeded for {to_email}")
     return False
 
+async def ensure_vapid_keys():
+    """Ensure VAPID keys are loaded from environment or MongoDB settings collection"""
+    global VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL, VAPID_INSTANCE
+    if VAPID_PUBLIC_KEY and VAPID_INSTANCE:
+        return
+    
+    try:
+        keys_doc = await db.settings.find_one({"id": "vapid_keys"})
+        if keys_doc and keys_doc.get("public_key") and keys_doc.get("private_key"):
+            VAPID_PUBLIC_KEY = keys_doc["public_key"]
+            VAPID_PRIVATE_KEY = keys_doc["private_key"]
+            VAPID_EMAIL = keys_doc.get("email", VAPID_EMAIL or "mentis.mathematics@gmail.com")
+            try:
+                from py_vapid import Vapid
+                VAPID_INSTANCE = Vapid.from_pem(VAPID_PRIVATE_KEY.encode('utf-8'))
+                logger.info("Loaded VAPID keys from database and initialized Vapid instance")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Vapid instance from DB PEM: {e}")
+            return
+        
+        # If not in database or environment, generate and store dynamically
+        try:
+            from py_vapid import Vapid
+            from py_vapid.main import b64urlencode
+            from cryptography.hazmat.primitives import serialization
+            
+            vapid = Vapid()
+            vapid.generate_keys()
+            raw_pub = vapid.public_key.public_bytes(
+                serialization.Encoding.X962,
+                serialization.PublicFormat.UncompressedPoint
+            )
+            pub_b64 = b64urlencode(raw_pub)
+            priv_pem = vapid.private_key.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.PKCS8,
+                serialization.NoEncryption()
+            ).decode('utf-8')
+            
+            await db.settings.update_one(
+                {"id": "vapid_keys"},
+                {"$set": {
+                    "id": "vapid_keys",
+                    "public_key": pub_b64,
+                    "private_key": priv_pem,
+                    "email": VAPID_EMAIL or "mentis.mathematics@gmail.com"
+                }},
+                upsert=True
+            )
+            VAPID_PUBLIC_KEY = pub_b64
+            VAPID_PRIVATE_KEY = priv_pem
+            VAPID_INSTANCE = vapid
+            logger.info("Generated and stored new permanent VAPID keys in database")
+        except Exception as gen_err:
+            logger.error(f"Failed to generate VAPID keys: {gen_err}")
+    except Exception as e:
+        logger.error(f"Error ensuring VAPID keys: {e}")
+
 # Helper function to send push notification to a user
 async def send_push_notification(user_id: str, title: str, body: str, url: str = "/", tag: str = "mentis"):
     """Send push notification to all subscriptions for a user"""
-    if not VAPID_PUBLIC_KEY or not VAPID_PRIVATE_KEY:
+    await ensure_vapid_keys()
+    if not VAPID_PUBLIC_KEY or not (VAPID_INSTANCE or VAPID_PRIVATE_KEY):
         logger.warning("VAPID keys not configured, skipping push notification")
         return
     
@@ -831,6 +891,8 @@ async def send_push_notification(user_id: str, title: str, body: str, url: str =
             "data": {"url": url}
         })
         
+        vapid_key_arg = VAPID_INSTANCE if VAPID_INSTANCE is not None else VAPID_PRIVATE_KEY
+        
         for sub in subscriptions:
             try:
                 webpush(
@@ -839,7 +901,7 @@ async def send_push_notification(user_id: str, title: str, body: str, url: str =
                         "keys": sub["keys"]
                     },
                     data=notification_data,
-                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_private_key=vapid_key_arg,
                     vapid_claims={
                         "sub": f"mailto:{VAPID_EMAIL}"
                     }
@@ -860,6 +922,7 @@ async def send_push_notification(user_id: str, title: str, body: str, url: str =
 @api_router.get("/push/vapid-public-key")
 async def get_vapid_public_key():
     """Get the VAPID public key for push subscriptions"""
+    await ensure_vapid_keys()
     return {"publicKey": VAPID_PUBLIC_KEY}
 
 @api_router.post("/push/subscribe")

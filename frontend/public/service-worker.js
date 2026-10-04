@@ -2,7 +2,7 @@
 // Version 2 - Enhanced for PWA Builder compatibility
 /* eslint-disable no-undef */
 /* global clients */
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `mentis-cache-${CACHE_VERSION}`;
 const urlsToCache = [
   '/',

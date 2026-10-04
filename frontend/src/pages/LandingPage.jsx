@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, Gamepad2, Sparkles, Network, Users, Video, Info, Smartphone, Download, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import DownloadAppModal from '@/components/DownloadAppModal';
 import axios from 'axios';
 import { AuthContext } from '@/App';

@@ -648,18 +648,76 @@ def _send_smtp_sync(to_email: str, subject: str, html_content: str, text_content
         server.login(smtp_user, clean_password)
         server.send_message(msg)
 
+def _send_gmail_api_sync(to_email: str, subject: str, html_content: str, text_content: str, client_id: str, client_secret: str, refresh_token: str, from_name: str = "Mentis Mathematics Foundation", from_email: str = "mentis.mathematics@gmail.com"):
+    import requests
+    import base64
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    # 1. Exchange refresh token for fresh access token
+    token_url = "https://oauth2.googleapis.com/token"
+    token_resp = requests.post(
+        token_url,
+        data={
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token,
+            "grant_type": "refresh_token"
+        },
+        timeout=10
+    )
+    token_resp.raise_for_status()
+    access_token = token_resp.json()["access_token"]
+
+    # 2. Build RFC2822 message
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = f"{from_name} <{from_email}>"
+    msg["To"] = to_email
+
+    if text_content:
+        msg.attach(MIMEText(text_content, "plain"))
+    msg.attach(MIMEText(html_content, "html"))
+
+    raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
+
+    # 3. Post to official Gmail REST API over HTTPS port 443
+    api_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+    send_resp = requests.post(
+        api_url,
+        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+        json={"raw": raw_message},
+        timeout=10
+    )
+    send_resp.raise_for_status()
+    return send_resp.json()
+
 async def send_system_email(to_email: str, subject: str, html_content: str, text_content: str = "") -> bool:
     """
     Universal Email Dispatcher:
-    1. Prioritizes Gmail SMTP (smtp.gmail.com:587) using SMTP_USER and SMTP_PASSWORD.
-    2. Falls back to SendGrid if SENDGRID_API_KEY is configured.
-    3. Logs detailed diagnostics.
+    1. Prioritizes Official Google Gmail REST API (HTTPS Port 443) - zero 3rd party, immune to Render port blocking.
+    2. Falls back to SendGrid / Resend Web APIs if configured.
+    3. Falls back to Gmail SMTP on hosts where port 587 is unblocked.
     """
     smtp_user = os.environ.get('SMTP_USER') or os.environ.get('GMAIL_USER') or 'mentis.mathematics@gmail.com'
     smtp_password = os.environ.get('SMTP_PASSWORD') or os.environ.get('GMAIL_APP_PASSWORD') or 'tcmpubbriehmnufa'
     smtp_host = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
     smtp_port = int(os.environ.get('SMTP_PORT', '587'))
     from_name = os.environ.get('FROM_NAME', 'Mentis Mathematics Foundation')
+
+    # 1. Official Google Gmail REST API (Over HTTPS Port 443 - zero 3rd party, direct Google)
+    gmail_client_id = os.environ.get('GMAIL_CLIENT_ID')
+    gmail_client_secret = os.environ.get('GMAIL_CLIENT_SECRET')
+    gmail_refresh_token = os.environ.get('GMAIL_REFRESH_TOKEN')
+
+    if gmail_client_id and gmail_client_secret and gmail_refresh_token:
+        try:
+            logger.info(f"Dispatching '{subject}' via official Gmail REST API (Port 443 HTTPS) to {to_email}")
+            await asyncio.to_thread(_send_gmail_api_sync, to_email, subject, html_content, text_content, gmail_client_id, gmail_client_secret, gmail_refresh_token, from_name, smtp_user)
+            logger.info(f"Email '{subject}' successfully delivered via Gmail REST API to {to_email}")
+            return True
+        except Exception as e:
+            logger.exception(f"Gmail REST API delivery failed to {to_email}: {e}")
 
     # 1. Prioritize SendGrid Web API if configured (HTTPS Port 443 - works everywhere including Render Free)
     sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
@@ -3978,8 +4036,10 @@ async def debug_email():
             
     sg_key = os.environ.get("SENDGRID_API_KEY", "")
     resend_key = os.environ.get("RESEND_API_KEY", "")
+    has_gmail_api = bool(os.environ.get("GMAIL_CLIENT_ID") and os.environ.get("GMAIL_CLIENT_SECRET") and os.environ.get("GMAIL_REFRESH_TOKEN"))
     return {
         "smtp_connectivity": smtp_test,
+        "has_gmail_api": has_gmail_api,
         "has_sendgrid_key": bool(sg_key),
         "sendgrid_key_prefix": sg_key[:8] if sg_key else None,
         "has_resend_key": bool(resend_key),

@@ -3,13 +3,6 @@ import sys
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from pathlib import Path
-from dotenv import load_dotenv
-
-# Load .env if present
-env_path = Path(__file__).parent / '.env'
-if env_path.exists():
-    load_dotenv(env_path)
 
 smtp_user = os.environ.get("SMTP_USER") or os.environ.get("GMAIL_USER") or "mentis.mathematics@gmail.com"
 smtp_password = os.environ.get("SMTP_PASSWORD") or os.environ.get("GMAIL_APP_PASSWORD")

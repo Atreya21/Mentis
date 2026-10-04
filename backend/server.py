@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, BackgroundTasks, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -995,6 +995,18 @@ async def test_push_notification(current_user: User = Depends(get_current_user))
         tag="test"
     )
     return {"message": "Test notification sent"}
+
+# ============== MOBILE APP DOWNLOAD ENDPOINT ==============
+
+@api_router.get("/download/app")
+@api_router.get("/download/android")
+async def download_android_app():
+    """Redirect to the latest official Mentis Android APK release"""
+    apk_release_url = os.environ.get(
+        "ANDROID_APK_URL",
+        "https://github.com/Atreya21/Mentis/releases/download/v1.0.0/Mentis.apk"
+    )
+    return RedirectResponse(url=apk_release_url, status_code=302)
 
 @api_router.post("/auth/signup")
 async def signup(user_data: UserCreate):

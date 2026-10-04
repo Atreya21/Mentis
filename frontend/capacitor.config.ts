@@ -5,9 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Mentis',
   webDir: 'build',
   server: {
-    // For development, you can use the live server
-    // url: 'https://mentis-auth-test.preview.emergentagent.com',
-    // cleartext: true,
+    // Points directly to the live production website so every prompt/deployment automatically updates the app
+    url: 'https://mentismathematicsfoundation.com',
+    cleartext: false,
     androidScheme: 'https'
   },
   plugins: {

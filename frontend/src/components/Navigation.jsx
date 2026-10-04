@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/App';
 import { useWebSocket } from '@/context/WebSocketContext';
 import { Button } from '@/components/ui/button';
-import { User, Shield, Menu, X } from 'lucide-react';
+import { User, Shield, Menu, X, Smartphone } from 'lucide-react';
+import DownloadAppModal from '@/components/DownloadAppModal';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -14,6 +15,7 @@ const Navigation = () => {
   const location = useLocation();
   const [logoUrl, setLogoUrl] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const { unreadCount, fetchUnreadCount } = useWebSocket();
 
   useEffect(() => {
@@ -101,8 +103,18 @@ const Navigation = () => {
             ))}
           </div>
 
-          {/* Desktop Auth Buttons */}
+          {/* Desktop Auth & App Buttons */}
           <div className="hidden sm:flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDownloadModal(true)}
+              className="rounded-full border-orange-500/40 hover:bg-orange-500/10 hover:border-orange-400 text-slate-300 hover:text-white text-xs sm:text-sm px-3 sm:px-3.5 flex items-center gap-1.5 transition-all"
+              data-testid="nav-download-app-btn"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-orange-400" />
+              <span>App</span>
+            </Button>
             {user ? (
               <>
                 <Link to="/dashboard">
@@ -178,8 +190,24 @@ const Navigation = () => {
               </Link>
             ))}
 
+            {/* Mobile App Download Button */}
+            <div className="pt-2">
+              <button
+                onClick={() => { setMobileMenuOpen(false); setShowDownloadModal(true); }}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-orange-500/10 border border-orange-500/30 text-white hover:bg-orange-500/20 transition-all text-sm font-medium"
+              >
+                <span className="flex items-center gap-3">
+                  <Smartphone className="w-4 h-4 text-orange-400" />
+                  <span>Download Mobile App</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/30 text-orange-300 font-bold">
+                  APK / PWA
+                </span>
+              </button>
+            </div>
+
             {/* Mobile Auth Section */}
-            <div className="pt-4 mt-4 border-t border-slate-700 space-y-2">
+            <div className="pt-3 mt-3 border-t border-slate-700 space-y-2">
               {user ? (
                 <>
                   <Link
@@ -219,6 +247,12 @@ const Navigation = () => {
           </div>
         </div>
       )}
+
+      {/* App Download Modal */}
+      <DownloadAppModal 
+        isOpen={showDownloadModal} 
+        onClose={() => setShowDownloadModal(false)} 
+      />
     </nav>
   );
 };

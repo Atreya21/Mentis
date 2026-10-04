@@ -1,0 +1,7 @@
+{
+  "name": "mentis-app",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm install --legacy-peer-deps && CI=false npm run build"
+  }
+}

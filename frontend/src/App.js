@@ -10,6 +10,8 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 import MessagePopupContainer from '@/components/MessagePopupContainer';
+import pushService from '@/services/PushNotificationService';
+import notificationService from '@/services/NotificationService';
 import { WebSocketProvider } from '@/context/WebSocketContext';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
@@ -96,6 +98,14 @@ function App() {
       setLoading(false);
     }
   }, []);
+
+  // Automatically initialize and sync push notifications for authenticated user
+  useEffect(() => {
+    if (user) {
+      pushService.init().catch(err => console.warn('Push init error:', err));
+      notificationService.init().catch(err => console.warn('Notification init error:', err));
+    }
+  }, [user]);
 
   const login = async (email, password) => {
     try {

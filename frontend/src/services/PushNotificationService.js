@@ -37,6 +37,23 @@ class PushNotificationService {
       console.log('Push service initialized, permission:', this.permission);
       console.log('Existing subscription:', !!this.subscription);
       
+      // Auto-sync or auto-subscribe if permission is granted
+      if (this.permission === 'granted') {
+        if (!this.subscription) {
+          try {
+            await this.subscribe();
+          } catch (subErr) {
+            console.warn('Auto-subscribe error:', subErr);
+          }
+        } else {
+          try {
+            await this.sendSubscriptionToServer(this.subscription);
+          } catch (syncErr) {
+            console.warn('Auto-sync subscription error:', syncErr);
+          }
+        }
+      }
+
       return this.permission === 'granted' && !!this.subscription;
     } catch (err) {
       console.error('Failed to initialize push service:', err);

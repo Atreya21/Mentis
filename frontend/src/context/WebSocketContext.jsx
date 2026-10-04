@@ -187,11 +187,9 @@ export const WebSocketProvider = ({ children, user }) => {
                 // Increment unread count
                 setUnreadCount(prev => prev + 1);
 
-                // Native Desktop / PWA background notification
-                if (document.hidden) {
-                  const preview = msg.content || (msg.attachment ? `Sent an attachment (${msg.attachment.file_type || 'file'})` : 'New message');
-                  notificationService.showNewMessage(msg.sender_name || 'Mathmate', preview, msg.connection_id);
-                }
+                // Instant Device OS Notification (mobile banner, desktop notification tray)
+                const preview = msg.content || (msg.attachment ? `Sent an attachment (${msg.attachment.file_type || 'file'})` : 'New message');
+                notificationService.showNewMessage(msg.sender_name || 'Mathmate', preview, msg.connection_id);
 
                 // In-App floating interactive pop-up
                 addPopup({
@@ -216,12 +214,12 @@ export const WebSocketProvider = ({ children, user }) => {
 
               if (!isGroupActive) {
                 audioChime.playNotificationSound();
-                if (document.hidden) {
-                  notificationService.show(`New message in ${data.group_name || 'Group'}`, {
-                    body: `${msg.sender_name || 'Member'}: ${msg.content || 'Sent a file'}`,
-                    tag: `group-${data.group_id}`
-                  });
-                }
+                // Instant Device OS Notification
+                notificationService.show(`New message in ${data.group_name || 'Group'}`, {
+                  body: `${msg.sender_name || 'Member'}: ${msg.content || 'Sent a file'}`,
+                  tag: `group-${data.group_id}`,
+                  data: { url: `/connect?tab=groups&group=${data.group_id}` }
+                });
                 addPopup({
                   id: `grp-${msg.id || Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                   type: 'group_message',
@@ -236,6 +234,11 @@ export const WebSocketProvider = ({ children, user }) => {
               }
             } else if (type === 'connection_request') {
               audioChime.playNotificationSound();
+              notificationService.show('New Connection Request', {
+                body: `${data.from_user?.name || 'Someone'} wants to connect with you on Mathmate!`,
+                tag: `conn-req-${data.connection_id || Date.now()}`,
+                data: { url: '/connect' }
+              });
               addPopup({
                 id: `conn-req-${data.connection_id || Date.now()}`,
                 type: 'connection_request',
@@ -247,13 +250,18 @@ export const WebSocketProvider = ({ children, user }) => {
               });
             } else if (type === 'connection_accepted') {
               audioChime.playNotificationSound();
+              notificationService.show('Connection Accepted! 🎉', {
+                body: `${data.from_user?.name || 'A user'} accepted your request. Start chatting now!`,
+                tag: `conn-acc-${data.connection_id || Date.now()}`,
+                data: { url: `/connect?chat=${data.connection_id}` }
+              });
               addPopup({
                 id: `conn-acc-${data.connection_id || Date.now()}`,
                 type: 'connection_accepted',
                 title: 'Connection Accepted! 🎉',
                 subtitle: data.from_user?.name || 'Mathmate',
                 content: `${data.from_user?.name || 'A user'} accepted your request. Start chatting now!`,
-                avatarLetter: (data.from_user?.name || 'C').charAt(0).toUpperCase(),
+                avatarLetter: (data.from_user?.name || 'A').charAt(0).toUpperCase(),
                 url: `/connect?chat=${data.connection_id}`
               });
             } else if (type === 'online_users') {

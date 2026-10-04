@@ -26,6 +26,13 @@ UPLOADS_DIR = ROOT_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
 load_dotenv(ROOT_DIR / '.env')
 
+# Configure logging at the top level
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("mentis.backend")
+
 # VAPID keys for Web Push Notifications
 VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
 VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
@@ -599,6 +606,73 @@ async def get_master_admin_user(user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Master Admin access required")
     return user
 
+# ================= EMAIL DISPATCH SERVICE =================
+def _send_smtp_sync(to_email: str, subject: str, html_content: str, text_content: str, smtp_user: str, smtp_password: str, smtp_host: str = "smtp.gmail.com", smtp_port: int = 587, from_name: str = "Mentis Mathematics Foundation"):
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = f"{from_name} <{smtp_user}>"
+    msg["To"] = to_email
+
+    if text_content:
+        msg.attach(MIMEText(text_content, "plain"))
+    msg.attach(MIMEText(html_content, "html"))
+
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(smtp_user, smtp_password)
+        server.send_message(msg)
+
+async def send_system_email(to_email: str, subject: str, html_content: str, text_content: str = "") -> bool:
+    """
+    Universal Email Dispatcher:
+    1. Prioritizes Gmail SMTP (smtp.gmail.com:587) using SMTP_USER and SMTP_PASSWORD.
+    2. Falls back to SendGrid if SENDGRID_API_KEY is configured.
+    3. Logs detailed diagnostics.
+    """
+    smtp_user = os.environ.get('SMTP_USER') or os.environ.get('GMAIL_USER') or 'mentis.mathematics@gmail.com'
+    smtp_password = os.environ.get('SMTP_PASSWORD') or os.environ.get('GMAIL_APP_PASSWORD')
+    smtp_host = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
+    smtp_port = int(os.environ.get('SMTP_PORT', '587'))
+    from_name = os.environ.get('FROM_NAME', 'Mentis Mathematics Foundation')
+
+    if smtp_user and smtp_password:
+        try:
+            logger.info(f"Dispatching '{subject}' via Gmail SMTP ({smtp_host}) to {to_email}")
+            await asyncio.to_thread(_send_smtp_sync, to_email, subject, html_content, text_content, smtp_user, smtp_password, smtp_host, smtp_port, from_name)
+            logger.info(f"Email '{subject}' successfully delivered via SMTP to {to_email}")
+            return True
+        except Exception as e:
+            logger.exception(f"SMTP delivery failed to {to_email}: {e}")
+
+    # Fallback to SendGrid
+    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+    if sendgrid_api_key:
+        try:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail, Email, To
+            from_email = os.environ.get('FROM_EMAIL', smtp_user or 'mentis.mathematics@gmail.com')
+            message = Mail(
+                from_email=Email(from_email, from_name),
+                to_emails=To(to_email),
+                subject=subject,
+                html_content=html_content
+            )
+            sg = SendGridAPIClient(sendgrid_api_key)
+            await asyncio.to_thread(sg.send, message)
+            logger.info(f"Email '{subject}' successfully delivered via SendGrid to {to_email}")
+            return True
+        except Exception as e:
+            logger.exception(f"SendGrid delivery failed to {to_email}: {e}")
+
+    logger.warning(f"No configured email transport (Gmail SMTP or SendGrid) available for {to_email}")
+    return False
+
 # Helper function to send push notification to a user
 async def send_push_notification(user_id: str, title: str, body: str, url: str = "/", tag: str = "mentis"):
     """Send push notification to all subscriptions for a user"""
@@ -751,47 +825,36 @@ async def signup(user_data: UserCreate):
     
     # Send verification email
     try:
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-        frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com')
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com').rstrip('/')
+        verification_link = f"{frontend_url}/verify-email?token={verification_token}"
         
-        if sendgrid_api_key:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To
-            
-            verification_link = f"{frontend_url}/verify-email?token={verification_token}"
-            
-            message = Mail(
-                from_email=Email("mentis.mathematics@gmail.com", "Mentis Mathematics"),
-                to_emails=To(user_data.email),
-                subject="Verify Your Mentis Account",
-                html_content=f"""
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #f97316;">Welcome to Mentis!</h2>
-                    <p>Hi {user_data.name},</p>
-                    <p>Thank you for signing up. Please verify your email address to activate your account.</p>
-                    <p style="margin: 30px 0;">
-                        <a href="{verification_link}" 
-                           style="background: linear-gradient(to right, #f97316, #ec4899); 
-                                  color: white; 
-                                  padding: 12px 30px; 
-                                  text-decoration: none; 
-                                  border-radius: 25px;
-                                  display: inline-block;">
-                            Verify Email
-                        </a>
-                    </p>
-                    <p style="color: #666; font-size: 14px;">
-                        Or copy and paste this link in your browser:<br>
-                        <a href="{verification_link}" style="color: #f97316;">{verification_link}</a>
-                    </p>
-                    <p style="color: #666; font-size: 14px;">This link will expire in 24 hours.</p>
-                </div>
-                """
-            )
-            
-            sg = SendGridAPIClient(sendgrid_api_key)
-            sg.send(message)
-            logger.info(f"Verification email sent to {user_data.email}")
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; color: #e2e8f0;">
+            <h2 style="color: #f97316; margin-bottom: 20px;">Welcome to Mentis!</h2>
+            <p>Hi {user_data.name},</p>
+            <p>Thank you for signing up for Mentis Mathematics Foundation. Please verify your email address to activate your account.</p>
+            <p style="margin: 30px 0; text-align: center;">
+                <a href="{verification_link}" 
+                   style="background: linear-gradient(to right, #f97316, #ec4899); 
+                          color: white; 
+                          padding: 12px 30px; 
+                          text-decoration: none; 
+                          border-radius: 25px;
+                          display: inline-block;
+                          font-weight: bold;">
+                    Verify Email
+                </a>
+            </p>
+            <p style="color: #94a3b8; font-size: 13px;">
+                Or copy and paste this link in your browser:<br>
+                <a href="{verification_link}" style="color: #f97316; word-break: break-all;">{verification_link}</a>
+            </p>
+            <p style="color: #64748b; font-size: 12px; margin-top: 20px;">This link will expire in 24 hours.</p>
+        </div>
+        """
+        text_content = f"Hi {user_data.name},\n\nPlease verify your email address for Mentis: {verification_link}\n\nThis link will expire in 24 hours.\n\nMentis Mathematics Foundation"
+        
+        await send_system_email(user_data.email, "Verify Your Mentis Account", html_content, text_content)
     except Exception as e:
         logger.error(f"Failed to send verification email: {e}")
     
@@ -905,47 +968,35 @@ async def resend_verification(email: EmailStr):
     
     # Send verification email
     try:
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-        frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com')
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com').rstrip('/')
+        verification_link = f"{frontend_url}/verify-email?token={verification_token}"
         
-        if sendgrid_api_key:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To
-            
-            verification_link = f"{frontend_url}/verify-email?token={verification_token}"
-            
-            message = Mail(
-                from_email=Email("mentis.mathematics@gmail.com", "Mentis Mathematics"),
-                to_emails=To(email),
-                subject="Verify Your Mentis Account",
-                html_content=f"""
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #f97316;">Verify Your Email</h2>
-                    <p>Hi {user_doc.get('name', 'there')},</p>
-                    <p>Please click the button below to verify your email address.</p>
-                    <p style="margin: 30px 0;">
-                        <a href="{verification_link}" 
-                           style="background: linear-gradient(to right, #f97316, #ec4899); 
-                                  color: white; 
-                                  padding: 12px 30px; 
-                                  text-decoration: none; 
-                                  border-radius: 25px;
-                                  display: inline-block;">
-                            Verify Email
-                        </a>
-                    </p>
-                    <p style="color: #666; font-size: 14px;">
-                        Or copy and paste this link:<br>
-                        <a href="{verification_link}" style="color: #f97316;">{verification_link}</a>
-                    </p>
-                    <p style="color: #666; font-size: 14px;">This link expires in 24 hours.</p>
-                </div>
-                """
-            )
-            
-            sg = SendGridAPIClient(sendgrid_api_key)
-            sg.send(message)
-            logger.info(f"Verification email resent to {email}")
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; color: #e2e8f0;">
+            <h2 style="color: #f97316; margin-bottom: 20px;">Verify Your Email</h2>
+            <p>Hi {user_doc.get('name', 'there')},</p>
+            <p>Please click the button below to verify your email address for Mentis Mathematics Foundation.</p>
+            <p style="margin: 30px 0; text-align: center;">
+                <a href="{verification_link}" 
+                   style="background: linear-gradient(to right, #f97316, #ec4899); 
+                          color: white; 
+                          padding: 12px 30px; 
+                          text-decoration: none; 
+                          border-radius: 25px;
+                          display: inline-block;
+                          font-weight: bold;">
+                    Verify Email
+                </a>
+            </p>
+            <p style="color: #94a3b8; font-size: 13px;">
+                Or copy and paste this link in your browser:<br>
+                <a href="{verification_link}" style="color: #f97316; word-break: break-all;">{verification_link}</a>
+            </p>
+            <p style="color: #64748b; font-size: 12px; margin-top: 20px;">This link will expire in 24 hours.</p>
+        </div>
+        """
+        text_content = f"Hi {user_doc.get('name', 'there')},\n\nPlease verify your email address: {verification_link}\n\nMentis Mathematics Foundation"
+        await send_system_email(email, "Verify Your Mentis Account", html_content, text_content)
     except Exception as e:
         logger.error(f"Failed to resend verification email: {e}")
     
@@ -1401,11 +1452,16 @@ async def forgot_password(request: PasswordResetRequest):
     # Generate secure token
     reset_token = secrets.token_urlsafe(32)
     
+    # Use production domain as default fallback
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com').rstrip('/')
+    reset_link = f"{frontend_url}/reset-password?token={reset_token}"
+    
     # Create reset token document
     token_doc = {
         "id": str(uuid.uuid4()),
         "email": request.email,
         "token": reset_token,
+        "reset_link": reset_link,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
         "used": False
@@ -1413,50 +1469,53 @@ async def forgot_password(request: PasswordResetRequest):
     
     await db.password_reset_tokens.insert_one(token_doc)
     
-    # Send email with reset link
-    reset_link = f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/reset-password?token={reset_token}"
-    
-    try:
-        # Check if SendGrid is configured
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-        from_email = os.environ.get('FROM_EMAIL', 'noreply@mentis.com')
-        
-        if sendgrid_api_key:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To, Content
-            
-            message = Mail(
-                from_email=Email(from_email),
-                to_emails=To(request.email),
-                subject='Reset Your Mentis Password',
-                html_content=f'''
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #f97316;">Reset Your Password</h2>
-                    <p>Hi there,</p>
-                    <p>You recently requested to reset your password for your Mentis account. Click the button below to reset it:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="{reset_link}" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block;">Reset Password</a>
-                    </div>
-                    <p>Or copy and paste this link into your browser:</p>
-                    <p style="color: #64748b; word-break: break-all;">{reset_link}</p>
-                    <p><strong>This link will expire in 1 hour.</strong></p>
-                    <p>If you didn't request a password reset, you can safely ignore this email.</p>
-                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-                    <p style="color: #64748b; font-size: 12px;">Mentis - Mathematics Community Platform</p>
-                </div>
-                '''
-            )
-            
-            sg = SendGridAPIClient(sendgrid_api_key)
-            response = sg.send(message)
-            logger.info(f"Password reset email sent to {request.email}, status: {response.status_code}")
-        else:
-            # Log for admin to manually share (development mode)
-            logger.warning(f"SendGrid not configured. Reset link for {request.email}: {reset_link}")
-            
-    except Exception as e:
-        logger.error(f"Failed to send password reset email: {str(e)}")
-        # Don't reveal error to user for security
+    html_content = f'''<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b1120; margin: 0; padding: 24px;">
+  <div style="max-width: 560px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 36px 32px; color: #e2e8f0; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);">
+    <div style="text-align: center; margin-bottom: 28px;">
+      <h1 style="color: #f97316; font-size: 24px; margin: 0 0 6px 0; font-weight: 800;">Mentis Mathematics Foundation</h1>
+      <p style="color: #94a3b8; font-size: 14px; margin: 0;">Password Reset Request</p>
+    </div>
+    <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1; margin-bottom: 16px;">Hi there,</p>
+    <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1; margin-bottom: 24px;">We received a request to reset your password for your Mentis account. Click the button below to choose a new password:</p>
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="{reset_link}" target="_blank" style="background: linear-gradient(135deg, #f97316 0%, #ec4899 100%); color: #ffffff; padding: 14px 34px; font-size: 15px; font-weight: 600; text-decoration: none; border-radius: 9999px; display: inline-block; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);">Reset Password</a>
+    </div>
+    <p style="font-size: 13px; line-height: 1.6; color: #94a3b8; margin-bottom: 8px;">If the button above does not work, copy and paste this link into your browser:</p>
+    <p style="font-size: 12px; color: #f97316; word-break: break-all; background: #0f172a; padding: 14px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">{reset_link}</p>
+    <p style="font-size: 13px; color: #fb923c; margin-bottom: 12px;">⏱️ <strong>This link is valid for 1 hour.</strong></p>
+    <p style="font-size: 13px; color: #64748b; line-height: 1.5;">If you did not request a password reset, you can safely ignore this email. Your account remains completely secure.</p>
+    <hr style="border: none; border-top: 1px solid #334155; margin: 32px 0 20px 0;">
+    <p style="color: #64748b; font-size: 12px; text-align: center; margin: 0;">Mentis Mathematics Foundation • <a href="https://mentismathematicsfoundation.com" style="color: #f97316; text-decoration: none;">mentismathematicsfoundation.com</a></p>
+  </div>
+</body>
+</html>'''
+
+    text_content = f"""Hi there,
+
+We received a request to reset your password for your Mentis account. Click the link below to choose a new password:
+
+{reset_link}
+
+This link is valid for 1 hour.
+
+If you did not request a password reset, you can safely ignore this email.
+
+Mentis Mathematics Foundation
+https://mentismathematicsfoundation.com
+"""
+
+    await send_system_email(
+        to_email=request.email,
+        subject="Reset Your Mentis Password",
+        html_content=html_content,
+        text_content=text_content
+    )
     
     return success_message
 
@@ -2676,34 +2735,21 @@ async def report_user(user_id: str, report_data: UserReportCreate, current_user:
     
     # Send email notification to admin
     try:
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-        admin_email = os.environ.get('FROM_EMAIL', 'mentis.mathematics@gmail.com')
-        
-        if sendgrid_api_key:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To
-            
-            reporter = await db.users.find_one({"id": current_user.id}, {"_id": 0})
-            
-            message = Mail(
-                from_email=Email(admin_email),
-                to_emails=To(admin_email),
-                subject=f'🚨 User Report: {reported_user.get("name", "Unknown")} - Mentis',
-                html_content=f'''
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 10px;">
-                    <h2 style="color: #ef4444; margin-bottom: 20px;">New User Report 🚨</h2>
-                    <p style="color: #e2e8f0;"><strong>Reported User:</strong> {reported_user.get("name", "Unknown")} ({reported_user.get("email", "Unknown")})</p>
-                    <p style="color: #e2e8f0;"><strong>Reported By:</strong> {reporter.get("name", "Unknown") if reporter else "Unknown"}</p>
-                    <p style="color: #e2e8f0;"><strong>Reason:</strong> {report_data.reason}</p>
-                    <p style="color: #e2e8f0;"><strong>Description:</strong> {report_data.description}</p>
-                    <hr style="border: none; border-top: 1px solid #374151; margin: 20px 0;">
-                    <p style="color: #64748b; font-size: 12px;">Please review this report in the Admin Dashboard.</p>
-                </div>
-                '''
-            )
-            
-            sg = SendGridAPIClient(sendgrid_api_key)
-            sg.send(message)
+        admin_email = os.environ.get('ADMIN_NOTIFICATION_EMAIL') or os.environ.get('SMTP_USER') or 'mentis.mathematics@gmail.com'
+        reporter = await db.users.find_one({"id": current_user.id}, {"_id": 0})
+        html_content = f'''
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; color: #e2e8f0;">
+            <h2 style="color: #ef4444; margin-bottom: 20px;">New User Report 🚨</h2>
+            <p><strong>Reported User:</strong> {reported_user.get("name", "Unknown")} ({reported_user.get("email", "Unknown")})</p>
+            <p><strong>Reported By:</strong> {reporter.get("name", "Unknown") if reporter else "Unknown"}</p>
+            <p><strong>Reason:</strong> {report_data.reason}</p>
+            <p><strong>Description:</strong> {report_data.description}</p>
+            <hr style="border: none; border-top: 1px solid #334155; margin: 20px 0;">
+            <p style="color: #64748b; font-size: 12px;">Please review this report in the Admin Dashboard.</p>
+        </div>
+        '''
+        text_content = f"New User Report:\nReported User: {reported_user.get('name')}\nReason: {report_data.reason}\nDescription: {report_data.description}"
+        await send_system_email(admin_email, f'🚨 User Report: {reported_user.get("name", "Unknown")} - Mentis', html_content, text_content)
     except Exception as e:
         logger.error(f"Failed to send report notification email: {str(e)}")
     
@@ -3871,177 +3917,83 @@ async def health_check_root():
     """Root health check endpoint"""
     return {"status": "ok"}
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
 async def send_resource_approval_email(user_email: str, user_name: str, resource_title: str):
     """Send email notification when a user's resource is approved"""
-    try:
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-        from_email = os.environ.get('FROM_EMAIL', 'noreply@mentis.com')
-        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-        
-        if not sendgrid_api_key:
-            logger.warning(f"SendGrid not configured. Cannot send approval email to {user_email}")
-            return False
-            
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail, Email, To
-        
-        message = Mail(
-            from_email=Email(from_email),
-            to_emails=To(user_email),
-            subject='🎉 Your Resource Has Been Approved! - Mentis',
-            html_content=f'''
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 10px;">
-                <h2 style="color: #f97316; margin-bottom: 20px;">Great News, {user_name}! 🎉</h2>
-                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
-                    Your submitted resource <strong style="color: #f97316;">"{resource_title}"</strong> has been reviewed and approved by our team!
-                </p>
-                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
-                    It's now live on the Resource Hub and available to the entire Mentis community. Thank you for contributing to our growing collection of mathematics resources!
-                </p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{frontend_url}/resources" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">View Resource Hub</a>
-                </div>
-                <p style="color: #94a3b8; font-size: 14px;">
-                    Keep contributing and help us build the best mathematics resource collection!
-                </p>
-                <hr style="border: none; border-top: 1px solid #374151; margin: 30px 0;">
-                <p style="color: #64748b; font-size: 12px; text-align: center;">
-                    Mentis - Mathematics Community Platform<br>
-                    <a href="mailto:mentis.mathematics@gmail.com" style="color: #f97316;">mentis.mathematics@gmail.com</a>
-                </p>
-            </div>
-            '''
-        )
-        
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
-        logger.info(f"Resource approval email sent to {user_email}, status: {response.status_code}")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Failed to send resource approval email to {user_email}: {str(e)}")
-        return False
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com').rstrip('/')
+    html_content = f'''
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; color: #e2e8f0;">
+        <h2 style="color: #f97316; margin-bottom: 20px;">Great News, {user_name}! 🎉</h2>
+        <p style="font-size: 16px; line-height: 1.6;">
+            Your submitted resource <strong style="color: #f97316;">"{resource_title}"</strong> has been reviewed and approved by our team!
+        </p>
+        <p style="font-size: 16px; line-height: 1.6;">
+            It's now live on the Resource Hub and available to the entire Mentis community. Thank you for contributing to our growing collection of mathematics resources!
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{frontend_url}/resources" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">View Resource Hub</a>
+        </div>
+        <hr style="border: none; border-top: 1px solid #334155; margin: 30px 0;">
+        <p style="color: #64748b; font-size: 12px; text-align: center;">
+            Mentis Mathematics Foundation • <a href="{frontend_url}" style="color: #f97316; text-decoration: none;">mentismathematicsfoundation.com</a>
+        </p>
+    </div>
+    '''
+    text_content = f"Great news {user_name}! Your resource '{resource_title}' has been approved and is now live on the Mentis Resource Hub: {frontend_url}/resources"
+    return await send_system_email(user_email, '🎉 Your Resource Has Been Approved! - Mentis', html_content, text_content)
 
 async def send_resource_rejection_email(user_email: str, user_name: str, resource_title: str):
     """Send email notification when a user's resource is rejected"""
-    try:
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-        from_email = os.environ.get('FROM_EMAIL', 'noreply@mentis.com')
-        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-        
-        if not sendgrid_api_key:
-            logger.warning(f"SendGrid not configured. Cannot send rejection email to {user_email}")
-            return False
-            
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail, Email, To
-        
-        message = Mail(
-            from_email=Email(from_email),
-            to_emails=To(user_email),
-            subject='Resource Submission Update - Mentis',
-            html_content=f'''
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 10px;">
-                <h2 style="color: #f97316; margin-bottom: 20px;">Hello {user_name},</h2>
-                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
-                    Thank you for your contribution to Mentis! After careful review, we were unable to approve your submitted resource <strong style="color: #94a3b8;">"{resource_title}"</strong> at this time.
-                </p>
-                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
-                    This could be due to one of the following reasons:
-                </p>
-                <ul style="color: #94a3b8; font-size: 14px; line-height: 1.8;">
-                    <li>The content may not align with our community guidelines</li>
-                    <li>The resource link may be inaccessible or broken</li>
-                    <li>Similar content already exists in our Resource Hub</li>
-                    <li>The description or metadata needs improvement</li>
-                </ul>
-                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
-                    We encourage you to review and resubmit your resource. If you have any questions, feel free to reach out to us.
-                </p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{frontend_url}/resources" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">Submit Another Resource</a>
-                </div>
-                <p style="color: #94a3b8; font-size: 14px;">
-                    Your contributions help make Mentis a better platform for everyone!
-                </p>
-                <hr style="border: none; border-top: 1px solid #374151; margin: 30px 0;">
-                <p style="color: #64748b; font-size: 12px; text-align: center;">
-                    Mentis - Mathematics Community Platform<br>
-                    <a href="mailto:mentis.mathematics@gmail.com" style="color: #f97316;">mentis.mathematics@gmail.com</a>
-                </p>
-            </div>
-            '''
-        )
-        
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
-        logger.info(f"Resource rejection email sent to {user_email}, status: {response.status_code}")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Failed to send resource rejection email to {user_email}: {str(e)}")
-        return False
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com').rstrip('/')
+    html_content = f'''
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; color: #e2e8f0;">
+        <h2 style="color: #f97316; margin-bottom: 20px;">Hello {user_name},</h2>
+        <p style="font-size: 16px; line-height: 1.6;">
+            Thank you for your contribution to Mentis! After careful review, we were unable to approve your submitted resource <strong style="color: #94a3b8;">"{resource_title}"</strong> at this time.
+        </p>
+        <ul style="color: #94a3b8; font-size: 14px; line-height: 1.8;">
+            <li>The content may not align with our community guidelines</li>
+            <li>The resource link may be inaccessible or broken</li>
+            <li>Similar content already exists in our Resource Hub</li>
+            <li>The description or metadata needs improvement</li>
+        </ul>
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{frontend_url}/resources" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">Submit Another Resource</a>
+        </div>
+        <hr style="border: none; border-top: 1px solid #334155; margin: 30px 0;">
+        <p style="color: #64748b; font-size: 12px; text-align: center;">
+            Mentis Mathematics Foundation • <a href="{frontend_url}" style="color: #f97316; text-decoration: none;">mentismathematicsfoundation.com</a>
+        </p>
+    </div>
+    '''
+    text_content = f"Hello {user_name}, update on your resource '{resource_title}'. Check {frontend_url}/resources for guidelines."
+    return await send_system_email(user_email, 'Resource Submission Update - Mentis', html_content, text_content)
 
 async def send_unread_messages_notification_email(user_email: str, user_name: str, unread_count: int, sender_names: List[str]):
     """Send email notification when user has unread messages for more than 24 hours"""
-    try:
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
-        from_email = os.environ.get('FROM_EMAIL', 'noreply@mentis.com')
-        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-        
-        if not sendgrid_api_key:
-            logger.warning(f"SendGrid not configured. Cannot send unread messages email to {user_email}")
-            return False
-            
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail, Email, To
-        
-        senders_text = ", ".join(sender_names[:3])
-        if len(sender_names) > 3:
-            senders_text += f" and {len(sender_names) - 3} others"
-        
-        message = Mail(
-            from_email=Email(from_email),
-            to_emails=To(user_email),
-            subject=f'💬 You have {unread_count} unread message{"s" if unread_count > 1 else ""} on Mentis!',
-            html_content=f'''
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 10px;">
-                <h2 style="color: #f97316; margin-bottom: 20px;">Hey {user_name}! 💬</h2>
-                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
-                    You have <strong style="color: #f97316;">{unread_count} unread message{"s" if unread_count > 1 else ""}</strong> waiting for you on Mathmate!
-                </p>
-                <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">
-                    Messages from: <strong style="color: #e2e8f0;">{senders_text}</strong>
-                </p>
-                <p style="color: #e2e8f0; font-size: 16px; line-height: 1.6;">
-                    Don't keep your math buddies waiting! Log in to continue your conversations.
-                </p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{frontend_url}/connect" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">View Messages</a>
-                </div>
-                <hr style="border: none; border-top: 1px solid #374151; margin: 30px 0;">
-                <p style="color: #64748b; font-size: 12px; text-align: center;">
-                    Mentis - Mathematics Community Platform<br>
-                    <a href="mailto:mentis.mathematics@gmail.com" style="color: #f97316;">mentis.mathematics@gmail.com</a>
-                </p>
-            </div>
-            '''
-        )
-        
-        sg = SendGridAPIClient(sendgrid_api_key)
-        response = sg.send(message)
-        logger.info(f"Unread messages notification email sent to {user_email}, status: {response.status_code}")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Failed to send unread messages email to {user_email}: {str(e)}")
-        return False
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://mentismathematicsfoundation.com').rstrip('/')
+    senders_text = ", ".join(sender_names[:3])
+    if len(sender_names) > 3:
+        senders_text += f" and {len(sender_names) - 3} others"
+    html_content = f'''
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; color: #e2e8f0;">
+        <h2 style="color: #f97316; margin-bottom: 20px;">Hey {user_name}! 💬</h2>
+        <p style="font-size: 16px; line-height: 1.6;">
+            You have <strong style="color: #f97316;">{unread_count} unread message{"s" if unread_count > 1 else ""}</strong> waiting for you on Mentis!
+        </p>
+        <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">
+            Messages from: <strong style="color: #e2e8f0;">{senders_text}</strong>
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{frontend_url}/connect" style="background: linear-gradient(to right, #f97316, #ec4899); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">View Messages</a>
+        </div>
+        <hr style="border: none; border-top: 1px solid #334155; margin: 30px 0;">
+        <p style="color: #64748b; font-size: 12px; text-align: center;">
+            Mentis Mathematics Foundation • <a href="{frontend_url}" style="color: #f97316; text-decoration: none;">mentismathematicsfoundation.com</a>
+        </p>
+    </div>
+    '''
+    text_content = f"Hey {user_name}! You have {unread_count} unread message(s) on Mentis: {frontend_url}/connect"
+    return await send_system_email(user_email, f'💬 You have {unread_count} unread message{"s" if unread_count > 1 else ""} on Mentis!', html_content, text_content)
 
 async def check_and_notify_unread_messages():
     """Background task to check for unread messages older than 24 hours and send notifications"""

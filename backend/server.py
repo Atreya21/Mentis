@@ -4014,9 +4014,9 @@ async def health_check():
     try:
         # Quick database ping to verify connectivity
         await db.command('ping')
-        return {"status": "healthy", "database": "connected", "version": "ea723b1"}
+        return {"status": "healthy", "database": "connected", "version": "gmail-api-v1"}
     except Exception as e:
-        return {"status": "unhealthy", "database": "disconnected", "error": str(e), "version": "ea723b1"}
+        return {"status": "unhealthy", "database": "disconnected", "error": str(e), "version": "gmail-api-v1"}
 
 @app.get("/api/debug-email")
 async def debug_email():
@@ -4040,11 +4040,10 @@ async def debug_email():
     return {
         "smtp_connectivity": smtp_test,
         "has_gmail_api": has_gmail_api,
+        "email_engine": "Google Official Gmail REST API (Port 443 HTTPS)" if has_gmail_api else "Fallback",
         "has_sendgrid_key": bool(sg_key),
-        "sendgrid_key_prefix": sg_key[:8] if sg_key else None,
         "has_resend_key": bool(resend_key),
         "smtp_user": os.environ.get("SMTP_USER", "mentis.mathematics@gmail.com"),
-        "has_smtp_password": bool(os.environ.get("SMTP_PASSWORD") or "tcmpubbriehmnufa"),
     }
 
 @app.get("/health")

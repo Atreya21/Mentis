@@ -34,6 +34,8 @@ dist
 
 *token.json*
 *credentials.json*
+backend/gmail_tokens.json
+backend/capture_token.py
 
 # Logs and debug files
 npm-debug.log*

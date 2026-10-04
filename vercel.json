@@ -4,7 +4,7 @@
   "outputDirectory": "frontend/build",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!Mentis\\.apk|icons/|static/|favicon\\.ico|manifest\\.json|service-worker\\.js).*)",
       "destination": "/index.html"
     }
   ]

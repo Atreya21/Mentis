@@ -3,5 +3,8 @@
   "private": true,
   "scripts": {
     "build": "cd frontend && npm install --legacy-peer-deps && CI=false npm run build"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }

@@ -84,6 +84,15 @@ const ConnectPage = () => {
       setNotificationsEnabled(isEnabled);
     };
     initPush();
+
+    const handlePermChange = (e) => {
+      if (e.detail && e.detail.granted) {
+        setNotificationsEnabled(true);
+        toast.success('Device notifications enabled for Mentis!');
+      }
+    };
+    window.addEventListener('mentis_permission_changed', handlePermChange);
+    return () => window.removeEventListener('mentis_permission_changed', handlePermChange);
   }, []);
 
   // Toggle push notifications
@@ -96,8 +105,29 @@ const ConnectPage = () => {
         toast.success('Push notifications disabled');
       } else {
         await pushService.subscribe();
+
+        // Check if native app permission is still not granted (e.g. permanently denied by Android)
+        if (typeof window !== 'undefined' && window.MentisNative) {
+          const hasPerm = window.MentisNative.hasNotificationPermission();
+          if (!hasPerm) {
+            toast.info('Please enable notifications in Android Settings to receive message alerts.', {
+              action: {
+                label: 'Open Settings',
+                onClick: () => window.MentisNative.openNotificationSettings()
+              },
+              duration: 8000
+            });
+            setTimeout(() => {
+              if (window.MentisNative && !window.MentisNative.hasNotificationPermission()) {
+                window.MentisNative.openNotificationSettings();
+              }
+            }, 800);
+            return;
+          }
+        }
+
         setNotificationsEnabled(true);
-        toast.success('Push notifications enabled! You will receive notifications even when the app is closed.');
+        toast.success('Push notifications enabled! You will receive alerts for new messages.');
         
         // Send a test notification
         setTimeout(async () => {
@@ -110,7 +140,14 @@ const ConnectPage = () => {
       }
     } catch (err) {
       console.error('Push toggle error:', err);
-      if (err.message && err.message.includes('denied')) {
+      if (typeof window !== 'undefined' && window.MentisNative) {
+        toast.error('Please allow notifications in Android Settings', {
+          action: {
+            label: 'Open Settings',
+            onClick: () => window.MentisNative.openNotificationSettings()
+          }
+        });
+      } else if (err.message && err.message.includes('denied')) {
         toast.error('Notifications blocked. Please click the site settings icon in your browser address bar to allow notifications.');
       } else {
         toast.error(err.message || 'Failed to toggle notifications');

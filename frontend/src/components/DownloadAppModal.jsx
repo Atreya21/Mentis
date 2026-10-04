@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const GITHUB_RELEASE_URL = 'https://github.com/Atreya21/Mentis/releases/download/v1.0.0/Mentis.apk';
+const GITHUB_RELEASE_URL = 'https://github.com/Atreya21/Mentis/releases/download/v1.0.1/Mentis.apk';
 const DIRECT_APK_URL = GITHUB_RELEASE_URL;
 
 const DownloadAppModal = ({ isOpen, onClose }) => {

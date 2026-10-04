@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useContext, useRef, useCallback, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/App';
+import { useWebSocket } from '@/context/WebSocketContext';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,10 +25,18 @@ import {
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
 
 const ConnectPage = () => {
   const { user } = useContext(AuthContext);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { 
+    subscribe, 
+    sendTyping: wsSendTyping, 
+    setActiveChatId, 
+    onlineUsers: globalOnlineUsers, 
+    fetchUnreadCount 
+  } = useWebSocket();
   const [activeTab, setActiveTab] = useState('discover');
   const [searchQuery, setSearchQuery] = useState('');
   const [collegeFilter, setCollegeFilter] = useState('');
@@ -65,7 +75,6 @@ const ConnectPage = () => {
   const [matrixPage, setMatrixPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   
-  const wsRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
   // Initialize push notifications
@@ -330,86 +339,108 @@ const ConnectPage = () => {
   };
 
   // Open chat
-  const openChat = (connection) => {
+  const openChat = useCallback((connection) => {
     setActiveChat(connection);
+    if (setActiveChatId) setActiveChatId(connection.id);
     fetchMessages(connection.id);
     setActiveTab('chat');
-  };
 
-  // Auto-refresh messages when in active chat
-  useEffect(() => {
-    if (!activeChat) return;
-    
-    // Fetch messages immediately
-    fetchMessages(activeChat.id);
-    
-    // Auto-refresh messages every 1 second for real-time updates
-    const messageRefreshInterval = setInterval(() => {
-      fetchMessages(activeChat.id);
-    }, 1000);
-    
-    return () => clearInterval(messageRefreshInterval);
-  }, [activeChat]);
-
-  // WebSocket connection
-  useEffect(() => {
+    // Mark messages as read on backend & refresh unread count
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (token) {
+      axios.post(`${API}/messages/${connection.id}/mark-read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(() => {
+        if (fetchUnreadCount) fetchUnreadCount();
+      }).catch(() => {});
+    }
+  }, [setActiveChatId, fetchUnreadCount]);
 
-    const connectWebSocket = () => {
-      const ws = new WebSocket(`${WS_URL}/ws/${token}`);
-      
-      ws.onopen = () => {
-        console.log('WebSocket connected');
-        wsRef.current = ws;
-      };
-      
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === 'new_message') {
-          // Add message to chat if viewing that connection
-          if (activeChat && data.message.connection_id === activeChat.id) {
-            setMessages(prev => [...prev, data.message]);
-          }
-          // Update connection list
-          fetchConnections();
-        } else if (data.type === 'connection_request') {
-          toast.info(`${data.from_user.name} sent you a connection request!`);
-          fetchPendingRequests();
-        } else if (data.type === 'connection_accepted') {
-          toast.success(`${data.from_user.name} accepted your connection request!`);
-          fetchConnections();
-          fetchSentRequests();
-        } else if (data.type === 'typing') {
-          if (activeChat && data.connection_id === activeChat.id) {
-            setIsTyping(true);
-            clearTimeout(typingTimeoutRef.current);
-            typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
-          }
-        }
-      };
-      
-      ws.onclose = () => {
-        console.log('WebSocket disconnected, reconnecting...');
-        setTimeout(connectWebSocket, 3000);
-      };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-    };
-    
-    connectWebSocket();
-    
+  // Sync activeChatId with WebSocketContext
+  useEffect(() => {
+    if (setActiveChatId) {
+      setActiveChatId(activeChat ? activeChat.id : null);
+    }
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
+      if (setActiveChatId) setActiveChatId(null);
     };
+  }, [activeChat, setActiveChatId]);
+
+  // Handle URL query parameters (?chat=connection_id or ?tab=groups)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const targetChatId = params.get('chat');
+    const targetTab = params.get('tab');
+
+    if (targetTab === 'groups') {
+      setShowGroupChat(true);
+    }
+
+    if (targetChatId && connections.length > 0) {
+      const foundConn = connections.find(c => c.id === targetChatId);
+      if (foundConn) {
+        openChat(foundConn);
+      }
+    }
+  }, [location.search, connections, openChat]);
+
+  // Ref to always access current activeChat in WebSocket listeners
+  const activeChatRef = useRef(activeChat);
+  useEffect(() => {
+    activeChatRef.current = activeChat;
   }, [activeChat]);
 
-  // Initial data fetch
+  // Subscribe to real-time events via global WebSocket
+  useEffect(() => {
+    if (!subscribe) return;
+
+    const unsubMsg = subscribe('new_message', (data) => {
+      const msg = data.message;
+      if (activeChatRef.current && msg.connection_id === activeChatRef.current.id) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+        
+        // Mark as read immediately on backend
+        const token = localStorage.getItem('token');
+        if (token) {
+          axios.post(`${API}/messages/${msg.connection_id}/mark-read`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).then(() => {
+            if (fetchUnreadCount) fetchUnreadCount();
+          }).catch(() => {});
+        }
+      }
+      fetchConnections();
+    });
+
+    const unsubReq = subscribe('connection_request', () => {
+      fetchPendingRequests();
+    });
+
+    const unsubAcc = subscribe('connection_accepted', () => {
+      fetchConnections();
+      fetchSentRequests();
+    });
+
+    const unsubTyping = subscribe('typing', (data) => {
+      if (activeChatRef.current && data.connection_id === activeChatRef.current.id) {
+        setIsTyping(true);
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
+      }
+    });
+
+    return () => {
+      unsubMsg();
+      unsubReq();
+      unsubAcc();
+      unsubTyping();
+    };
+  }, [subscribe, fetchUnreadCount]);
+
+  // Initial data fetch & gentle 15-second background sync
   useEffect(() => {
     fetchColleges();
     fetchConnections();
@@ -420,11 +451,10 @@ const ConnectPage = () => {
     fetchEmailRequests();
     searchUsers();
     
-    // Auto-refresh connections every 1 second for real-time updates
     const refreshInterval = setInterval(() => {
       fetchConnections();
-      fetchPendingRequests(); // Also check for new connection requests
-    }, 1000);
+      fetchPendingRequests();
+    }, 15000);
     
     return () => clearInterval(refreshInterval);
   }, []);
@@ -495,11 +525,8 @@ const ConnectPage = () => {
 
   // Send typing indicator
   const handleTyping = () => {
-    if (wsRef.current && activeChat) {
-      wsRef.current.send(JSON.stringify({
-        type: 'typing',
-        connection_id: activeChat.id
-      }));
+    if (activeChat && wsSendTyping) {
+      wsSendTyping(activeChat.id);
     }
   };
 
@@ -573,7 +600,7 @@ const ConnectPage = () => {
               sentRequests={sentRequests}
               pinnedChats={pinnedChats}
               activeChat={activeChat}
-              onlineUsers={onlineUsers}
+              onlineUsers={globalOnlineUsers || onlineUsers}
               onOpenChat={openChat}
               onAcceptRequest={acceptRequest}
               onRejectRequest={rejectRequest}

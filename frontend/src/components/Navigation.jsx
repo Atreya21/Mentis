@@ -1,6 +1,7 @@
-import React, { useContext, useState, useEffect, useCallback } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/App';
+import { useWebSocket } from '@/context/WebSocketContext';
 import { Button } from '@/components/ui/button';
 import { User, Shield, Menu, X } from 'lucide-react';
 import axios from 'axios';
@@ -12,42 +13,16 @@ const Navigation = () => {
   const { user } = useContext(AuthContext);
   const location = useLocation();
   const [logoUrl, setLogoUrl] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const fetchUnreadCount = useCallback(async () => {
-    if (!user) {
-      setUnreadCount(0);
-      return;
-    }
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/messages/unread/count`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUnreadCount(res.data.unread_count || 0);
-    } catch (err) {
-      console.error('Failed to fetch unread count');
-    }
-  }, [user]);
+  const { unreadCount, fetchUnreadCount } = useWebSocket();
 
   useEffect(() => {
     fetchLogo();
   }, []);
 
-  useEffect(() => {
-    fetchUnreadCount();
-    
-    // Poll for unread messages every 30 seconds when user is logged in
-    if (user) {
-      const interval = setInterval(fetchUnreadCount, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [user, fetchUnreadCount]);
-
   // Refresh unread count when navigating away from Mathmate
   useEffect(() => {
-    if (location.pathname !== '/connect' && user) {
+    if (location.pathname !== '/connect' && user && fetchUnreadCount) {
       fetchUnreadCount();
     }
   }, [location.pathname, user, fetchUnreadCount]);

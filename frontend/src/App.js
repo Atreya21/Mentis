@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
+import MessagePopupContainer from '@/components/MessagePopupContainer';
+import { WebSocketProvider } from '@/context/WebSocketContext';
 import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
@@ -146,32 +148,35 @@ function App() {
   return (
     <AuthContext.Provider value={{ user, setUser, login, signup, logout }}>
       <BrowserRouter>
-        <div className="App min-h-screen flex flex-col bg-slate-950">
-          <Navigation />
-          <div className="flex-grow">
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
-              <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/verify-email" element={<VerifyEmailPage />} />
-              <Route path="/resend-verification" element={<ResendVerificationPage />} />
-              <Route path="/about" element={<AboutUs />} />
-              <Route path="/resources" element={user ? <ResourceHub /> : <Navigate to="/login" />} />
-              <Route path="/funamatics" element={user ? <Funamatics /> : <Navigate to="/login" />} />
-              <Route path="/curiofacts" element={user ? <Curiofacts /> : <Navigate to="/login" />} />
-              <Route path="/matrix" element={user ? <Matrix /> : <Navigate to="/login" />} />
-              <Route path="/connect" element={user ? <ConnectPage /> : <Navigate to="/login" />} />
-              <Route path="/reels" element={user ? <ReelsPage /> : <Navigate to="/login" />} />
-              <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-              <Route path="/admin" element={(user?.role === 'admin' || user?.role === 'master_admin') ? <AdminDashboard /> : <Navigate to="/" />} />
-            </Routes>
+        <WebSocketProvider user={user}>
+          <div className="App min-h-screen flex flex-col bg-slate-950">
+            <Navigation />
+            <div className="flex-grow">
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
+                <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
+                <Route path="/resend-verification" element={<ResendVerificationPage />} />
+                <Route path="/about" element={<AboutUs />} />
+                <Route path="/resources" element={user ? <ResourceHub /> : <Navigate to="/login" />} />
+                <Route path="/funamatics" element={user ? <Funamatics /> : <Navigate to="/login" />} />
+                <Route path="/curiofacts" element={user ? <Curiofacts /> : <Navigate to="/login" />} />
+                <Route path="/matrix" element={user ? <Matrix /> : <Navigate to="/login" />} />
+                <Route path="/connect" element={user ? <ConnectPage /> : <Navigate to="/login" />} />
+                <Route path="/reels" element={user ? <ReelsPage /> : <Navigate to="/login" />} />
+                <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+                <Route path="/admin" element={(user?.role === 'admin' || user?.role === 'master_admin') ? <AdminDashboard /> : <Navigate to="/" />} />
+              </Routes>
+            </div>
+            <ConditionalFooter />
+            <Toaster position="top-right" />
+            <MessagePopupContainer />
+            <PWAUpdatePrompt />
           </div>
-          <ConditionalFooter />
-          <Toaster position="top-right" />
-          <PWAUpdatePrompt />
-        </div>
+        </WebSocketProvider>
       </BrowserRouter>
     </AuthContext.Provider>
   );

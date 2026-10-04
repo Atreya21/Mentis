@@ -567,24 +567,52 @@ class PushSubscriptionRequest(BaseModel):
 # WebSocket Connection Manager for real-time chat
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
+        # Maps user_id -> set of active WebSockets (supports multiple tabs / devices)
+        self.active_connections: Dict[str, Set[WebSocket]] = {}
     
     async def connect(self, websocket: WebSocket, user_id: str):
         await websocket.accept()
-        self.active_connections[user_id] = websocket
+        if user_id not in self.active_connections:
+            self.active_connections[user_id] = set()
+        self.active_connections[user_id].add(websocket)
+        logger.info(f"WebSocket connected for user {user_id}. Active sessions: {len(self.active_connections[user_id])}")
     
-    def disconnect(self, user_id: str):
-        if user_id in self.active_connections:
-            del self.active_connections[user_id]
+    def disconnect(self, websocket: WebSocket, user_id: str = None):
+        if user_id and user_id in self.active_connections:
+            self.active_connections[user_id].discard(websocket)
+            if not self.active_connections[user_id]:
+                del self.active_connections[user_id]
+        else:
+            for uid in list(self.active_connections.keys()):
+                self.active_connections[uid].discard(websocket)
+                if not self.active_connections[uid]:
+                    del self.active_connections[uid]
+        logger.info(f"WebSocket disconnected for user {user_id}")
+    
+    def is_online(self, user_id: str) -> bool:
+        return user_id in self.active_connections and len(self.active_connections[user_id]) > 0
     
     async def send_personal_message(self, message: dict, user_id: str):
         if user_id in self.active_connections:
-            await self.active_connections[user_id].send_json(message)
+            dead_sockets = set()
+            for ws in list(self.active_connections[user_id]):
+                try:
+                    await ws.send_json(message)
+                except Exception as e:
+                    logger.warning(f"Error sending WebSocket message to user {user_id}: {e}")
+                    dead_sockets.add(ws)
+            for dead in dead_sockets:
+                self.active_connections[user_id].discard(dead)
+            if user_id in self.active_connections and not self.active_connections[user_id]:
+                del self.active_connections[user_id]
     
     async def broadcast_to_users(self, message: dict, user_ids: List[str]):
         for user_id in user_ids:
-            if user_id in self.active_connections:
-                await self.active_connections[user_id].send_json(message)
+            await self.send_personal_message(message, user_id)
+    
+    async def broadcast_all(self, message: dict):
+        for user_id in list(self.active_connections.keys()):
+            await self.send_personal_message(message, user_id)
 
 manager = ConnectionManager()
 
@@ -3536,6 +3564,7 @@ async def setup_master_admin():
 # WebSocket endpoint for real-time chat
 @app.websocket("/ws/{token}")
 async def websocket_endpoint(websocket: WebSocket, token: str):
+    user_id = None
     try:
         # Verify token and get user
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
@@ -3551,14 +3580,29 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         
         await manager.connect(websocket, user_id)
         
+        # Send initial online status
+        try:
+            await websocket.send_json({
+                "type": "online_users",
+                "user_ids": list(manager.active_connections.keys())
+            })
+        except Exception:
+            pass
+        
         try:
             while True:
                 data = await websocket.receive_text()
                 message_data = json.loads(data)
+                msg_type = message_data.get('type')
                 
-                if message_data.get('type') == 'ping':
+                if msg_type == 'ping':
                     await websocket.send_json({"type": "pong"})
-                elif message_data.get('type') == 'typing':
+                elif msg_type == 'get_online_users':
+                    await websocket.send_json({
+                        "type": "online_users",
+                        "user_ids": list(manager.active_connections.keys())
+                    })
+                elif msg_type == 'typing':
                     # Notify the other user that current user is typing
                     connection_id = message_data.get('connection_id')
                     if connection_id:
@@ -3571,11 +3615,15 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                                 "user_id": user_id
                             }, other_user_id)
         except WebSocketDisconnect:
-            manager.disconnect(user_id)
-    except jwt.ExpiredSignatureError:
-        await websocket.close(code=4001)
-    except jwt.InvalidTokenError:
-        await websocket.close(code=4001)
+            manager.disconnect(websocket, user_id)
+        except Exception as e:
+            logger.warning(f"WebSocket session error for {user_id}: {e}")
+            manager.disconnect(websocket, user_id)
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        try:
+            await websocket.close(code=4001)
+        except Exception:
+            pass
 
 # ============== ABOUT US SECTION ==============
 

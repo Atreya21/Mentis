@@ -23,11 +23,12 @@
 * **Root Directory:** `backend`
 * **Start Command:** `uvicorn server:app --host 0.0.0.0 --port $PORT`
 
-### Frontend PWA (Next Step: Vercel)
-* **Location:** `/frontend`
-* **Target Host:** Vercel (Hobby Free Tier)
+### Frontend PWA (Vercel)
+* **Status:** ✅ Live & Operational (Hobby Free Tier)
+* **Commit:** `560280f`
+* **Live Deployment URL:** `https://mentis-chi.vercel.app`
 * **Required Env Var:** `REACT_APP_BACKEND_URL="https://mentis-backend-a80p.onrender.com"`
-* **Domain:** `mentismathematicsfoundation.com`
+* **Target Custom Domain:** `mentismathematicsfoundation.com`
 
 ---
 

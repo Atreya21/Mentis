@@ -1001,10 +1001,17 @@ async def test_push_notification(current_user: User = Depends(get_current_user))
 @api_router.get("/download/app")
 @api_router.get("/download/android")
 async def download_android_app():
-    """Redirect to the latest official Mentis Android APK release"""
+    """Download the official Mentis Android APK directly"""
+    static_apk_path = ROOT_DIR / "static" / "Mentis.apk"
+    if static_apk_path.is_file():
+        return FileResponse(
+            path=str(static_apk_path),
+            filename="Mentis.apk",
+            media_type="application/vnd.android.package-archive"
+        )
     apk_release_url = os.environ.get(
         "ANDROID_APK_URL",
-        "https://github.com/Atreya21/Mentis/releases/download/v1.0.0/Mentis.apk"
+        "https://mentismathematicsfoundation.com/Mentis.apk"
     )
     return RedirectResponse(url=apk_release_url, status_code=302)
 

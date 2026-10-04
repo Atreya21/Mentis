@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Gamepad2, Sparkles, Network, Users, Video, Info, Smartphone, Download, RefreshCw, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DownloadAppModal from '@/components/DownloadAppModal';
+import { useIsApp } from '@/utils/appDetector';
 import axios from 'axios';
 import { AuthContext } from '@/App';
 
@@ -12,6 +13,7 @@ const API = `${BACKEND_URL}/api`;
 
 const LandingPage = () => {
   const { user } = useContext(AuthContext);
+  const isApp = useIsApp();
   const [heroImage, setHeroImage] = React.useState('https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85');
   const [showDownloadModal, setShowDownloadModal] = React.useState(false);
 
@@ -146,16 +148,18 @@ const LandingPage = () => {
                   Join Community
                 </Button>
               </Link>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={() => setShowDownloadModal(true)}
-                className="w-full sm:w-auto rounded-full h-12 sm:h-14 px-6 sm:px-8 border-orange-500/50 bg-slate-900/80 hover:bg-orange-500/10 hover:border-orange-400 text-white font-medium transition-all hover:scale-105 text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-orange-500/10 group" 
-                data-testid="hero-download-app-btn"
-              >
-                <Smartphone className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
-                <span>Download App</span>
-              </Button>
+              {!isApp && (
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  onClick={() => setShowDownloadModal(true)}
+                  className="w-full sm:w-auto rounded-full h-12 sm:h-14 px-6 sm:px-8 border-orange-500/50 bg-slate-900/80 hover:bg-orange-500/10 hover:border-orange-400 text-white font-medium transition-all hover:scale-105 text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-orange-500/10 group" 
+                  data-testid="hero-download-app-btn"
+                >
+                  <Smartphone className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
+                  <span>Download App</span>
+                </Button>
+              )}
             </motion.div>
           </motion.div>
 
@@ -280,124 +284,128 @@ const LandingPage = () => {
       )}
 
       {/* Mobile App Download Showcase Section */}
-      <section className="py-16 sm:py-24 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 relative overflow-hidden border-t border-slate-800">
-        <div className="absolute inset-0">
-          <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl" />
-        </div>
+      {!isApp && (
+        <section className="py-16 sm:py-24 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 relative overflow-hidden border-t border-slate-800">
+          <div className="absolute inset-0">
+            <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl" />
+          </div>
 
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
-          <div className="bg-gradient-to-r from-slate-900/90 via-slate-850/90 to-slate-900/90 border border-slate-700/80 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              
-              <div className="lg:col-span-7 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs sm:text-sm font-medium">
-                  <Smartphone className="w-4 h-4" />
-                  <span>Now Available on Mobile</span>
-                </div>
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
+            <div className="bg-gradient-to-r from-slate-900/90 via-slate-850/90 to-slate-900/90 border border-slate-700/80 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs sm:text-sm font-medium">
+                    <Smartphone className="w-4 h-4" />
+                    <span>Now Available on Mobile</span>
+                  </div>
 
-                <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight">
-                  Take Mentis Wherever You Go
-                </h2>
+                  <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight">
+                    Take Mentis Wherever You Go
+                  </h2>
 
-                <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
-                  Download the official Mentis Mobile App. Study mathematics, challenge your friends on Funamatics, watch VEX shorts, and chat in real-time on Mathmate right from your phone.
-                </p>
+                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
+                    Download the official Mentis Mobile App. Study mathematics, challenge your friends on Funamatics, watch VEX shorts, and chat in real-time on Mathmate right from your phone.
+                  </p>
 
-                {/* Features List */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400 flex-shrink-0 mt-0.5">
-                      <RefreshCw className="w-4 h-4" />
+                  {/* Features List */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400 flex-shrink-0 mt-0.5">
+                        <RefreshCw className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-white">Live Cloud Sync</h4>
+                        <p className="text-xs text-slate-400">All website updates and new features sync to the app automatically.</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-white">Live Cloud Sync</h4>
-                      <p className="text-xs text-slate-400">All website updates and new features sync to the app automatically.</p>
+
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-pink-500/10 text-pink-400 flex-shrink-0 mt-0.5">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-white">Native Notifications</h4>
+                        <p className="text-xs text-slate-400">Get instant pop-up alerts on your device even when the app is closed.</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-pink-500/10 text-pink-400 flex-shrink-0 mt-0.5">
-                      <ShieldCheck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-white">Native Notifications</h4>
-                      <p className="text-xs text-slate-400">Get instant pop-up alerts on your device even when the app is closed.</p>
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                    <Button 
+                      size="lg"
+                      onClick={() => setShowDownloadModal(true)}
+                      className="rounded-full h-12 sm:h-14 px-8 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 group"
+                      data-testid="showcase-download-apk-btn"
+                    >
+                      <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+                      <span>Download Mentis.apk</span>
+                    </Button>
+
+                    <Button 
+                      size="lg" 
+                      variant="outline" 
+                      onClick={() => setShowDownloadModal(true)}
+                      className="rounded-full h-12 sm:h-14 px-8 border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center gap-2"
+                    >
+                      <Sparkles className="w-5 h-5 text-orange-400" />
+                      <span>Install on iOS / Web</span>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Phone Preview Mockup */}
+                <div className="lg:col-span-5 flex justify-center">
+                  <div className="relative w-64 sm:w-72 rounded-[38px] border-4 border-slate-700 bg-slate-950 p-3 shadow-2xl glow-on-hover">
+                    <div className="absolute top-5 left-1/2 -translate-x-1/2 w-24 h-4 bg-slate-800 rounded-full z-20" />
+                    <div className="rounded-[28px] overflow-hidden bg-slate-900 border border-slate-800 p-4 space-y-4">
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center gap-2">
+                          <img src="/app-logo.png" alt="Mentis Logo" className="w-7 h-7 rounded-lg object-cover shadow-sm border border-slate-700/60" />
+                          <span className="font-heading font-bold text-white text-sm">Mentis</span>
+                        </div>
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      </div>
+
+                      <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700/60">
+                        <div className="text-[10px] text-orange-400 font-semibold uppercase tracking-wider">Mathmate Live</div>
+                        <div className="text-xs text-white font-medium mt-1">Real-time chat & discussion</div>
+                        <div className="text-[11px] text-slate-400 mt-1 line-clamp-2">"Push notifications active on this device."</div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                          <div className="text-[10px] text-cyan-400 font-medium">Resources</div>
+                          <div className="text-xs text-white font-semibold">100+ Topics</div>
+                        </div>
+                        <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700/40 text-center">
+                          <div className="text-[10px] text-pink-400 font-medium">Funamatics</div>
+                          <div className="text-xs text-white font-semibold">Play & Learn</div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 text-center">
+                        <span className="text-[10px] text-slate-500">Live Webview Shell • Auto-Updated</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                  <Button 
-                    size="lg"
-                    onClick={() => setShowDownloadModal(true)}
-                    className="rounded-full h-12 sm:h-14 px-8 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 group"
-                    data-testid="showcase-download-apk-btn"
-                  >
-                    <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-                    <span>Download Mentis.apk</span>
-                  </Button>
-
-                  <Button 
-                    size="lg"
-                    variant="outline"
-                    onClick={() => setShowDownloadModal(true)}
-                    className="rounded-full h-12 sm:h-14 px-8 border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center gap-2"
-                  >
-                    <Sparkles className="w-5 h-5 text-orange-400" />
-                    <span>Install on iOS / Web</span>
-                  </Button>
-                </div>
               </div>
-
-              {/* Phone Preview Mockup */}
-              <div className="lg:col-span-5 flex justify-center">
-                <div className="relative w-64 sm:w-72 rounded-[38px] border-4 border-slate-700 bg-slate-950 p-3 shadow-2xl glow-on-hover">
-                  <div className="absolute top-5 left-1/2 -translate-x-1/2 w-24 h-4 bg-slate-800 rounded-full z-20" />
-                  <div className="rounded-[28px] overflow-hidden bg-slate-900 border border-slate-800 p-4 space-y-4">
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center gap-2">
-                        <img src="/app-logo.png" alt="Mentis Logo" className="w-7 h-7 rounded-lg object-cover shadow-sm border border-slate-700/60" />
-                        <span className="font-heading font-bold text-white text-sm">Mentis</span>
-                      </div>
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    </div>
-
-                    <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700/60">
-                      <div className="text-[10px] text-orange-400 font-semibold uppercase tracking-wider">Mathmate Live</div>
-                      <div className="text-xs text-white font-medium mt-1">Real-time chat & discussion</div>
-                      <div className="text-[11px] text-slate-400 mt-1 line-clamp-2">"Push notifications active on this device."</div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700/40 text-center">
-                        <div className="text-[10px] text-cyan-400 font-medium">Resources</div>
-                        <div className="text-xs text-white font-semibold">100+ Topics</div>
-                      </div>
-                      <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700/40 text-center">
-                        <div className="text-[10px] text-pink-400 font-medium">Funamatics</div>
-                        <div className="text-xs text-white font-semibold">Play & Learn</div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 text-center">
-                      <span className="text-[10px] text-slate-500">Live Webview Shell • Auto-Updated</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Download App Modal */}
-      <DownloadAppModal 
-        isOpen={showDownloadModal} 
-        onClose={() => setShowDownloadModal(false)} 
-      />
+      {!isApp && (
+        <DownloadAppModal 
+          isOpen={showDownloadModal} 
+          onClose={() => setShowDownloadModal(false)} 
+        />
+      )}
     </div>
   );
 };

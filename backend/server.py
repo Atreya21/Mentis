@@ -17,6 +17,7 @@ from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
+import bcrypt
 from passlib.context import CryptContext
 import secrets
 from pywebpush import webpush, WebPushException
@@ -91,6 +92,23 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production'
 JWT_ALGORITHM = 'HS256'
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
+
+def hash_password(password: str) -> str:
+    """Hash password using bcrypt with automatic truncation at 72 bytes and fallback."""
+    try:
+        return bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
+    except Exception:
+        return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password against bcrypt hash safely."""
+    try:
+        return bcrypt.checkpw(plain_password.encode("utf-8")[:72], hashed_password.encode("utf-8"))
+    except Exception:
+        try:
+            return pwd_context.verify(plain_password, hashed_password)
+        except Exception:
+            return False
 
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -621,11 +639,13 @@ def _send_smtp_sync(to_email: str, subject: str, html_content: str, text_content
         msg.attach(MIMEText(text_content, "plain"))
     msg.attach(MIMEText(html_content, "html"))
 
+    clean_password = smtp_password.replace(" ", "") if smtp_password else ""
+
     with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
         server.ehlo()
         server.starttls()
         server.ehlo()
-        server.login(smtp_user, smtp_password)
+        server.login(smtp_user, clean_password)
         server.send_message(msg)
 
 async def send_system_email(to_email: str, subject: str, html_content: str, text_content: str = "") -> bool:
@@ -636,7 +656,7 @@ async def send_system_email(to_email: str, subject: str, html_content: str, text
     3. Logs detailed diagnostics.
     """
     smtp_user = os.environ.get('SMTP_USER') or os.environ.get('GMAIL_USER') or 'mentis.mathematics@gmail.com'
-    smtp_password = os.environ.get('SMTP_PASSWORD') or os.environ.get('GMAIL_APP_PASSWORD')
+    smtp_password = os.environ.get('SMTP_PASSWORD') or os.environ.get('GMAIL_APP_PASSWORD') or 'tcmpubbriehmnufa'
     smtp_host = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
     smtp_port = int(os.environ.get('SMTP_PORT', '587'))
     from_name = os.environ.get('FROM_NAME', 'Mentis Mathematics Foundation')
@@ -804,7 +824,7 @@ async def signup(user_data: UserCreate):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    hashed_password = pwd_context.hash(user_data.password)
+    hashed_password = hash_password(user_data.password)
     
     # Generate verification token
     verification_token = str(uuid.uuid4())
@@ -867,7 +887,7 @@ async def login(login_data: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     stored_password = user_doc.get('password')
-    if not stored_password or not pwd_context.verify(login_data.password, stored_password):
+    if not stored_password or not verify_password(login_data.password, stored_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Email verification check
@@ -1536,7 +1556,7 @@ async def reset_password(reset_data: PasswordReset):
         raise HTTPException(status_code=400, detail="Reset token has expired")
     
     # Update user password
-    hashed_password = pwd_context.hash(reset_data.new_password)
+    hashed_password = hash_password(reset_data.new_password)
     result = await db.users.update_one(
         {"email": token_doc['email']},
         {"$set": {"password": hashed_password}}

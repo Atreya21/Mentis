@@ -27,8 +27,8 @@
 * **Status:** ✅ Live & Operational (Hobby Free Tier)
 * **Commit:** `560280f`
 * **Live Deployment URL:** `https://mentis-chi.vercel.app`
+* **Production Custom Domain:** `https://mentismathematicsfoundation.com` / `https://www.mentismathematicsfoundation.com` (SSL Active & Verified)
 * **Required Env Var:** `REACT_APP_BACKEND_URL="https://mentis-backend-a80p.onrender.com"`
-* **Target Custom Domain:** `mentismathematicsfoundation.com`
 
 ---
 
@@ -44,5 +44,8 @@
 
 ---
 
-## 3. IMMEDIATE NEXT ACTION
-Complete Step 3: Deploy `/frontend` to Vercel, attach `REACT_APP_BACKEND_URL`, and map the custom domain `mentismathematicsfoundation.com`.
+## 3. STATUS SUMMARY
+✅ **Database:** MongoDB Atlas active & connected.  
+✅ **Backend API:** Live on Render (`https://mentis-backend-a80p.onrender.com/api/health` -> healthy).  
+✅ **Frontend:** Live on Vercel (`https://mentismathematicsfoundation.com`).  
+✅ **Legal Dossier:** Fully drafted and ready for the 7:00 PM Section 8 Incorporation call.

@@ -3928,9 +3928,9 @@ async def health_check():
     try:
         # Quick database ping to verify connectivity
         await db.command('ping')
-        return {"status": "healthy", "database": "connected"}
+        return {"status": "healthy", "database": "connected", "version": "4503a56"}
     except Exception as e:
-        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
+        return {"status": "unhealthy", "database": "disconnected", "error": str(e), "version": "4503a56"}
 
 @app.get("/health")
 async def health_check_root():

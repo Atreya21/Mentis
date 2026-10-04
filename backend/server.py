@@ -895,7 +895,8 @@ async def send_push_notification(user_id: str, title: str, body: str, url: str =
         
         for sub in subscriptions:
             try:
-                webpush(
+                await asyncio.to_thread(
+                    webpush,
                     subscription_info={
                         "endpoint": sub["endpoint"],
                         "keys": sub["keys"]

@@ -2,7 +2,7 @@
 // Version 2 - Enhanced for PWA Builder compatibility
 /* eslint-disable no-undef */
 /* global clients */
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `mentis-cache-${CACHE_VERSION}`;
 const urlsToCache = [
   '/',
@@ -105,11 +105,11 @@ self.addEventListener('push', (event) => {
   
   let notificationData = {
     title: 'Mentis',
-    body: 'You have a new notification',
+    body: 'You have a new message',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-72x72.png',
     tag: 'mentis-notification',
-    data: { url: '/' }
+    data: { url: '/connect' }
   };
   
   // Try to parse push data
@@ -122,19 +122,18 @@ self.addEventListener('push', (event) => {
     }
   }
 
+  const iconUrl = new URL(notificationData.icon || '/icons/icon-192x192.png', self.location.origin).href;
+  const badgeUrl = new URL(notificationData.badge || '/icons/icon-72x72.png', self.location.origin).href;
+
   const options = {
     body: notificationData.body,
-    icon: notificationData.icon || '/icons/icon-192x192.png',
-    badge: notificationData.badge || '/icons/icon-72x72.png',
-    vibrate: [100, 50, 100, 50, 100],
+    icon: iconUrl,
+    badge: badgeUrl,
+    vibrate: [200, 100, 200],
     tag: notificationData.tag || 'mentis-notification',
     renotify: true,
-    requireInteraction: false,
-    data: notificationData.data || { url: '/' },
-    actions: [
-      { action: 'open', title: 'Open Mentis' },
-      { action: 'dismiss', title: 'Dismiss' }
-    ]
+    requireInteraction: true,
+    data: notificationData.data || { url: '/connect' }
   };
 
   event.waitUntil(

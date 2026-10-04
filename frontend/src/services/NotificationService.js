@@ -51,31 +51,43 @@ class NotificationService {
 
   // Check if notifications are enabled
   isEnabled() {
-    return this.supported && this.permission === 'granted';
+    return this.supported && ('Notification' in window) && Notification.permission === 'granted';
   }
 
   // Show a notification (works for both PWA and regular browser)
   async show(title, options = {}) {
     if (!this.isEnabled()) {
-      console.log('Mentis Notifications: Not enabled');
+      console.log('Mentis Notifications: Not enabled or permission not granted');
       return null;
     }
 
-    const defaultOptions = {
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
-      vibrate: [100, 50, 100],
-      requireInteraction: false,
-      silent: false,
-      tag: options.tag || 'mentis-notification',
-      renotify: true,
-      data: options.data || {},
-      ...options
-    };
-
     try {
-      // Try using service worker for PWA (more reliable on mobile)
-      if (this.swRegistration) {
+      // Ensure we have service worker registration
+      if (!this.swRegistration && ('serviceWorker' in navigator)) {
+        try {
+          this.swRegistration = await navigator.serviceWorker.ready;
+        } catch (e) {
+          console.warn('SW ready error in NotificationService:', e);
+        }
+      }
+
+      const iconUrl = typeof window !== 'undefined' ? new URL('/icons/icon-192x192.png', window.location.origin).href : '/icons/icon-192x192.png';
+      const badgeUrl = typeof window !== 'undefined' ? new URL('/icons/icon-72x72.png', window.location.origin).href : '/icons/icon-72x72.png';
+
+      const defaultOptions = {
+        icon: iconUrl,
+        badge: badgeUrl,
+        vibrate: [200, 100, 200],
+        requireInteraction: true,
+        silent: false,
+        tag: options.tag || 'mentis-notification',
+        renotify: true,
+        data: options.data || { url: '/connect' },
+        ...options
+      };
+
+      // Prioritize service worker showNotification (delivers to OS even when tab is backgrounded)
+      if (this.swRegistration && 'showNotification' in this.swRegistration) {
         await this.swRegistration.showNotification(title, defaultOptions);
         console.log('Mentis Notifications: Shown via Service Worker');
         return true;
@@ -87,17 +99,15 @@ class NotificationService {
       notification.onclick = (event) => {
         event.preventDefault();
         window.focus();
+        if (options.data?.url && typeof window !== 'undefined') {
+          window.location.href = options.data.url;
+        }
         if (options.onClick) {
           options.onClick(event);
         }
         notification.close();
       };
 
-      // Auto-close after 5 seconds on desktop
-      if (!this.isMobile()) {
-        setTimeout(() => notification.close(), 5000);
-      }
-      
       console.log('Mentis Notifications: Shown via Notification API');
       return notification;
     } catch (err) {

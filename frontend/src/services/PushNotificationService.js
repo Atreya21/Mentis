@@ -19,6 +19,14 @@ class PushNotificationService {
     }
 
     try {
+      // Ensure service worker is registered
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('/service-worker.js');
+        } catch (swErr) {
+          console.warn('SW register warning:', swErr);
+        }
+      }
       // Wait for service worker to be ready
       this.swRegistration = await navigator.serviceWorker.ready;
       this.permission = Notification.permission;
@@ -66,37 +74,52 @@ class PushNotificationService {
       this.permission = await Notification.requestPermission();
       
       if (this.permission !== 'granted') {
-        throw new Error('Notification permission denied');
+        throw new Error('Notification permission was denied. Please click the icon in your address bar to allow notifications.');
       }
 
-      // Get VAPID public key from server
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API}/push/vapid-public-key`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to get VAPID key from server');
+      // Get VAPID public key from server (or fallback to permanent key configured in database)
+      const FALLBACK_VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY || 'BEkwTv7bnBppWbTgXRY1Yea4-wGIEKrofSY-dUgJzR175CIRja9EgUwM64k38-H3eoVTMTE1uzzSIkoanRA7LDE';
+      let publicKey = '';
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API}/push/vapid-public-key`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (response.ok) {
+          const data = await response.json();
+          publicKey = data.publicKey;
+        }
+      } catch (err) {
+        console.warn('Could not fetch VAPID key from server, using database fallback key:', err);
       }
-      
-      const { publicKey } = await response.json();
-      
+
       if (!publicKey) {
-        throw new Error('VAPID public key not configured on server');
+        publicKey = FALLBACK_VAPID_PUBLIC_KEY;
       }
-
-      // Check existing subscription
-      let subscription = await this.swRegistration.pushManager.getSubscription();
 
       // Convert VAPID key to Uint8Array
       const applicationServerKey = this.urlBase64ToUint8Array(publicKey);
 
-      // If existing subscription has different key or none exists, subscribe
+      // Check existing subscription and subscribe cleanly
+      let subscription = await this.swRegistration.pushManager.getSubscription();
+
       if (!subscription) {
-        subscription = await this.swRegistration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: applicationServerKey
-        });
+        try {
+          subscription = await this.swRegistration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey
+          });
+        } catch (subErr) {
+          console.warn('Initial push subscription failed, attempting re-subscription:', subErr);
+          const oldSub = await this.swRegistration.pushManager.getSubscription();
+          if (oldSub) {
+            try { await oldSub.unsubscribe(); } catch (e) { /* ignore */ }
+          }
+          subscription = await this.swRegistration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey
+          });
+        }
       }
 
       this.subscription = subscription;

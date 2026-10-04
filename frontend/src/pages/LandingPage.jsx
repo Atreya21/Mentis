@@ -358,9 +358,7 @@ const LandingPage = () => {
                   <div className="rounded-[28px] overflow-hidden bg-slate-900 border border-slate-800 p-4 space-y-4">
                     <div className="flex items-center justify-between pt-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs">
-                          M
-                        </div>
+                        <img src="/app-logo.png" alt="Mentis Logo" className="w-7 h-7 rounded-lg object-cover shadow-sm border border-slate-700/60" />
                         <span className="font-heading font-bold text-white text-sm">Mentis</span>
                       </div>
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

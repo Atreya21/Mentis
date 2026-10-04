@@ -105,10 +105,8 @@ const DownloadAppModal = ({ isOpen, onClose }) => {
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-pink-500 p-0.5 shadow-lg shadow-orange-500/20">
-                <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                  <Smartphone className="w-7 h-7 text-orange-400" />
-                </div>
+              <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-orange-500/20 border border-slate-700/80 bg-slate-950 flex items-center justify-center">
+                <img src="/app-logo.png" alt="Mentis Logo" className="w-full h-full object-cover" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
                 <CheckCircle2 className="w-3.5 h-3.5 text-white" />

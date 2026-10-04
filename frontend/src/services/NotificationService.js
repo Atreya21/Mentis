@@ -4,12 +4,22 @@
 class NotificationService {
   constructor() {
     this.permission = 'default';
-    this.supported = 'Notification' in window;
+    this.supported = (typeof window !== 'undefined' && !!window.MentisNative) || ('Notification' in window);
     this.swRegistration = null;
+  }
+
+  isNative() {
+    return typeof window !== 'undefined' && !!window.MentisNative;
   }
 
   // Check if notifications are supported and get permission status
   async init() {
+    if (this.isNative()) {
+      const granted = window.MentisNative.hasNotificationPermission();
+      this.permission = granted ? 'granted' : 'default';
+      return granted;
+    }
+
     if (!this.supported) {
       console.log('Mentis Notifications: Not supported in this browser');
       return false;
@@ -37,6 +47,13 @@ class NotificationService {
 
   // Request notification permission from user
   async requestPermission() {
+    if (this.isNative()) {
+      window.MentisNative.requestNotificationPermission();
+      const granted = window.MentisNative.hasNotificationPermission();
+      this.permission = granted ? 'granted' : 'default';
+      return this.permission;
+    }
+
     if (!this.supported) return 'denied';
     
     try {
@@ -51,11 +68,23 @@ class NotificationService {
 
   // Check if notifications are enabled
   isEnabled() {
+    if (this.isNative()) {
+      return window.MentisNative.hasNotificationPermission();
+    }
     return this.supported && ('Notification' in window) && Notification.permission === 'granted';
   }
 
   // Show a notification (works for both PWA and regular browser)
   async show(title, options = {}) {
+    if (this.isNative()) {
+      window.MentisNative.showNotification(
+        title, 
+        options.body || '', 
+        options.data?.url || '/connect'
+      );
+      return true;
+    }
+
     if (!this.isEnabled()) {
       console.log('Mentis Notifications: Not enabled or permission not granted');
       return null;

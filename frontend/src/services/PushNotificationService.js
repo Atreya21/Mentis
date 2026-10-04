@@ -8,11 +8,38 @@ class PushNotificationService {
     this.swRegistration = null;
     this.subscription = null;
     this.permission = 'default';
-    this.supported = 'PushManager' in window && 'serviceWorker' in navigator;
+    this.supported = (typeof window !== 'undefined' && !!window.MentisNative) || 
+      ('PushManager' in window && 'serviceWorker' in navigator);
+  }
+
+  isNative() {
+    return typeof window !== 'undefined' && !!window.MentisNative;
   }
 
   // Initialize the service
   async init() {
+    if (this.isNative()) {
+      const hasPerm = window.MentisNative.hasNotificationPermission();
+      this.permission = hasPerm ? 'granted' : 'default';
+
+      // Auto start background sync if logged in
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          const userId = user.id || user._id;
+          if (userId) {
+            const wsUrl = process.env.REACT_APP_BACKEND_URL 
+              ? process.env.REACT_APP_BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://')
+              : 'wss://mentismathematicsfoundation.com';
+            window.MentisNative.startBackgroundSync(userId, wsUrl);
+          }
+        }
+      } catch (e) {}
+
+      return hasPerm;
+    }
+
     if (!this.supported) {
       console.log('Push notifications not supported');
       return false;
@@ -63,11 +90,37 @@ class PushNotificationService {
 
   // Check if push is enabled
   isEnabled() {
+    if (this.isNative()) {
+      return window.MentisNative.hasNotificationPermission();
+    }
     return this.supported && this.permission === 'granted' && !!this.subscription;
   }
 
   // Request permission and subscribe
   async subscribe() {
+    if (this.isNative()) {
+      window.MentisNative.requestNotificationPermission();
+
+      // Start background sync
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          const userId = user.id || user._id;
+          if (userId) {
+            const wsUrl = process.env.REACT_APP_BACKEND_URL 
+              ? process.env.REACT_APP_BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://')
+              : 'wss://mentismathematicsfoundation.com';
+            window.MentisNative.startBackgroundSync(userId, wsUrl);
+          }
+        }
+      } catch (e) {}
+
+      const hasPerm = window.MentisNative.hasNotificationPermission();
+      this.permission = hasPerm ? 'granted' : 'default';
+      return true;
+    }
+
     if (!this.supported) {
       throw new Error('Push notifications not supported in this browser');
     }
@@ -154,6 +207,13 @@ class PushNotificationService {
 
   // Unsubscribe from push notifications
   async unsubscribe() {
+    if (this.isNative()) {
+      if (typeof window !== 'undefined' && window.MentisNative) {
+        window.MentisNative.stopBackgroundSync();
+      }
+      return true;
+    }
+
     if (!this.subscription) {
       return true;
     }
@@ -274,6 +334,17 @@ class PushNotificationService {
 
   // Show local notification (fallback when page is active)
   showLocalNotification(title, options = {}) {
+    if (this.isNative()) {
+      if (typeof window !== 'undefined' && window.MentisNative) {
+        window.MentisNative.showNotification(
+          title, 
+          options.body || '', 
+          options.data?.url || '/connect'
+        );
+      }
+      return;
+    }
+
     if (this.permission !== 'granted') return;
 
     const defaultOptions = {

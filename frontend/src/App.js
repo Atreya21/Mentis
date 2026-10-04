@@ -142,7 +142,9 @@ function App() {
   };
 
   const logout = () => {
+    pushService.unsubscribe().catch(() => {});
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     toast.success('Logged out successfully');
   };

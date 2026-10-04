@@ -40,7 +40,8 @@ const ReelsPage = () => {
     math_domain: [],
     difficulty: '',
     language: 'english',
-    tags: []
+    tags: [],
+    video_platform: ''
   });
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,7 +49,8 @@ const ReelsPage = () => {
   const [selectedFilters, setSelectedFilters] = useState({
     education_level: [],
     math_domain: [],
-    difficulty: ''
+    difficulty: '',
+    video_platform: []
   });
   const [tagInput, setTagInput] = useState('');
 
@@ -111,6 +113,7 @@ const ReelsPage = () => {
       if (selectedFilters.education_level?.length) params.append('education_level', selectedFilters.education_level.join(','));
       if (selectedFilters.math_domain?.length) params.append('math_domain', selectedFilters.math_domain.join(','));
       if (selectedFilters.difficulty) params.append('difficulty', selectedFilters.difficulty);
+      if (selectedFilters.video_platform?.length) params.append('video_platform', selectedFilters.video_platform.join(','));
       
       const res = await axios.get(`${API}/reels?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -312,6 +315,29 @@ const ReelsPage = () => {
                     data-testid="reel-caption-input"
                   />
                 </div>
+
+                {/* Video Platform Selection */}
+                {filterOptions.video_platform && (
+                  <div>
+                    <Label className="text-slate-300">Video Platform</Label>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {filterOptions.video_platform.map(opt => (
+                        <Badge
+                          key={opt.value}
+                          className={`cursor-pointer text-xs ${
+                            formData.video_platform === opt.value
+                              ? 'bg-purple-500 text-white'
+                              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                          }`}
+                          onClick={() => setFormData({ ...formData, video_platform: formData.video_platform === opt.value ? '' : opt.value })}
+                        >
+                          {opt.label}
+                        </Badge>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">Select where this video is hosted</p>
+                  </div>
+                )}
 
                 {/* Categorization */}
                 <div className="border-t border-slate-700 pt-4">
@@ -525,13 +551,43 @@ const ReelsPage = () => {
               </div>
             )}
 
+            {/* Video Platform */}
+            {filterOptions.video_platform && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Platform</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.video_platform.map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.video_platform?.includes(opt.value)
+                          ? 'bg-purple-500 text-white hover:bg-purple-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.video_platform || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          video_platform: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Clear Filters */}
-            {(selectedFilters.education_level?.length > 0 || selectedFilters.math_domain?.length > 0 || searchQuery) && (
+            {(selectedFilters.education_level?.length > 0 || selectedFilters.math_domain?.length > 0 || selectedFilters.video_platform?.length > 0 || searchQuery) && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setSelectedFilters({ education_level: [], math_domain: [], difficulty: '' });
+                  setSelectedFilters({ education_level: [], math_domain: [], difficulty: '', video_platform: [] });
                   setSearchQuery('');
                 }}
                 className="text-pink-400 hover:text-pink-300 self-end"

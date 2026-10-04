@@ -379,7 +379,8 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 1. ✅ **Comprehensive Filter System**
    - **Resource Hub Filters**: Content Type (Notes, Playlist, Book, Article, PPTs, Others), Education Level, Math Domain, Difficulty
    - **Curiofacts Filters**: Education Level, Math Domain, Difficulty with search
-   - **VEX Filters**: Education Level, Math Domain with search
+   - **VEX Filters**: Education Level, Math Domain, Video Platform (YouTube, Instagram, Facebook, TikTok, Vimeo, Twitter/X, Reddit, Google Drive, Other)
+   - **Funamatics Filters**: Difficulty (Easy, Medium, Hard), Math Domain, Education Level
    - Server-side filtering via query parameters
    - Filter badges with multi-select capability
    - "Clear All Filters" button when filters active
@@ -388,6 +389,7 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - **Resource Hub**: Search by title, topic, or tags
    - **Curiofacts**: Search by title, content, or tags
    - **VEX**: Search by caption or tags
+   - **Funamatics**: Search by game name or description
    - Real-time search with server-side filtering
 
 3. ✅ **Tags System**
@@ -402,8 +404,8 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 
 5. ✅ **Filter Options API**
    - `GET /api/filter-options` - Returns all filter categories
-   - Auto-seeding of 58 default filter options on first call
-   - Categories: education_level (5), math_domain (14), class_grade (16), difficulty (4), exam_type (9), language (10)
+   - Auto-seeding of 70 default filter options on first call
+   - Categories: education_level (5), math_domain (14), class_grade (16), difficulty (4), exam_type (9), language (10), video_platform (9), game_difficulty (3)
    - Admin endpoints for managing filter options
 
 6. ✅ **Upload Form Enhancements**
@@ -411,6 +413,7 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Education Level, Math Domain, Difficulty selectors
    - Tags input for user-generated keywords
    - Language selection dropdown
+   - Video Platform selection for VEX uploads
 
 ### Pending/Future Tasks
 1. **P1**: Implement "Reply to Message" in Mathmate chat (UI exists, needs backend)

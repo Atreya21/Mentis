@@ -318,6 +318,7 @@ class Reel(BaseModel):
     user_name: Optional[str] = None
     video_url: str
     video_type: str = "link"  # 'link' (YouTube, Instagram, Drive) or 'upload'
+    video_platform: Optional[str] = None  # youtube, instagram, facebook, tiktok, etc.
     caption: str
     status: str = "pending"  # pending, approved, rejected
     # Filter fields
@@ -332,6 +333,7 @@ class Reel(BaseModel):
 class ReelCreate(BaseModel):
     video_url: str
     video_type: str = "link"
+    video_platform: Optional[str] = None
     caption: str
     education_level: List[str] = []
     math_domain: List[str] = []
@@ -1073,8 +1075,37 @@ async def update_resource_status(resource_id: str, update: ResourceApprove, admi
     return Resource(**result)
 
 @api_router.get("/games", response_model=List[Game])
-async def get_games():
-    games = await db.games.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+async def get_games(
+    search: Optional[str] = None,
+    difficulty: Optional[str] = None,
+    math_domain: Optional[str] = None,
+    education_level: Optional[str] = None
+):
+    query = {}
+    
+    # Search in title and description
+    if search:
+        query["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # Filter by difficulty
+    if difficulty:
+        difficulties = difficulty.split(",")
+        query["difficulty"] = {"$in": difficulties}
+    
+    # Filter by math domain (if games have this field)
+    if math_domain:
+        domains = math_domain.split(",")
+        query["math_domain"] = {"$in": domains}
+    
+    # Filter by education level (if games have this field)
+    if education_level:
+        levels = education_level.split(",")
+        query["education_level"] = {"$in": levels}
+    
+    games = await db.games.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     for g in games:
         if isinstance(g['created_at'], str):
             g['created_at'] = datetime.fromisoformat(g['created_at'])
@@ -2782,6 +2813,7 @@ async def get_reels(
     difficulty: Optional[str] = None,
     exam_type: Optional[str] = None,
     language: Optional[str] = None,
+    video_platform: Optional[str] = None,
     tags: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
@@ -2814,6 +2846,10 @@ async def get_reels(
     
     if language:
         query["language"] = language
+    
+    if video_platform:
+        platforms = video_platform.split(",")
+        query["video_platform"] = {"$in": platforms}
     
     if tags:
         tag_list = tags.split(",")
@@ -3704,6 +3740,22 @@ DEFAULT_FILTER_OPTIONS = [
     {"category": "language", "value": "kannada", "label": "Kannada", "order": 8},
     {"category": "language", "value": "malayalam", "label": "Malayalam", "order": 9},
     {"category": "language", "value": "punjabi", "label": "Punjabi", "order": 10},
+    
+    # Video Platforms (for VEX)
+    {"category": "video_platform", "value": "youtube", "label": "YouTube", "order": 1},
+    {"category": "video_platform", "value": "instagram", "label": "Instagram", "order": 2},
+    {"category": "video_platform", "value": "facebook", "label": "Facebook", "order": 3},
+    {"category": "video_platform", "value": "tiktok", "label": "TikTok", "order": 4},
+    {"category": "video_platform", "value": "vimeo", "label": "Vimeo", "order": 5},
+    {"category": "video_platform", "value": "twitter", "label": "Twitter/X", "order": 6},
+    {"category": "video_platform", "value": "reddit", "label": "Reddit", "order": 7},
+    {"category": "video_platform", "value": "google_drive", "label": "Google Drive", "order": 8},
+    {"category": "video_platform", "value": "other", "label": "Other", "order": 9},
+    
+    # Game Difficulty (for Funamatics)
+    {"category": "game_difficulty", "value": "easy", "label": "Easy", "order": 1},
+    {"category": "game_difficulty", "value": "medium", "label": "Medium", "order": 2},
+    {"category": "game_difficulty", "value": "hard", "label": "Hard", "order": 3},
 ]
 
 @api_router.get("/filter-options")

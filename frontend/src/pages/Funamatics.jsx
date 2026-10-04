@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { Gamepad2, ExternalLink, Search } from 'lucide-react';
@@ -13,30 +15,47 @@ const API = `${BACKEND_URL}/api`;
 const Funamatics = () => {
   const [games, setGames] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterOptions, setFilterOptions] = useState({});
+  const [selectedFilters, setSelectedFilters] = useState({
+    difficulty: [],
+    math_domain: [],
+    education_level: []
+  });
 
   useEffect(() => {
     fetchGames();
+    fetchFilterOptions();
   }, []);
+
+  // Refetch when filters change
+  useEffect(() => {
+    fetchGames();
+  }, [selectedFilters, searchQuery]);
+
+  const fetchFilterOptions = async () => {
+    try {
+      const res = await axios.get(`${API}/filter-options`);
+      setFilterOptions(res.data);
+    } catch (err) {
+      console.error('Failed to fetch filter options');
+    }
+  };
 
   const fetchGames = async () => {
     try {
-      const res = await axios.get(`${API}/games`);
+      const params = new URLSearchParams();
+      
+      if (searchQuery) params.append('search', searchQuery);
+      if (selectedFilters.difficulty?.length) params.append('difficulty', selectedFilters.difficulty.join(','));
+      if (selectedFilters.math_domain?.length) params.append('math_domain', selectedFilters.math_domain.join(','));
+      if (selectedFilters.education_level?.length) params.append('education_level', selectedFilters.education_level.join(','));
+      
+      const res = await axios.get(`${API}/games?${params.toString()}`);
       setGames(res.data);
     } catch (err) {
       toast.error('Failed to fetch games');
     }
   };
-
-  // Filter games based on search query
-  const filteredGames = useMemo(() => {
-    if (!searchQuery.trim()) return games;
-    const query = searchQuery.toLowerCase();
-    return games.filter(g => 
-      g.title?.toLowerCase().includes(query) ||
-      g.description?.toLowerCase().includes(query) ||
-      g.difficulty?.toLowerCase().includes(query)
-    );
-  }, [games, searchQuery]);
 
   return (
     <div className="min-h-screen pt-20 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -70,30 +89,143 @@ const Funamatics = () => {
           </motion.p>
         </div>
 
-        {/* Search Bar */}
+        {/* Search and Filters */}
         <motion.div 
-          className="mb-10 flex justify-center"
+          className="mb-10 space-y-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <Input
-              type="text"
-              placeholder="Search games by name or difficulty..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
-              data-testid="game-search-input"
-            />
+          {/* Search Bar */}
+          <div className="flex justify-center">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Search games by name or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
+                data-testid="game-search-input"
+              />
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap justify-center gap-4">
+            {/* Difficulty Filter */}
+            {filterOptions.game_difficulty && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Difficulty</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.game_difficulty.map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.difficulty?.includes(opt.value)
+                          ? opt.value === 'easy' ? 'bg-green-500 text-white hover:bg-green-600'
+                            : opt.value === 'medium' ? 'bg-orange-500 text-white hover:bg-orange-600'
+                            : 'bg-red-500 text-white hover:bg-red-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.difficulty || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          difficulty: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Math Domain Filter */}
+            {filterOptions.math_domain && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Math Domain</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.math_domain.slice(0, 6).map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.math_domain?.includes(opt.value)
+                          ? 'bg-orange-500 text-white hover:bg-orange-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.math_domain || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          math_domain: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Education Level Filter */}
+            {filterOptions.education_level && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Education Level</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.education_level.slice(0, 5).map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.education_level?.includes(opt.value)
+                          ? 'bg-pink-500 text-white hover:bg-pink-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.education_level || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          education_level: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Clear Filters */}
+            {(selectedFilters.difficulty?.length > 0 || selectedFilters.math_domain?.length > 0 || selectedFilters.education_level?.length > 0 || searchQuery) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedFilters({ difficulty: [], math_domain: [], education_level: [] });
+                  setSearchQuery('');
+                }}
+                className="text-orange-400 hover:text-orange-300 self-end"
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
         </motion.div>
 
         <TooltipProvider>
-          {filteredGames.length > 0 ? (
+          {games.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredGames.map((game, index) => (
+              {games.map((game, index) => (
                 <motion.div
                   key={game.id}
                   className="group relative overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-800/50 backdrop-blur-sm hover-lift card-hover"
@@ -151,7 +283,7 @@ const Funamatics = () => {
                 </motion.div>
               ))}
             </div>
-          ) : searchQuery ? (
+          ) : searchQuery || selectedFilters.difficulty?.length > 0 || selectedFilters.math_domain?.length > 0 ? (
             <div className="text-center py-20">
               <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-12 border-2 border-dashed border-slate-700 max-w-lg mx-auto">
                 <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
@@ -159,7 +291,7 @@ const Funamatics = () => {
                   No Games Found
                 </h3>
                 <p className="text-slate-400">
-                  No games match &quot;{searchQuery}&quot;. Try a different search term.
+                  No games match your filters. Try adjusting your search criteria.
                 </p>
               </div>
             </div>

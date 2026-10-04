@@ -641,7 +641,7 @@ def _send_smtp_sync(to_email: str, subject: str, html_content: str, text_content
 
     clean_password = smtp_password.replace(" ", "") if smtp_password else ""
 
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=5) as server:
         server.ehlo()
         server.starttls()
         server.ehlo()
@@ -661,16 +661,7 @@ async def send_system_email(to_email: str, subject: str, html_content: str, text
     smtp_port = int(os.environ.get('SMTP_PORT', '587'))
     from_name = os.environ.get('FROM_NAME', 'Mentis Mathematics Foundation')
 
-    if smtp_user and smtp_password:
-        try:
-            logger.info(f"Dispatching '{subject}' via Gmail SMTP ({smtp_host}) to {to_email}")
-            await asyncio.to_thread(_send_smtp_sync, to_email, subject, html_content, text_content, smtp_user, smtp_password, smtp_host, smtp_port, from_name)
-            logger.info(f"Email '{subject}' successfully delivered via SMTP to {to_email}")
-            return True
-        except Exception as e:
-            logger.exception(f"SMTP delivery failed to {to_email}: {e}")
-
-    # Fallback to SendGrid
+    # 1. Prioritize SendGrid Web API if configured (HTTPS Port 443 - works everywhere including Render Free)
     sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
     if sendgrid_api_key:
         try:
@@ -690,7 +681,44 @@ async def send_system_email(to_email: str, subject: str, html_content: str, text
         except Exception as e:
             logger.exception(f"SendGrid delivery failed to {to_email}: {e}")
 
-    logger.warning(f"No configured email transport (Gmail SMTP or SendGrid) available for {to_email}")
+    # 2. Resend Web API (HTTPS Port 443 - zero SMTP port blocks)
+    resend_api_key = os.environ.get('RESEND_API_KEY')
+    if resend_api_key:
+        try:
+            import requests
+            resend_from = os.environ.get('RESEND_FROM', 'Mentis Mathematics <onboarding@resend.dev>')
+            resp = await asyncio.to_thread(
+                requests.post,
+                'https://api.resend.com/emails',
+                headers={'Authorization': f'Bearer {resend_api_key}', 'Content-Type': 'application/json'},
+                json={
+                    'from': resend_from,
+                    'to': [to_email],
+                    'subject': subject,
+                    'html': html_content,
+                    'text': text_content or None
+                },
+                timeout=10
+            )
+            if resp.status_code in [200, 201]:
+                logger.info(f"Email '{subject}' successfully delivered via Resend to {to_email}")
+                return True
+            else:
+                logger.error(f"Resend delivery failed ({resp.status_code}): {resp.text}")
+        except Exception as e:
+            logger.exception(f"Resend delivery failed to {to_email}: {e}")
+
+    # 3. Direct Gmail SMTP (Ports 587/465 - works on local/paid hosts; timeout fast if port blocked)
+    if smtp_user and smtp_password:
+        try:
+            logger.info(f"Attempting SMTP ({smtp_host}:{smtp_port}) to {to_email}")
+            await asyncio.to_thread(_send_smtp_sync, to_email, subject, html_content, text_content, smtp_user, smtp_password, smtp_host, smtp_port, from_name)
+            logger.info(f"Email '{subject}' successfully delivered via SMTP to {to_email}")
+            return True
+        except Exception as e:
+            logger.warning(f"SMTP delivery failed to {to_email}: {e}")
+
+    logger.warning(f"No configured email transport succeeded for {to_email}")
     return False
 
 # Helper function to send push notification to a user
@@ -3928,9 +3956,36 @@ async def health_check():
     try:
         # Quick database ping to verify connectivity
         await db.command('ping')
-        return {"status": "healthy", "database": "connected", "version": "4503a56"}
+        return {"status": "healthy", "database": "connected", "version": "ea723b1"}
     except Exception as e:
-        return {"status": "unhealthy", "database": "disconnected", "error": str(e), "version": "4503a56"}
+        return {"status": "unhealthy", "database": "disconnected", "error": str(e), "version": "ea723b1"}
+
+@app.get("/api/debug-email")
+async def debug_email():
+    """Diagnose email transport connectivity and credentials on Render host"""
+    import socket
+    smtp_test = {}
+    for port in [587, 465, 25]:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2.5)
+        try:
+            res = s.connect_ex(("smtp.gmail.com", port))
+            smtp_test[f"port_{port}"] = "OPEN" if res == 0 else f"BLOCKED (code {res})"
+        except Exception as e:
+            smtp_test[f"port_{port}"] = f"ERROR: {str(e)}"
+        finally:
+            s.close()
+            
+    sg_key = os.environ.get("SENDGRID_API_KEY", "")
+    resend_key = os.environ.get("RESEND_API_KEY", "")
+    return {
+        "smtp_connectivity": smtp_test,
+        "has_sendgrid_key": bool(sg_key),
+        "sendgrid_key_prefix": sg_key[:8] if sg_key else None,
+        "has_resend_key": bool(resend_key),
+        "smtp_user": os.environ.get("SMTP_USER", "mentis.mathematics@gmail.com"),
+        "has_smtp_password": bool(os.environ.get("SMTP_PASSWORD") or "tcmpubbriehmnufa"),
+    }
 
 @app.get("/health")
 async def health_check_root():

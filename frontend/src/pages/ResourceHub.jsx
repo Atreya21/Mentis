@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -70,15 +72,28 @@ const ResourceHub = () => {
   const [viewResource, setViewResource] = useState(null);
   const [shareToChatOpen, setShareToChatOpen] = useState(false);
   const [shareContent, setShareContent] = useState(null);
+  const [filterOptions, setFilterOptions] = useState({});
+  const [selectedFilters, setSelectedFilters] = useState({
+    content_type: '',
+    education_level: [],
+    math_domain: [],
+    difficulty: ''
+  });
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     content_type: 'notes',
     url: '',
-    topic: ''
+    topic: '',
+    education_level: [],
+    math_domain: [],
+    difficulty: '',
+    language: 'english',
+    tags: []
   });
+  const [tagInput, setTagInput] = useState('');
 
-  // Filter resources based on search query and saved filter
+  // Filter resources based on saved filter only (server handles other filters)
   const filteredResources = useMemo(() => {
     let filtered = resources;
     
@@ -87,24 +102,28 @@ const ResourceHub = () => {
       filtered = filtered.filter(r => savedResources.includes(r.id));
     }
     
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(r => 
-        r.title?.toLowerCase().includes(query) ||
-        r.description?.toLowerCase().includes(query) ||
-        r.topic?.toLowerCase().includes(query) ||
-        r.uploader_name?.toLowerCase().includes(query)
-      );
-    }
-    
     return filtered;
-  }, [resources, searchQuery, showSavedOnly, savedResources]);
+  }, [resources, showSavedOnly, savedResources]);
 
   useEffect(() => {
     fetchResources();
     fetchSavedResources();
+    fetchFilterOptions();
   }, [filter]);
+
+  // Refetch when filters change
+  useEffect(() => {
+    fetchResources();
+  }, [selectedFilters, searchQuery]);
+
+  const fetchFilterOptions = async () => {
+    try {
+      const res = await axios.get(`${API}/filter-options`);
+      setFilterOptions(res.data);
+    } catch (err) {
+      console.error('Failed to fetch filter options');
+    }
+  };
 
   // Handle deep link - check for view parameter
   useEffect(() => {
@@ -228,7 +247,19 @@ const ResourceHub = () => {
 
   const fetchResources = async () => {
     try {
-      const res = await axios.get(`${API}/resources?status=${filter}`);
+      const params = new URLSearchParams();
+      params.append('status', filter);
+      
+      // Add search query
+      if (searchQuery) params.append('search', searchQuery);
+      
+      // Add filter parameters
+      if (selectedFilters.content_type) params.append('content_type', selectedFilters.content_type);
+      if (selectedFilters.education_level?.length) params.append('education_level', selectedFilters.education_level.join(','));
+      if (selectedFilters.math_domain?.length) params.append('math_domain', selectedFilters.math_domain.join(','));
+      if (selectedFilters.difficulty) params.append('difficulty', selectedFilters.difficulty);
+      
+      const res = await axios.get(`${API}/resources?${params.toString()}`);
       setResources(res.data);
       if (user) {
         fetchLikes(res.data);
@@ -324,7 +355,19 @@ const ResourceHub = () => {
       });
       toast.success('Resource submitted for approval!');
       setDialogOpen(false);
-      setFormData({ title: '', description: '', content_type: 'notes', url: '', topic: '' });
+      setFormData({ 
+        title: '', 
+        description: '', 
+        content_type: 'notes', 
+        url: '', 
+        topic: '',
+        education_level: [],
+        math_domain: [],
+        difficulty: '',
+        language: 'english',
+        tags: []
+      });
+      setTagInput('');
       fetchResources();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to submit resource');
@@ -399,6 +442,8 @@ const ResourceHub = () => {
                           <SelectItem value="playlist">Playlist</SelectItem>
                           <SelectItem value="book">Book</SelectItem>
                           <SelectItem value="article">Article</SelectItem>
+                          <SelectItem value="ppts">PPTs</SelectItem>
+                          <SelectItem value="others">Others</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -438,18 +483,152 @@ const ResourceHub = () => {
           )}
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <Input
-              type="text"
-              placeholder="Search resources by title, topic, or uploader..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
-              data-testid="resource-search-input"
-            />
+        {/* Search Bar and Filters */}
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Search resources by title, topic, or tags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
+                data-testid="resource-search-input"
+              />
+            </div>
+            
+            {/* Content Type Filter */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={!selectedFilters.content_type ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedFilters({ ...selectedFilters, content_type: '' })}
+                className={!selectedFilters.content_type 
+                  ? "bg-orange-500 hover:bg-orange-600" 
+                  : "border-slate-600 text-slate-300 hover:bg-slate-700"}
+              >
+                All Types
+              </Button>
+              {['notes', 'playlist', 'book', 'article', 'ppts', 'others'].map(type => (
+                <Button
+                  key={type}
+                  variant={selectedFilters.content_type === type ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedFilters({ ...selectedFilters, content_type: type })}
+                  className={selectedFilters.content_type === type 
+                    ? "bg-orange-500 hover:bg-orange-600" 
+                    : "border-slate-600 text-slate-300 hover:bg-slate-700"}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Category Filters */}
+          <div className="flex flex-wrap gap-4">
+            {/* Education Level */}
+            {filterOptions.education_level && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Education Level</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.education_level.slice(0, 5).map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.education_level?.includes(opt.value)
+                          ? 'bg-orange-500 text-white hover:bg-orange-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.education_level || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          education_level: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Math Domain */}
+            {filterOptions.math_domain && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Math Domain</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.math_domain.slice(0, 6).map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.math_domain?.includes(opt.value)
+                          ? 'bg-orange-500 text-white hover:bg-orange-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.math_domain || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          math_domain: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Difficulty */}
+            {filterOptions.difficulty && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Difficulty</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.difficulty.map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.difficulty === opt.value
+                          ? 'bg-orange-500 text-white hover:bg-orange-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          difficulty: selectedFilters.difficulty === opt.value ? '' : opt.value
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Clear Filters */}
+            {(selectedFilters.content_type || selectedFilters.education_level?.length > 0 || selectedFilters.math_domain?.length > 0 || selectedFilters.difficulty || searchQuery) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedFilters({ content_type: '', education_level: [], math_domain: [], difficulty: '' });
+                  setSearchQuery('');
+                }}
+                className="text-orange-400 hover:text-orange-300 self-end"
+              >
+                Clear All Filters
+              </Button>
+            )}
           </div>
         </div>
 

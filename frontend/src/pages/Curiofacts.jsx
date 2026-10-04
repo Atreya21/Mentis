@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { Sparkles, Calendar, Heart, MessageCircle, Send, X, Plus, Share2 } from 'lucide-react';
+import { Sparkles, Calendar, Heart, MessageCircle, Send, X, Plus, Share2, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import ShareToChat from '@/components/ShareToChat';
@@ -27,15 +28,48 @@ const Curiofacts = () => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
-  const [submitForm, setSubmitForm] = useState({ title: '', content: '', image_url: '' });
+  const [submitForm, setSubmitForm] = useState({ 
+    title: '', 
+    content: '', 
+    image_url: '',
+    education_level: [],
+    math_domain: [],
+    difficulty: '',
+    language: 'english',
+    tags: []
+  });
   const [viewFactModalOpen, setViewFactModalOpen] = useState(false);
   const [viewFact, setViewFact] = useState(null);
   const [shareToChatOpen, setShareToChatOpen] = useState(false);
   const [shareContent, setShareContent] = useState(null);
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterOptions, setFilterOptions] = useState({});
+  const [selectedFilters, setSelectedFilters] = useState({
+    education_level: [],
+    math_domain: [],
+    difficulty: ''
+  });
+  const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     fetchFacts();
+    fetchFilterOptions();
   }, []);
+
+  // Refetch when filters change
+  useEffect(() => {
+    fetchFacts();
+  }, [selectedFilters, searchQuery]);
+
+  const fetchFilterOptions = async () => {
+    try {
+      const res = await axios.get(`${API}/filter-options`);
+      setFilterOptions(res.data);
+    } catch (err) {
+      console.error('Failed to fetch filter options');
+    }
+  };
 
   // Handle deep link
   useEffect(() => {
@@ -84,7 +118,14 @@ const Curiofacts = () => {
 
   const fetchFacts = async () => {
     try {
-      const res = await axios.get(`${API}/curiofacts`);
+      const params = new URLSearchParams();
+      
+      if (searchQuery) params.append('search', searchQuery);
+      if (selectedFilters.education_level?.length) params.append('education_level', selectedFilters.education_level.join(','));
+      if (selectedFilters.math_domain?.length) params.append('math_domain', selectedFilters.math_domain.join(','));
+      if (selectedFilters.difficulty) params.append('difficulty', selectedFilters.difficulty);
+      
+      const res = await axios.get(`${API}/curiofacts?${params.toString()}`);
       setFacts(res.data);
       fetchLikes(res.data);
     } catch (err) {
@@ -257,7 +298,7 @@ const Curiofacts = () => {
                     Submit a Curiofact
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-slate-800 border-slate-700 max-w-md">
+                <DialogContent className="bg-slate-800 border-slate-700 max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-white">Submit a Curiofact</DialogTitle>
                   </DialogHeader>
@@ -280,7 +321,7 @@ const Curiofacts = () => {
                         value={submitForm.content}
                         onChange={(e) => setSubmitForm({...submitForm, content: e.target.value})}
                         className="mt-2 bg-slate-900 border-slate-700 text-white"
-                        rows={6}
+                        rows={4}
                         placeholder="Share your fascinating math fact..."
                       />
                     </div>
@@ -303,6 +344,143 @@ const Curiofacts = () => {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Categorization */}
+                    <div className="border-t border-slate-700 pt-4">
+                      <Label className="text-slate-400 text-xs mb-2 block">Categorization (helps users find your content)</Label>
+                      
+                      {/* Education Level */}
+                      {filterOptions.education_level && (
+                        <div className="mb-3">
+                          <Label className="text-slate-400 text-xs mb-1 block">Education Level</Label>
+                          <div className="flex flex-wrap gap-1">
+                            {filterOptions.education_level.slice(0, 5).map(opt => (
+                              <Badge
+                                key={opt.value}
+                                className={`cursor-pointer text-xs ${
+                                  submitForm.education_level.includes(opt.value)
+                                    ? 'bg-orange-500 text-white'
+                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                }`}
+                                onClick={() => {
+                                  const current = submitForm.education_level;
+                                  setSubmitForm({
+                                    ...submitForm,
+                                    education_level: current.includes(opt.value)
+                                      ? current.filter(v => v !== opt.value)
+                                      : [...current, opt.value]
+                                  });
+                                }}
+                              >
+                                {opt.label}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Math Domain */}
+                      {filterOptions.math_domain && (
+                        <div className="mb-3">
+                          <Label className="text-slate-400 text-xs mb-1 block">Math Domain</Label>
+                          <div className="flex flex-wrap gap-1">
+                            {filterOptions.math_domain.slice(0, 6).map(opt => (
+                              <Badge
+                                key={opt.value}
+                                className={`cursor-pointer text-xs ${
+                                  submitForm.math_domain.includes(opt.value)
+                                    ? 'bg-orange-500 text-white'
+                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                }`}
+                                onClick={() => {
+                                  const current = submitForm.math_domain;
+                                  setSubmitForm({
+                                    ...submitForm,
+                                    math_domain: current.includes(opt.value)
+                                      ? current.filter(v => v !== opt.value)
+                                      : [...current, opt.value]
+                                  });
+                                }}
+                              >
+                                {opt.label}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Difficulty */}
+                      {filterOptions.difficulty && (
+                        <div className="mb-3">
+                          <Label className="text-slate-400 text-xs mb-1 block">Difficulty</Label>
+                          <div className="flex flex-wrap gap-1">
+                            {filterOptions.difficulty.map(opt => (
+                              <Badge
+                                key={opt.value}
+                                className={`cursor-pointer text-xs ${
+                                  submitForm.difficulty === opt.value
+                                    ? 'bg-orange-500 text-white'
+                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                }`}
+                                onClick={() => setSubmitForm({ ...submitForm, difficulty: submitForm.difficulty === opt.value ? '' : opt.value })}
+                              >
+                                {opt.label}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      <div>
+                        <Label className="text-slate-400 text-xs mb-1 block">Tags</Label>
+                        <div className="flex gap-2 mb-2">
+                          <Input
+                            placeholder="Add tag..."
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (tagInput.trim() && !submitForm.tags.includes(tagInput.trim().toLowerCase())) {
+                                  setSubmitForm({ ...submitForm, tags: [...submitForm.tags, tagInput.trim().toLowerCase()] });
+                                  setTagInput('');
+                                }
+                              }
+                            }}
+                            className="bg-slate-900 border-slate-700 text-white text-sm flex-1"
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              if (tagInput.trim() && !submitForm.tags.includes(tagInput.trim().toLowerCase())) {
+                                setSubmitForm({ ...submitForm, tags: [...submitForm.tags, tagInput.trim().toLowerCase()] });
+                                setTagInput('');
+                              }
+                            }}
+                            size="sm"
+                            className="bg-orange-500 hover:bg-orange-600"
+                          >
+                            Add
+                          </Button>
+                        </div>
+                        {submitForm.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {submitForm.tags.map(tag => (
+                              <Badge
+                                key={tag}
+                                className="bg-orange-500/20 text-orange-400 flex items-center gap-1 cursor-pointer text-xs"
+                                onClick={() => setSubmitForm({ ...submitForm, tags: submitForm.tags.filter(t => t !== tag) })}
+                              >
+                                #{tag}
+                                <X className="w-3 h-3" />
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <Button 
                       onClick={handleSubmitCuriofact}
                       className="w-full bg-gradient-to-r from-orange-500 to-pink-500"
@@ -314,6 +492,125 @@ const Curiofacts = () => {
               </Dialog>
             </motion.div>
           )}
+        </div>
+
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4">
+          <div className="relative max-w-md mx-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Input
+              type="text"
+              placeholder="Search curiofacts by title, content, or tags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
+            />
+          </div>
+          
+          {/* Filters */}
+          <div className="flex flex-wrap justify-center gap-4">
+            {/* Education Level */}
+            {filterOptions.education_level && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Education Level</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.education_level.slice(0, 5).map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.education_level?.includes(opt.value)
+                          ? 'bg-orange-500 text-white hover:bg-orange-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.education_level || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          education_level: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Math Domain */}
+            {filterOptions.math_domain && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Math Domain</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.math_domain.slice(0, 6).map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.math_domain?.includes(opt.value)
+                          ? 'bg-orange-500 text-white hover:bg-orange-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.math_domain || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          math_domain: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Difficulty */}
+            {filterOptions.difficulty && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Difficulty</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.difficulty.map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.difficulty === opt.value
+                          ? 'bg-orange-500 text-white hover:bg-orange-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          difficulty: selectedFilters.difficulty === opt.value ? '' : opt.value
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Clear Filters */}
+            {(selectedFilters.education_level?.length > 0 || selectedFilters.math_domain?.length > 0 || selectedFilters.difficulty || searchQuery) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedFilters({ education_level: [], math_domain: [], difficulty: '' });
+                  setSearchQuery('');
+                }}
+                className="text-orange-400 hover:text-orange-300 self-end"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="space-y-8">

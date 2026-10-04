@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { 
   Play, Plus, Heart, MessageCircle, Share2, Send, Bookmark,
-  User, Calendar, ExternalLink, Video, AlertTriangle
+  User, Calendar, ExternalLink, Video, AlertTriangle, Search, X
 } from 'lucide-react';
 import ShareToChat from '@/components/ShareToChat';
 
@@ -35,13 +35,42 @@ const ReelsPage = () => {
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [formData, setFormData] = useState({
     video_url: '',
-    caption: ''
+    caption: '',
+    education_level: [],
+    math_domain: [],
+    difficulty: '',
+    language: 'english',
+    tags: []
   });
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterOptions, setFilterOptions] = useState({});
+  const [selectedFilters, setSelectedFilters] = useState({
+    education_level: [],
+    math_domain: [],
+    difficulty: ''
+  });
+  const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     fetchReels();
     fetchSavedReels();
+    fetchFilterOptions();
   }, []);
+
+  // Refetch when filters change
+  useEffect(() => {
+    fetchReels();
+  }, [selectedFilters, searchQuery]);
+
+  const fetchFilterOptions = async () => {
+    try {
+      const res = await axios.get(`${API}/filter-options`);
+      setFilterOptions(res.data);
+    } catch (err) {
+      console.error('Failed to fetch filter options');
+    }
+  };
 
   // Handle deep link
   useEffect(() => {
@@ -76,7 +105,14 @@ const ReelsPage = () => {
   const fetchReels = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/reels`, {
+      const params = new URLSearchParams();
+      
+      if (searchQuery) params.append('search', searchQuery);
+      if (selectedFilters.education_level?.length) params.append('education_level', selectedFilters.education_level.join(','));
+      if (selectedFilters.math_domain?.length) params.append('math_domain', selectedFilters.math_domain.join(','));
+      if (selectedFilters.difficulty) params.append('difficulty', selectedFilters.difficulty);
+      
+      const res = await axios.get(`${API}/reels?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setReels(res.data);
@@ -271,10 +307,124 @@ const ReelsPage = () => {
                     onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
                     required
                     className="mt-2 bg-slate-900 border-slate-700 text-white"
-                    rows={4}
+                    rows={3}
                     placeholder="Describe what this video teaches... If sharing another creator's content, please credit them here."
                     data-testid="reel-caption-input"
                   />
+                </div>
+
+                {/* Categorization */}
+                <div className="border-t border-slate-700 pt-4">
+                  <Label className="text-slate-400 text-xs mb-2 block">Categorization (helps users find your content)</Label>
+                  
+                  {/* Education Level */}
+                  {filterOptions.education_level && (
+                    <div className="mb-3">
+                      <Label className="text-slate-400 text-xs mb-1 block">Education Level</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {filterOptions.education_level.slice(0, 5).map(opt => (
+                          <Badge
+                            key={opt.value}
+                            className={`cursor-pointer text-xs ${
+                              formData.education_level.includes(opt.value)
+                                ? 'bg-pink-500 text-white'
+                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                            }`}
+                            onClick={() => {
+                              const current = formData.education_level;
+                              setFormData({
+                                ...formData,
+                                education_level: current.includes(opt.value)
+                                  ? current.filter(v => v !== opt.value)
+                                  : [...current, opt.value]
+                              });
+                            }}
+                          >
+                            {opt.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Math Domain */}
+                  {filterOptions.math_domain && (
+                    <div className="mb-3">
+                      <Label className="text-slate-400 text-xs mb-1 block">Math Domain</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {filterOptions.math_domain.slice(0, 6).map(opt => (
+                          <Badge
+                            key={opt.value}
+                            className={`cursor-pointer text-xs ${
+                              formData.math_domain.includes(opt.value)
+                                ? 'bg-pink-500 text-white'
+                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                            }`}
+                            onClick={() => {
+                              const current = formData.math_domain;
+                              setFormData({
+                                ...formData,
+                                math_domain: current.includes(opt.value)
+                                  ? current.filter(v => v !== opt.value)
+                                  : [...current, opt.value]
+                              });
+                            }}
+                          >
+                            {opt.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  <div>
+                    <Label className="text-slate-400 text-xs mb-1 block">Tags</Label>
+                    <div className="flex gap-2 mb-2">
+                      <Input
+                        placeholder="Add tag..."
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (tagInput.trim() && !formData.tags.includes(tagInput.trim().toLowerCase())) {
+                              setFormData({ ...formData, tags: [...formData.tags, tagInput.trim().toLowerCase()] });
+                              setTagInput('');
+                            }
+                          }
+                        }}
+                        className="bg-slate-900 border-slate-700 text-white text-sm flex-1"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          if (tagInput.trim() && !formData.tags.includes(tagInput.trim().toLowerCase())) {
+                            setFormData({ ...formData, tags: [...formData.tags, tagInput.trim().toLowerCase()] });
+                            setTagInput('');
+                          }
+                        }}
+                        size="sm"
+                        className="bg-pink-500 hover:bg-pink-600"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    {formData.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {formData.tags.map(tag => (
+                          <Badge
+                            key={tag}
+                            className="bg-pink-500/20 text-pink-400 flex items-center gap-1 cursor-pointer text-xs"
+                            onClick={() => setFormData({ ...formData, tags: formData.tags.filter(t => t !== tag) })}
+                          >
+                            #{tag}
+                            <X className="w-3 h-3" />
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <Button 
@@ -298,6 +448,98 @@ const ReelsPage = () => {
             <Bookmark className={`w-4 h-4 mr-2 ${showSavedOnly ? 'fill-current' : ''}`} />
             {showSavedOnly ? 'Showing Saved' : 'Show Saved'}
           </Button>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Input
+              type="text"
+              placeholder="Search videos by caption or tags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
+            />
+          </div>
+          
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4">
+            {/* Education Level */}
+            {filterOptions.education_level && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Education Level</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.education_level.slice(0, 5).map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.education_level?.includes(opt.value)
+                          ? 'bg-pink-500 text-white hover:bg-pink-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.education_level || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          education_level: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Math Domain */}
+            {filterOptions.math_domain && (
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-400">Math Domain</Label>
+                <div className="flex flex-wrap gap-1">
+                  {filterOptions.math_domain.slice(0, 6).map(opt => (
+                    <Badge
+                      key={opt.value}
+                      className={`cursor-pointer text-xs ${
+                        selectedFilters.math_domain?.includes(opt.value)
+                          ? 'bg-pink-500 text-white hover:bg-pink-600'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => {
+                        const current = selectedFilters.math_domain || [];
+                        setSelectedFilters({
+                          ...selectedFilters,
+                          math_domain: current.includes(opt.value)
+                            ? current.filter(v => v !== opt.value)
+                            : [...current, opt.value]
+                        });
+                      }}
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Clear Filters */}
+            {(selectedFilters.education_level?.length > 0 || selectedFilters.math_domain?.length > 0 || searchQuery) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedFilters({ education_level: [], math_domain: [], difficulty: '' });
+                  setSearchQuery('');
+                }}
+                className="text-pink-400 hover:text-pink-300 self-end"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
         </div>
 
         {loading ? (

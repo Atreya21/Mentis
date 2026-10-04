@@ -375,6 +375,43 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
    - Added `/api/health` endpoint for Kubernetes deployment monitoring
    - Returns `{"status": "healthy"}` for liveness/readiness probes
 
+### Completed (March 15, 2026 - Session 2)
+1. ✅ **Comprehensive Filter System**
+   - **Resource Hub Filters**: Content Type (Notes, Playlist, Book, Article, PPTs, Others), Education Level, Math Domain, Difficulty
+   - **Curiofacts Filters**: Education Level, Math Domain, Difficulty with search
+   - **VEX Filters**: Education Level, Math Domain with search
+   - Server-side filtering via query parameters
+   - Filter badges with multi-select capability
+   - "Clear All Filters" button when filters active
+
+2. ✅ **Search Functionality**
+   - **Resource Hub**: Search by title, topic, or tags
+   - **Curiofacts**: Search by title, content, or tags
+   - **VEX**: Search by caption or tags
+   - Real-time search with server-side filtering
+
+3. ✅ **Tags System**
+   - Users can add tags when uploading content
+   - Tags are searchable across all content types
+   - Tag input with Enter key or Add button
+   - Tags displayed as badges in upload forms
+
+4. ✅ **New Resource Categories**
+   - Added "PPTs" content type for presentations
+   - Added "Others" content type for miscellaneous resources
+
+5. ✅ **Filter Options API**
+   - `GET /api/filter-options` - Returns all filter categories
+   - Auto-seeding of 58 default filter options on first call
+   - Categories: education_level (5), math_domain (14), class_grade (16), difficulty (4), exam_type (9), language (10)
+   - Admin endpoints for managing filter options
+
+6. ✅ **Upload Form Enhancements**
+   - All upload forms now include categorization section
+   - Education Level, Math Domain, Difficulty selectors
+   - Tags input for user-generated keywords
+   - Language selection dropdown
+
 ### Pending/Future Tasks
 1. **P1**: Implement "Reply to Message" in Mathmate chat (UI exists, needs backend)
 2. **P1**: Complete AdminDashboard.jsx refactoring (partially done)
@@ -388,6 +425,10 @@ Mentis is a hybrid platform combining features of LinkedIn and Reddit for the ma
 
 ## Database Schema Updates (March 15, 2026)
 - `users`: Added `email_verified` (bool), `verification_token` (str), `verification_token_expires` (datetime)
+- `resources`: Added `education_level` (array), `math_domain` (array), `class_grade` (str), `difficulty` (str), `exam_type` (array), `language` (str), `tags` (array)
+- `curiofacts`: Added `education_level` (array), `math_domain` (array), `difficulty` (str), `language` (str), `tags` (array)
+- `reels`: Added `education_level` (array), `math_domain` (array), `difficulty` (str), `exam_type` (array), `language` (str), `tags` (array)
+- `filter_options`: New collection for admin-managed filter categories
 
 ---
 Last Updated: March 15, 2026

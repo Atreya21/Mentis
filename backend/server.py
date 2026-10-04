@@ -116,20 +116,35 @@ class Resource(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: str
-    content_type: str
+    content_type: str  # notes, playlists, ppts, others
     url: str
     topic: str
     submitted_by: Optional[str] = None
     uploader_name: Optional[str] = None
     status: str = "pending"
+    # Filter fields
+    education_level: List[str] = []  # primary, high_school, ug, pg, research
+    math_domain: List[str] = []  # algebra, geometry, calculus, etc.
+    class_grade: Optional[str] = None  # class 1-12, semester 1-8
+    difficulty: Optional[str] = None  # beginner, intermediate, advanced, expert
+    exam_type: List[str] = []  # jee, neet, gre, gate, olympiad
+    language: Optional[str] = "english"
+    tags: List[str] = []  # user-generated tags
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ResourceCreate(BaseModel):
     title: str
     description: str
-    content_type: str
+    content_type: str  # notes, playlists, ppts, others
     url: str
     topic: str
+    education_level: List[str] = []
+    math_domain: List[str] = []
+    class_grade: Optional[str] = None
+    difficulty: Optional[str] = None
+    exam_type: List[str] = []
+    language: Optional[str] = "english"
+    tags: List[str] = []
 
 class ResourceApprove(BaseModel):
     status: str
@@ -159,12 +174,23 @@ class Curiofact(BaseModel):
     image_url: Optional[str] = None
     uploader_name: Optional[str] = None
     submitted_by: Optional[str] = None
+    # Filter fields
+    education_level: List[str] = []
+    math_domain: List[str] = []
+    difficulty: Optional[str] = None
+    language: Optional[str] = "english"
+    tags: List[str] = []
     published_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class CuriofactCreate(BaseModel):
     title: str
     content: str
     image_url: Optional[str] = None
+    education_level: List[str] = []
+    math_domain: List[str] = []
+    difficulty: Optional[str] = None
+    language: Optional[str] = "english"
+    tags: List[str] = []
 
 class MatrixRegistration(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -294,12 +320,25 @@ class Reel(BaseModel):
     video_type: str = "link"  # 'link' (YouTube, Instagram, Drive) or 'upload'
     caption: str
     status: str = "pending"  # pending, approved, rejected
+    # Filter fields
+    education_level: List[str] = []
+    math_domain: List[str] = []
+    difficulty: Optional[str] = None
+    exam_type: List[str] = []
+    language: Optional[str] = "english"
+    tags: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ReelCreate(BaseModel):
     video_url: str
     video_type: str = "link"
     caption: str
+    education_level: List[str] = []
+    math_domain: List[str] = []
+    difficulty: Optional[str] = None
+    exam_type: List[str] = []
+    language: Optional[str] = "english"
+    tags: List[str] = []
 
 # Pinned Chat Model
 class PinnedChat(BaseModel):
@@ -336,12 +375,23 @@ class CuriofactSubmission(BaseModel):
     content: str
     image_url: Optional[str] = None
     status: str = "pending"
+    # Filter fields
+    education_level: List[str] = []
+    math_domain: List[str] = []
+    difficulty: Optional[str] = None
+    language: Optional[str] = "english"
+    tags: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class CuriofactCreate(BaseModel):
+class CuriofactSubmissionCreate(BaseModel):
     title: str
     content: str
     image_url: Optional[str] = None
+    education_level: List[str] = []
+    math_domain: List[str] = []
+    difficulty: Optional[str] = None
+    language: Optional[str] = "english"
+    tags: List[str] = []
 
 # File Attachment Model for Chat
 class FileAttachment(BaseModel):
@@ -448,6 +498,29 @@ class FAQUpdate(BaseModel):
     question: Optional[str] = None
     answer: Optional[str] = None
     order: Optional[int] = None
+
+# Filter Options Model for admin-managed filter categories
+class FilterOption(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    category: str  # education_level, math_domain, class_grade, difficulty, exam_type, language
+    value: str  # The actual value (e.g., "algebra", "high_school")
+    label: str  # Display label (e.g., "Algebra", "High School")
+    order: int = 0
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FilterOptionCreate(BaseModel):
+    category: str
+    value: str
+    label: str
+    order: Optional[int] = 0
+
+class FilterOptionUpdate(BaseModel):
+    value: Optional[str] = None
+    label: Optional[str] = None
+    order: Optional[int] = None
+    is_active: Optional[bool] = None
 
 # Matrix Member Update Model (for Master Admin)
 class MatrixMemberUpdate(BaseModel):
@@ -886,8 +959,61 @@ async def create_resource(resource_data: ResourceCreate, user: User = Depends(ge
     return resource
 
 @api_router.get("/resources", response_model=List[Resource])
-async def get_resources(status: Optional[str] = None):
-    query = {"status": status} if status else {}
+async def get_resources(
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    content_type: Optional[str] = None,
+    education_level: Optional[str] = None,
+    math_domain: Optional[str] = None,
+    class_grade: Optional[str] = None,
+    difficulty: Optional[str] = None,
+    exam_type: Optional[str] = None,
+    language: Optional[str] = None,
+    tags: Optional[str] = None
+):
+    query = {}
+    
+    if status:
+        query["status"] = status
+    
+    # Search in title, description, topic, and tags
+    if search:
+        query["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}},
+            {"topic": {"$regex": search, "$options": "i"}},
+            {"tags": {"$regex": search, "$options": "i"}}
+        ]
+    
+    if content_type:
+        query["content_type"] = content_type
+    
+    # Multi-select filters (comma-separated values)
+    if education_level:
+        levels = education_level.split(",")
+        query["education_level"] = {"$in": levels}
+    
+    if math_domain:
+        domains = math_domain.split(",")
+        query["math_domain"] = {"$in": domains}
+    
+    if class_grade:
+        query["class_grade"] = class_grade
+    
+    if difficulty:
+        query["difficulty"] = difficulty
+    
+    if exam_type:
+        exams = exam_type.split(",")
+        query["exam_type"] = {"$in": exams}
+    
+    if language:
+        query["language"] = language
+    
+    if tags:
+        tag_list = tags.split(",")
+        query["tags"] = {"$in": tag_list}
+    
     resources = await db.resources.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     for r in resources:
         if isinstance(r['created_at'], str):
@@ -967,8 +1093,44 @@ async def create_game(game_data: GameCreate, admin: User = Depends(get_admin_use
     return game
 
 @api_router.get("/curiofacts", response_model=List[Curiofact])
-async def get_curiofacts():
-    facts = await db.curiofacts.find({}, {"_id": 0}).sort("published_at", -1).to_list(1000)
+async def get_curiofacts(
+    search: Optional[str] = None,
+    education_level: Optional[str] = None,
+    math_domain: Optional[str] = None,
+    difficulty: Optional[str] = None,
+    language: Optional[str] = None,
+    tags: Optional[str] = None
+):
+    query = {}
+    
+    # Search in title, content, and tags
+    if search:
+        query["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"content": {"$regex": search, "$options": "i"}},
+            {"tags": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # Multi-select filters
+    if education_level:
+        levels = education_level.split(",")
+        query["education_level"] = {"$in": levels}
+    
+    if math_domain:
+        domains = math_domain.split(",")
+        query["math_domain"] = {"$in": domains}
+    
+    if difficulty:
+        query["difficulty"] = difficulty
+    
+    if language:
+        query["language"] = language
+    
+    if tags:
+        tag_list = tags.split(",")
+        query["tags"] = {"$in": tag_list}
+    
+    facts = await db.curiofacts.find(query, {"_id": 0}).sort("published_at", -1).to_list(1000)
     for f in facts:
         if isinstance(f['published_at'], str):
             f['published_at'] = datetime.fromisoformat(f['published_at'])
@@ -2612,9 +2774,50 @@ async def create_reel(reel_data: ReelCreate, current_user: User = Depends(get_cu
     return {"message": "Reel submitted for approval", "reel_id": reel.id}
 
 @api_router.get("/reels")
-async def get_reels(status: Optional[str] = "approved", current_user: User = Depends(get_current_user)):
-    """Get all approved reels or pending (for submitter)"""
+async def get_reels(
+    status: Optional[str] = "approved",
+    search: Optional[str] = None,
+    education_level: Optional[str] = None,
+    math_domain: Optional[str] = None,
+    difficulty: Optional[str] = None,
+    exam_type: Optional[str] = None,
+    language: Optional[str] = None,
+    tags: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all approved reels or pending (for submitter) with optional filters"""
     query = {"status": status}
+    
+    # Search in caption and tags
+    if search:
+        query["$or"] = [
+            {"caption": {"$regex": search, "$options": "i"}},
+            {"tags": {"$regex": search, "$options": "i"}},
+            {"user_name": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # Multi-select filters
+    if education_level:
+        levels = education_level.split(",")
+        query["education_level"] = {"$in": levels}
+    
+    if math_domain:
+        domains = math_domain.split(",")
+        query["math_domain"] = {"$in": domains}
+    
+    if difficulty:
+        query["difficulty"] = difficulty
+    
+    if exam_type:
+        exams = exam_type.split(",")
+        query["exam_type"] = {"$in": exams}
+    
+    if language:
+        query["language"] = language
+    
+    if tags:
+        tag_list = tags.split(",")
+        query["tags"] = {"$in": tag_list}
     
     reels = await db.reels.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
     
@@ -2681,31 +2884,6 @@ async def delete_reel(reel_id: str, admin: User = Depends(get_admin_user)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Reel not found")
     return {"message": "Reel deleted"}
-
-# Like a reel
-@api_router.post("/reels/{reel_id}/like")
-async def like_reel(reel_id: str, current_user: User = Depends(get_current_user)):
-    """Like or unlike a reel"""
-    existing = await db.likes.find_one({
-        "user_id": current_user.id,
-        "target_id": reel_id,
-        "target_type": "reels"
-    })
-    
-    if existing:
-        await db.likes.delete_one({"id": existing['id']})
-        return {"message": "Like removed", "liked": False}
-    
-    like = Like(
-        user_id=current_user.id,
-        target_id=reel_id,
-        target_type="reels"
-    )
-    doc = like.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    await db.likes.insert_one(doc)
-    
-    return {"message": "Reel liked", "liked": True}
 
 # ============== ENHANCED CHAT FEATURES ==============
 
@@ -3452,6 +3630,168 @@ async def get_single_reel(reel_id: str, current_user: User = Depends(get_current
     reel['user_liked'] = user_liked is not None
     
     return reel
+
+# ============== FILTER OPTIONS API ==============
+
+# Default filter options to seed the database
+DEFAULT_FILTER_OPTIONS = [
+    # Education Levels
+    {"category": "education_level", "value": "primary", "label": "Primary School", "order": 1},
+    {"category": "education_level", "value": "high_school", "label": "High School", "order": 2},
+    {"category": "education_level", "value": "ug", "label": "Undergraduate (UG)", "order": 3},
+    {"category": "education_level", "value": "pg", "label": "Postgraduate (PG)", "order": 4},
+    {"category": "education_level", "value": "research", "label": "Research", "order": 5},
+    
+    # Math Domains
+    {"category": "math_domain", "value": "algebra", "label": "Algebra", "order": 1},
+    {"category": "math_domain", "value": "geometry", "label": "Geometry", "order": 2},
+    {"category": "math_domain", "value": "calculus", "label": "Calculus", "order": 3},
+    {"category": "math_domain", "value": "trigonometry", "label": "Trigonometry", "order": 4},
+    {"category": "math_domain", "value": "statistics", "label": "Statistics & Probability", "order": 5},
+    {"category": "math_domain", "value": "number_theory", "label": "Number Theory", "order": 6},
+    {"category": "math_domain", "value": "linear_algebra", "label": "Linear Algebra", "order": 7},
+    {"category": "math_domain", "value": "discrete_math", "label": "Discrete Mathematics", "order": 8},
+    {"category": "math_domain", "value": "differential_equations", "label": "Differential Equations", "order": 9},
+    {"category": "math_domain", "value": "real_analysis", "label": "Real Analysis", "order": 10},
+    {"category": "math_domain", "value": "complex_analysis", "label": "Complex Analysis", "order": 11},
+    {"category": "math_domain", "value": "topology", "label": "Topology", "order": 12},
+    {"category": "math_domain", "value": "applied_math", "label": "Applied Mathematics", "order": 13},
+    {"category": "math_domain", "value": "combinatorics", "label": "Combinatorics", "order": 14},
+    
+    # Class/Grade
+    {"category": "class_grade", "value": "class_1", "label": "Class 1", "order": 1},
+    {"category": "class_grade", "value": "class_2", "label": "Class 2", "order": 2},
+    {"category": "class_grade", "value": "class_3", "label": "Class 3", "order": 3},
+    {"category": "class_grade", "value": "class_4", "label": "Class 4", "order": 4},
+    {"category": "class_grade", "value": "class_5", "label": "Class 5", "order": 5},
+    {"category": "class_grade", "value": "class_6", "label": "Class 6", "order": 6},
+    {"category": "class_grade", "value": "class_7", "label": "Class 7", "order": 7},
+    {"category": "class_grade", "value": "class_8", "label": "Class 8", "order": 8},
+    {"category": "class_grade", "value": "class_9", "label": "Class 9", "order": 9},
+    {"category": "class_grade", "value": "class_10", "label": "Class 10", "order": 10},
+    {"category": "class_grade", "value": "class_11", "label": "Class 11", "order": 11},
+    {"category": "class_grade", "value": "class_12", "label": "Class 12", "order": 12},
+    {"category": "class_grade", "value": "year_1", "label": "Year 1 (College)", "order": 13},
+    {"category": "class_grade", "value": "year_2", "label": "Year 2 (College)", "order": 14},
+    {"category": "class_grade", "value": "year_3", "label": "Year 3 (College)", "order": 15},
+    {"category": "class_grade", "value": "year_4", "label": "Year 4 (College)", "order": 16},
+    
+    # Difficulty
+    {"category": "difficulty", "value": "beginner", "label": "Beginner", "order": 1},
+    {"category": "difficulty", "value": "intermediate", "label": "Intermediate", "order": 2},
+    {"category": "difficulty", "value": "advanced", "label": "Advanced", "order": 3},
+    {"category": "difficulty", "value": "expert", "label": "Expert", "order": 4},
+    
+    # Exam Types
+    {"category": "exam_type", "value": "jee", "label": "JEE (Main/Advanced)", "order": 1},
+    {"category": "exam_type", "value": "neet", "label": "NEET", "order": 2},
+    {"category": "exam_type", "value": "gate", "label": "GATE", "order": 3},
+    {"category": "exam_type", "value": "gre", "label": "GRE", "order": 4},
+    {"category": "exam_type", "value": "olympiad", "label": "Math Olympiad", "order": 5},
+    {"category": "exam_type", "value": "cat", "label": "CAT", "order": 6},
+    {"category": "exam_type", "value": "cbse", "label": "CBSE Board", "order": 7},
+    {"category": "exam_type", "value": "icse", "label": "ICSE Board", "order": 8},
+    {"category": "exam_type", "value": "state_board", "label": "State Board", "order": 9},
+    
+    # Languages
+    {"category": "language", "value": "english", "label": "English", "order": 1},
+    {"category": "language", "value": "hindi", "label": "Hindi", "order": 2},
+    {"category": "language", "value": "bengali", "label": "Bengali", "order": 3},
+    {"category": "language", "value": "tamil", "label": "Tamil", "order": 4},
+    {"category": "language", "value": "telugu", "label": "Telugu", "order": 5},
+    {"category": "language", "value": "marathi", "label": "Marathi", "order": 6},
+    {"category": "language", "value": "gujarati", "label": "Gujarati", "order": 7},
+    {"category": "language", "value": "kannada", "label": "Kannada", "order": 8},
+    {"category": "language", "value": "malayalam", "label": "Malayalam", "order": 9},
+    {"category": "language", "value": "punjabi", "label": "Punjabi", "order": 10},
+]
+
+@api_router.get("/filter-options")
+async def get_filter_options():
+    """Get all active filter options grouped by category"""
+    # Check if filter options exist, if not seed them
+    count = await db.filter_options.count_documents({})
+    if count == 0:
+        # Seed default filter options
+        for opt in DEFAULT_FILTER_OPTIONS:
+            opt_doc = FilterOption(**opt).model_dump()
+            opt_doc['created_at'] = opt_doc['created_at'].isoformat()
+            await db.filter_options.insert_one(opt_doc)
+    
+    options = await db.filter_options.find({"is_active": True}, {"_id": 0}).sort("order", 1).to_list(500)
+    
+    # Group by category
+    grouped = {}
+    for opt in options:
+        cat = opt['category']
+        if cat not in grouped:
+            grouped[cat] = []
+        grouped[cat].append(opt)
+    
+    return grouped
+
+@api_router.get("/admin/filter-options")
+async def get_all_filter_options(admin: User = Depends(get_admin_user)):
+    """Get all filter options including inactive ones (admin only)"""
+    options = await db.filter_options.find({}, {"_id": 0}).sort([("category", 1), ("order", 1)]).to_list(500)
+    
+    # Group by category
+    grouped = {}
+    for opt in options:
+        if isinstance(opt.get('created_at'), str):
+            opt['created_at'] = datetime.fromisoformat(opt['created_at'])
+        cat = opt['category']
+        if cat not in grouped:
+            grouped[cat] = []
+        grouped[cat].append(opt)
+    
+    return grouped
+
+@api_router.post("/admin/filter-options")
+async def create_filter_option(option_data: FilterOptionCreate, admin: User = Depends(get_admin_user)):
+    """Create a new filter option (admin only)"""
+    # Check if value already exists in category
+    existing = await db.filter_options.find_one({
+        "category": option_data.category,
+        "value": option_data.value
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Filter option with this value already exists in this category")
+    
+    option = FilterOption(**option_data.model_dump())
+    doc = option.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.filter_options.insert_one(doc)
+    
+    return {"message": "Filter option created", "id": option.id}
+
+@api_router.patch("/admin/filter-options/{option_id}")
+async def update_filter_option(option_id: str, update_data: FilterOptionUpdate, admin: User = Depends(get_admin_user)):
+    """Update a filter option (admin only)"""
+    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    result = await db.filter_options.update_one(
+        {"id": option_id},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Filter option not found")
+    
+    return {"message": "Filter option updated"}
+
+@api_router.delete("/admin/filter-options/{option_id}")
+async def delete_filter_option(option_id: str, admin: User = Depends(get_admin_user)):
+    """Delete a filter option (admin only)"""
+    result = await db.filter_options.delete_one({"id": option_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Filter option not found")
+    
+    return {"message": "Filter option deleted"}
 
 app.include_router(api_router)
 

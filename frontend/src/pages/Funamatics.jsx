@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { Gamepad2, ExternalLink, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Card3D from '@/components/3d/Card3D';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -228,68 +229,78 @@ const Funamatics = () => {
               {games.map((game, index) => (
                 <motion.div
                   key={game.id}
-                  className="group relative overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-800/50 backdrop-blur-sm hover-lift card-hover"
-                  data-testid="game-card"
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.5, delay: index * 0.08 }}
+                  className="h-full"
                 >
-                  {game.thumbnail && (
-                    <div className="h-48 overflow-hidden relative">
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-800 to-transparent z-[1] pointer-events-none"></div>
-                      <img
-                        src={game.thumbnail}
-                        alt={game.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
+                  <Card3D
+                    tiltMax={10}
+                    depth={24}
+                    borderColor="from-orange-500/40 via-pink-500/40 to-cyan-500/40"
+                    className="h-full"
+                    data-testid="game-card"
+                  >
+                    <div className="flex flex-col h-full rounded-2xl overflow-hidden group">
+                      {game.thumbnail && (
+                        <div className="h-48 overflow-hidden relative">
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-[1] pointer-events-none" />
+                          <img
+                            src={game.thumbnail}
+                            alt={game.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          />
+                        </div>
+                      )}
+                      <div className="p-6 flex flex-col justify-between flex-grow relative z-[2]">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                              game.difficulty === 'easy' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                              game.difficulty === 'medium' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+                              'bg-red-500/20 text-red-400 border border-red-500/30'
+                            }`}>
+                              {game.difficulty}
+                            </span>
+                            {game.math_domain && game.math_domain.map((d, i) => (
+                              <span key={`domain-${i}`} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 border border-orange-500/30 capitalize">
+                                {d.replace(/_/g, ' ')}
+                              </span>
+                            ))}
+                            {game.education_level && game.education_level.map((l, i) => (
+                              <span key={`level-${i}`} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 border border-pink-500/30 capitalize">
+                                {l.replace(/_/g, ' ')}
+                              </span>
+                            ))}
+                          </div>
+                          <h3 className="font-heading text-xl sm:text-2xl font-bold text-white mb-2 group-hover:text-orange-400 transition-colors">
+                            {game.title}
+                          </h3>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <p className="text-slate-400 text-sm mb-4 line-clamp-3 cursor-help leading-relaxed">
+                                {game.description}
+                              </p>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-sm bg-slate-900 border-slate-700 text-slate-200 p-3">
+                              <p className="text-sm">{game.description}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <a
+                          href={game.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative z-[3] block mt-2"
+                        >
+                          <Button className="w-full rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect shadow-md shadow-orange-500/20 font-semibold" data-testid="game-play-btn">
+                            Play Now
+                            <ExternalLink className="w-4 h-4 ml-2" />
+                          </Button>
+                        </a>
+                      </div>
                     </div>
-                  )}
-                  <div className="p-6 relative z-[2]">
-                    <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                        game.difficulty === 'easy' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                        game.difficulty === 'medium' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
-                        'bg-red-500/20 text-red-400 border border-red-500/30'
-                      }`}>
-                        {game.difficulty}
-                      </span>
-                      {game.math_domain && game.math_domain.map((d, i) => (
-                        <span key={`domain-${i}`} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 border border-orange-500/30 capitalize">
-                          {d.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                      {game.education_level && game.education_level.map((l, i) => (
-                        <span key={`level-${i}`} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 border border-pink-500/30 capitalize">
-                          {l.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                    </div>
-                    <h3 className="font-heading text-2xl font-bold text-white mb-3">
-                      {game.title}
-                    </h3>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <p className="text-slate-400 mb-4 line-clamp-3 cursor-help">
-                          {game.description}
-                        </p>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-sm bg-slate-900 border-slate-700 text-slate-200 p-3">
-                        <p className="text-sm">{game.description}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <a
-                      href={game.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="relative z-[3] block"
-                    >
-                      <Button className="w-full rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect" data-testid="game-play-btn">
-                        Play Now
-                        <ExternalLink className="w-4 h-4 ml-2" />
-                      </Button>
-                    </a>
-                  </div>
+                  </Card3D>
                 </motion.div>
               ))}
             </div>

@@ -61,58 +61,65 @@ const Navigation = () => {
   const filteredLinks = navLinks.filter(link => !link.requiresAuth || user);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      {/* Ambient Top Glow Line */}
+      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-orange-500/40 via-pink-500/30 to-transparent" />
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0 group">
             {logoUrl && (
               <img 
                 src={logoUrl} 
                 alt="Mentis Logo" 
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover ring-1 ring-orange-500/30 group-hover:ring-orange-500/70 transition-all shadow-md group-hover:scale-105"
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             )}
-            <span className="font-heading text-xl sm:text-2xl lg:text-3xl font-bold text-gradient shine-effect">
+            <span className="font-heading text-xl sm:text-2xl lg:text-3xl font-bold text-gradient shine-effect group-hover:drop-shadow-[0_0_12px_rgba(249,115,22,0.5)] transition-all">
               Mentis
             </span>
           </Link>
           
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-6 xl:gap-8">
-            {filteredLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`relative font-body text-sm font-medium transition-all hover:text-orange-400 hover:scale-105 whitespace-nowrap ${
-                  location.pathname === link.path ? 'text-orange-500' : 'text-slate-300'
-                }`}
-                data-testid={link.hasNotification ? 'mathmate-nav-link' : undefined}
-              >
-                <span className="flex items-center gap-1">
-                  {link.name}
-                  {link.hasNotification && unreadCount > 0 && (
-                    <span 
-                      className="absolute -top-2 -right-4 min-w-[20px] h-5 flex items-center justify-center bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full px-1.5 animate-pulse shadow-lg shadow-red-500/50"
-                      data-testid="mathmate-notification-badge"
-                    >
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                </span>
-              </Link>
-            ))}
+          <div className="hidden lg:flex items-center gap-2 xl:gap-3 bg-slate-900/60 p-1.5 rounded-full border border-slate-800/80 backdrop-blur-md">
+            {filteredLinks.map((link) => {
+              const isActive = location.pathname === link.path;
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`relative font-body text-xs xl:text-sm font-medium px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                    isActive 
+                      ? 'text-white bg-gradient-to-r from-orange-500/25 to-pink-500/20 border border-orange-500/40 shadow-sm shadow-orange-500/10' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                  data-testid={link.hasNotification ? 'mathmate-nav-link' : undefined}
+                >
+                  <span className="flex items-center gap-1.5">
+                    {link.name}
+                    {link.hasNotification && unreadCount > 0 && (
+                      <span 
+                        className="min-w-[18px] h-4 flex items-center justify-center bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] font-bold rounded-full px-1 animate-pulse shadow-md shadow-red-500/50"
+                        data-testid="mathmate-notification-badge"
+                      >
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
 
           {/* Desktop Auth & App Buttons */}
-          <div className="hidden sm:flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="hidden sm:flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
             {!isApp && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowDownloadModal(true)}
-                className="rounded-full border-orange-500/40 hover:bg-orange-500/10 hover:border-orange-400 text-slate-300 hover:text-white text-xs sm:text-sm px-3 sm:px-3.5 flex items-center gap-1.5 transition-all"
+                className="rounded-full border-orange-500/40 bg-slate-900/60 hover:bg-orange-500/15 hover:border-orange-400 text-slate-300 hover:text-white text-xs sm:text-sm px-3.5 flex items-center gap-1.5 transition-all shadow-sm"
                 data-testid="nav-download-app-btn"
               >
                 <Smartphone className="w-3.5 h-3.5 text-orange-400" />
@@ -122,15 +129,15 @@ const Navigation = () => {
             {user ? (
               <>
                 <Link to="/dashboard">
-                  <Button variant="outline" size="sm" className="rounded-full border-slate-700 hover:bg-slate-800 text-xs sm:text-sm px-3 sm:px-4" data-testid="dashboard-btn">
-                    <User className="w-4 h-4 sm:mr-2" />
+                  <Button variant="outline" size="sm" className="rounded-full border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-xs sm:text-sm px-3.5 sm:px-4" data-testid="dashboard-btn">
+                    <User className="w-4 h-4 sm:mr-1.5" />
                     <span className="hidden sm:inline">Dashboard</span>
                   </Button>
                 </Link>
                 {(user.role === 'admin' || user.role === 'master_admin') && (
                   <Link to="/admin">
-                    <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-xs sm:text-sm px-3 sm:px-4" data-testid="admin-dashboard-btn">
-                      <Shield className="w-4 h-4 sm:mr-2" />
+                    <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-xs sm:text-sm px-3.5 sm:px-4 shadow-md shadow-orange-500/20" data-testid="admin-dashboard-btn">
+                      <Shield className="w-4 h-4 sm:mr-1.5" />
                       <span className="hidden sm:inline">Admin</span>
                     </Button>
                   </Link>
@@ -139,12 +146,12 @@ const Navigation = () => {
             ) : (
               <>
                 <Link to="/login">
-                  <Button variant="outline" size="sm" className="rounded-full border-slate-700 hover:bg-slate-800 text-xs sm:text-sm px-3 sm:px-4" data-testid="login-nav-btn">
+                  <Button variant="outline" size="sm" className="rounded-full border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-xs sm:text-sm px-3.5 sm:px-4" data-testid="login-nav-btn">
                     Login
                   </Button>
                 </Link>
                 <Link to="/signup">
-                  <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-xs sm:text-sm px-3 sm:px-4" data-testid="signup-nav-btn">
+                  <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-xs sm:text-sm px-4 shadow-md shadow-orange-500/25 transition-all hover:scale-105" data-testid="signup-nav-btn">
                     Sign Up
                   </Button>
                 </Link>

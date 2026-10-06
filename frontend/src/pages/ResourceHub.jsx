@@ -17,6 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { BookOpen, Plus, Filter, Search, User, Heart, MessageCircle, Send, X, Bookmark, Share2 } from 'lucide-react';
 import ShareToChat from '@/components/ShareToChat';
+import Card3D from '@/components/3d/Card3D';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -657,113 +658,128 @@ const ResourceHub = () => {
             {filteredResources.map((resource) => (
               <motion.div
                 key={resource.id}
-                className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-6 rounded-xl card-hover shine-effect group hover:border-orange-500/50 transition-all duration-300"
-                data-testid="resource-card"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
+                className="h-full"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center">
-                    <BookOpen className="w-6 h-6 text-orange-400" />
+                <Card3D
+                  tiltMax={8}
+                  depth={18}
+                  borderColor="from-slate-700/60 via-slate-600/40 to-slate-700/60"
+                  className="h-full"
+                  data-testid="resource-card"
+                >
+                  <div className="p-6 flex flex-col justify-between h-full rounded-2xl">
+                    <div>
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center border border-slate-700/60 shadow-sm">
+                          <BookOpen className="w-6 h-6 text-orange-400" />
+                        </div>
+                        <span className="text-xs font-semibold px-3 py-1 bg-orange-500/15 text-orange-400 rounded-full border border-orange-500/30 uppercase tracking-wider">
+                          {resource.content_type}
+                        </span>
+                      </div>
+                      <h3 className="font-heading text-xl font-bold text-white mb-2 group-hover:text-orange-400 transition-colors">
+                        {resource.title}
+                      </h3>
+                      <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p 
+                              className="text-sm text-slate-400 mb-3 line-clamp-2 cursor-help hover:text-slate-300 transition-colors leading-relaxed"
+                            >
+                              {resource.description}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent 
+                            side="top" 
+                            className="max-w-md bg-slate-800 border-slate-600 text-slate-200 p-4 shadow-xl z-[100]"
+                            sideOffset={5}
+                          >
+                            <p className="text-sm leading-relaxed">{resource.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <User className="w-3 h-3 text-slate-500" />
+                        <span className="text-xs text-slate-500 font-medium">Uploaded by {resource.uploader_name || 'Unknown'}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between pt-2">
+                        <span className="text-xs text-slate-400 font-medium px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">{resource.topic}</span>
+                        <a
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative z-10 text-xs sm:text-sm text-orange-400 hover:text-orange-300 font-semibold transition-colors px-3 py-1 rounded-lg hover:bg-orange-500/10 flex items-center gap-1"
+                          data-testid="resource-view-link"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(resource.url, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          <span>Open Resource</span>
+                          <span>→</span>
+                        </a>
+                      </div>
+                      
+                      {/* Like, Comment, Save, Share Section */}
+                      {user && (
+                        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-800 relative z-20">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLike(resource.id); }}
+                            className={`flex items-center gap-1.5 border-slate-700 hover:border-pink-500 ${likes[resource.id]?.userLiked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10 cursor-pointer`}
+                            data-testid="like-resource-btn"
+                          >
+                            <Heart className={`w-3.5 h-3.5 ${likes[resource.id]?.userLiked ? 'fill-current' : ''}`} />
+                            <span className="text-xs">{likes[resource.id]?.count || 0}</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); openComments(resource); }}
+                            className="flex items-center gap-1.5 text-slate-400 border-slate-700 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10 cursor-pointer"
+                            data-testid="comment-resource-btn"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span className="text-xs">Comment</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSaveResource(resource.id); }}
+                            className={`flex items-center gap-1.5 border-slate-700 hover:border-yellow-500 ${savedResources.includes(resource.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-slate-400'} hover:text-yellow-400 hover:bg-yellow-500/10 cursor-pointer`}
+                            data-testid="save-resource-btn"
+                          >
+                            <Bookmark className={`w-3.5 h-3.5 ${savedResources.includes(resource.id) ? 'fill-current' : ''}`} />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareResource(resource); }}
+                            className="flex items-center gap-1.5 text-slate-400 border-slate-700 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10 cursor-pointer"
+                            data-testid="share-resource-btn"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareToChat(resource); }}
+                            className="flex items-center gap-1.5 text-slate-400 border-slate-700 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10 cursor-pointer"
+                            data-testid="share-to-chat-btn"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xs font-medium px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full border border-orange-500/30">
-                    {resource.content_type}
-                  </span>
-                </div>
-                <h3 className="font-heading text-xl font-semibold text-white mb-2">
-                  {resource.title}
-                </h3>
-                <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <p 
-                        className="text-sm text-slate-400 mb-3 line-clamp-2 cursor-help hover:text-slate-300 transition-colors"
-                      >
-                        {resource.description}
-                      </p>
-                    </TooltipTrigger>
-                    <TooltipContent 
-                      side="top" 
-                      className="max-w-md bg-slate-800 border-slate-600 text-slate-200 p-4 shadow-xl z-[100]"
-                      sideOffset={5}
-                    >
-                      <p className="text-sm leading-relaxed">{resource.description}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <User className="w-3 h-3 text-slate-500" />
-                  <span className="text-xs text-slate-500">Uploaded by {resource.uploader_name || 'Unknown'}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500 font-medium">{resource.topic}</span>
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative z-10 text-sm text-orange-400 hover:text-orange-300 font-medium transition-colors px-3 py-1 rounded-lg hover:bg-orange-500/10"
-                    data-testid="resource-view-link"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(resource.url, '_blank', 'noopener,noreferrer');
-                    }}
-                  >
-                    View →
-                  </a>
-                </div>
-                
-                {/* Like, Comment, Save, Share Section */}
-                {user && (
-                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-700 relative z-20">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLike(resource.id); }}
-                      className={`flex items-center gap-2 border-slate-600 hover:border-pink-500 ${likes[resource.id]?.userLiked ? 'text-pink-500 bg-pink-500/10' : 'text-slate-400'} hover:text-pink-400 hover:bg-pink-500/10 cursor-pointer`}
-                      data-testid="like-resource-btn"
-                    >
-                      <Heart className={`w-4 h-4 ${likes[resource.id]?.userLiked ? 'fill-current' : ''}`} />
-                      <span>{likes[resource.id]?.count || 0}</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openComments(resource); }}
-                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10 cursor-pointer"
-                      data-testid="comment-resource-btn"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>Comment</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSaveResource(resource.id); }}
-                      className={`flex items-center gap-2 border-slate-600 hover:border-yellow-500 ${savedResources.includes(resource.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-slate-400'} hover:text-yellow-400 hover:bg-yellow-500/10 cursor-pointer`}
-                      data-testid="save-resource-btn"
-                    >
-                      <Bookmark className={`w-4 h-4 ${savedResources.includes(resource.id) ? 'fill-current' : ''}`} />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareResource(resource); }}
-                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-green-400 hover:border-green-500 hover:bg-green-500/10 cursor-pointer"
-                      data-testid="share-resource-btn"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShareToChat(resource); }}
-                      className="flex items-center gap-2 text-slate-400 border-slate-600 hover:text-orange-400 hover:border-orange-500 hover:bg-orange-500/10 cursor-pointer"
-                      data-testid="share-to-chat-btn"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
+                </Card3D>
               </motion.div>
             ))}
           </div>

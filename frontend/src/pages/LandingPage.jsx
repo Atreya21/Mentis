@@ -1,12 +1,15 @@
 import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Gamepad2, Sparkles, Network, Users, Video, Info, Smartphone, Download, RefreshCw, ShieldCheck } from 'lucide-react';
+import { BookOpen, Gamepad2, Sparkles, Network, Users, Video, Info, Smartphone, Download, RefreshCw, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DownloadAppModal from '@/components/DownloadAppModal';
 import { useIsApp } from '@/utils/appDetector';
 import axios from 'axios';
 import { AuthContext } from '@/App';
+import MathCanvas3D from '@/components/3d/MathCanvas3D';
+import Card3D from '@/components/3d/Card3D';
+import FloatingMathBadges from '@/components/3d/FloatingMathBadges';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -82,56 +85,93 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen pt-16 sm:pt-20 bg-slate-950">
-      <section className="relative min-h-screen flex items-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 noise-texture overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-60 sm:w-80 h-60 sm:h-80 bg-orange-500/10 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute -bottom-40 -left-40 w-60 sm:w-80 h-60 sm:h-80 bg-pink-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }}></div>
+    <div className="min-h-screen pt-16 sm:pt-20 bg-slate-950 overflow-hidden">
+      {/* 3D Interactive Hero Section */}
+      <section className="relative min-h-[92vh] flex items-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 noise-texture overflow-hidden">
+        {/* Live Interactive 3D Math Geometry Canvas */}
+        <MathCanvas3D className="opacity-75 z-0" interactive={true} />
+
+        {/* Ambient Glowing Orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-32 -right-32 w-72 sm:w-96 h-72 sm:h-96 bg-orange-500/15 rounded-full blur-3xl animate-orb-1" />
+          <div className="absolute -bottom-32 -left-32 w-72 sm:w-96 h-72 sm:h-96 bg-pink-500/15 rounded-full blur-3xl animate-orb-2" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[140px]" />
+          <div className="absolute inset-0 math-grid-pattern opacity-40" />
         </div>
         
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-12 sm:py-20 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center relative z-10">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-12 sm:py-20 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-14 items-center relative z-10">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
           >
+            {/* Holographic Header Pill */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-orange-500/30 text-orange-400 text-xs sm:text-sm font-medium backdrop-blur-md shadow-lg shadow-orange-500/10 mb-4 sm:mb-6"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+              <span>Mentis Mathematics Foundation</span>
+              <span className="hidden sm:inline text-slate-500">•</span>
+              <span className="hidden sm:inline text-slate-400 font-mono text-[11px]">Where Minds Meet Mathematics</span>
+            </motion.div>
+
             <motion.h1 
-              className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-tight text-white mb-4 sm:mb-6"
+              className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.12] text-white mb-4 sm:mb-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              Welcome to
-              <span className="block text-gradient mt-2">Mentis Mathematics Foundation</span>
+              Where Curious Minds Meet
+              <span className="block text-gradient mt-2 font-extrabold">Mathematical Wonder</span>
             </motion.h1>
+
             <motion.p 
-              className="text-base sm:text-lg md:text-xl leading-relaxed text-slate-300 mb-4"
+              className="text-base sm:text-lg md:text-xl leading-relaxed text-slate-300 mb-3"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
+              transition={{ duration: 0.8, delay: 0.35 }}
             >
-              Join Mentis, the premier platform for mathematics enthusiasts. Learn, share, and grow with a community that speaks your language.
+              Explore curated libraries, interactive game labs, live community forums, and creative mathematical media — crafted to illuminate the elegance of numbers.
             </motion.p>
-            <motion.p 
-              className="text-sm sm:text-base md:text-lg leading-relaxed text-slate-400 mb-6 sm:mb-8"
+
+            {/* 3D Micro-Stats Strip */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
+              transition={{ duration: 0.8, delay: 0.45 }}
+              className="grid grid-cols-3 gap-2.5 sm:gap-3.5 my-6 max-w-md"
             >
-              Be a part of the world where minds meet mathematics.
-            </motion.p>
+              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md hover:border-orange-500/40 transition-colors">
+                <div className="font-heading text-lg sm:text-2xl font-bold text-orange-400">13+</div>
+                <div className="text-[11px] sm:text-xs text-slate-400 font-medium">Interactive Labs</div>
+              </div>
+              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md hover:border-pink-500/40 transition-colors">
+                <div className="font-heading text-lg sm:text-2xl font-bold text-pink-400">100%</div>
+                <div className="text-[11px] sm:text-xs text-slate-400 font-medium">Open & Free</div>
+              </div>
+              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md hover:border-cyan-500/40 transition-colors">
+                <div className="font-heading text-lg sm:text-2xl font-bold text-cyan-400">7+</div>
+                <div className="text-[11px] sm:text-xs text-slate-400 font-medium">Core Sections</div>
+              </div>
+            </motion.div>
+
             {!user && (
               <motion.div
-                className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6"
+                className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 sm:p-4 mb-5 sm:mb-6 backdrop-blur-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.55 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
               >
-                <p className="text-orange-400 text-xs sm:text-sm font-medium">
-                  Sign up to unlock all features including Resource Hub, Funamatics, VEX, and Mathmate!
+                <p className="text-orange-400 text-xs sm:text-sm font-medium flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping" />
+                  Sign up to unlock the full Resource Hub, Funamatics, VEX, and Mathmate live chat!
                 </p>
               </motion.div>
             )}
+
             <motion.div 
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap"
               initial={{ opacity: 0, y: 20 }}
@@ -139,12 +179,12 @@ const LandingPage = () => {
               transition={{ duration: 0.8, delay: 0.6 }}
             >
               <Link to="/signup" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto rounded-full h-12 sm:h-14 px-6 sm:px-8 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect glow-on-hover text-sm sm:text-base" data-testid="hero-get-started-btn">
-                  Get Started
+                <Button size="lg" className="w-full sm:w-auto rounded-full h-12 sm:h-14 px-7 sm:px-9 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect glow-on-hover text-sm sm:text-base font-semibold shadow-lg shadow-orange-500/25 transition-all hover:scale-105" data-testid="hero-get-started-btn">
+                  Get Started Free
                 </Button>
               </Link>
               <Link to="/matrix" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full h-12 sm:h-14 px-6 sm:px-8 border-slate-700 hover:bg-slate-800 hover:border-orange-500 transition-all hover:scale-105 text-sm sm:text-base" data-testid="hero-join-community-btn">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full h-12 sm:h-14 px-6 sm:px-8 border-slate-700 bg-slate-900/60 backdrop-blur-sm hover:bg-slate-800 hover:border-orange-500 transition-all hover:scale-105 text-sm sm:text-base" data-testid="hero-join-community-btn">
                   Join Community
                 </Button>
               </Link>
@@ -163,31 +203,63 @@ const LandingPage = () => {
             </motion.div>
           </motion.div>
 
+          {/* Right Column: 3D Holographic Showcase Card */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative animate-float hidden md:block"
+            className="relative hidden md:block"
           >
-            <div className="gradient-border glow-on-hover">
-              <div className="gradient-border-inner p-2">
+            {/* Floating 3D Mathematical Formulas around the card */}
+            <FloatingMathBadges />
+
+            <Card3D
+              tiltMax={10}
+              depth={35}
+              borderColor="from-orange-500/50 via-pink-500/50 to-cyan-500/50"
+              className="w-full max-w-lg mx-auto"
+            >
+              <div className="relative rounded-xl overflow-hidden group">
                 <img
                   src={heroImage}
-                  alt="Mentis Hero"
-                  className="rounded-2xl w-full h-auto"
+                  alt="Mentis Mathematics Foundation Hero Showcase"
+                  className="rounded-xl w-full h-[380px] lg:h-[440px] object-cover transition-transform duration-700 group-hover:scale-105"
                   onError={(e) => {
                     e.target.src = 'https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85';
                   }}
                 />
+
+                {/* Glass Overlay Badges */}
+                <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 text-white text-xs font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Interactive Math Universe</span>
+                </div>
+
+                <div className="absolute bottom-4 inset-x-4 z-10 p-4 rounded-xl bg-slate-950/85 backdrop-blur-md border border-white/10 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs uppercase font-mono text-orange-400 font-semibold tracking-wider">Mentis Foundation</div>
+                    <div className="text-sm font-bold text-white mt-0.5">Where Minds Meet Mathematics</div>
+                  </div>
+                  <Link to="/resources">
+                    <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-xs px-3">
+                      Explore Hub <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
-            </div>
+            </Card3D>
           </motion.div>
         </div>
       </section>
 
-      <section className="py-12 sm:py-20 md:py-32 bg-slate-900">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-          <div className="text-center mb-8 sm:mb-12 md:mb-16">
+      {/* "Everything You Need" Feature Section with 3D Tilt Cards */}
+      <section className="py-16 sm:py-24 md:py-32 bg-slate-900/90 relative overflow-hidden">
+        <div className="absolute inset-0 math-grid-pattern opacity-30 pointer-events-none" />
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
+          <div className="text-center mb-10 sm:mb-14 md:mb-18">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-mono uppercase tracking-wider mb-3">
+              Explore Our Ecosystem
+            </div>
             <motion.h2 
               className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-3 sm:mb-4"
               initial={{ opacity: 0, y: 20 }}
@@ -195,7 +267,7 @@ const LandingPage = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              Everything You Need
+              Seven Mathematical Realms
             </motion.h2>
             <motion.p 
               className="text-sm sm:text-base lg:text-lg text-slate-400 max-w-2xl mx-auto px-4"
@@ -204,11 +276,11 @@ const LandingPage = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               viewport={{ once: true }}
             >
-              Seven powerful sections designed to enhance your mathematical journey
+              Engineered from first principles to turn complex mathematical concepts into intuition and mastery
             </motion.p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-7 md:gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
@@ -216,29 +288,55 @@ const LandingPage = () => {
                   key={index}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  transition={{ duration: 0.5, delay: index * 0.08 }}
                   viewport={{ once: true }}
-                  whileHover={{ scale: 1.02 }}
                   className={index === 6 ? 'sm:col-span-2 lg:col-span-1 lg:col-start-2' : ''}
                 >
-                  <Link to={feature.link}>
-                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl hover-lift card-hover shine-effect group relative overflow-hidden h-full">
-                      <div className={`absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-gradient-to-br ${feature.color} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`}></div>
-                      <div className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-br ${feature.color} rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform relative z-10`}>
-                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />
+                  <Link to={feature.link} className="block h-full group">
+                    <Card3D
+                      tiltMax={12}
+                      depth={28}
+                      borderColor={`from-slate-700/60 via-slate-600/40 to-slate-700/60 group-hover:from-orange-500/60 group-hover:via-pink-500/60 group-hover:to-cyan-500/60`}
+                      className="h-full"
+                    >
+                      <div className="p-6 sm:p-7 md:p-8 flex flex-col justify-between h-full min-h-[220px]">
+                        <div>
+                          <div className={`w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-4 sm:mb-5 shadow-lg group-hover:scale-110 transition-transform`}>
+                            <Icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                          </div>
+                          <h3 className="font-heading text-xl sm:text-2xl font-bold text-white mb-2 group-hover:text-orange-400 transition-colors">
+                            {feature.title}
+                          </h3>
+                          <p className="text-sm sm:text-base leading-relaxed text-slate-400">
+                            {feature.description}
+                          </p>
+                        </div>
+                        <div className="pt-4 flex items-center text-xs font-semibold text-orange-400 group-hover:text-pink-400 transition-colors">
+                          <span>Enter {feature.title}</span>
+                          <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1.5 transition-transform" />
+                        </div>
                       </div>
-                      <h3 className="font-heading text-lg sm:text-xl md:text-2xl lg:text-3xl font-medium text-white mb-2 sm:mb-3 relative z-10">
-                        {feature.title}
-                      </h3>
-                      <p className="text-sm sm:text-base leading-relaxed text-slate-400 relative z-10">
-                        {feature.description}
-                      </p>
-                    </div>
+                    </Card3D>
                   </Link>
                 </motion.div>
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* Philosophical Mathematical Manifesto Banner */}
+      <section className="py-16 sm:py-20 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden border-y border-slate-800/80">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 text-center relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-mono uppercase tracking-wider mb-4">
+            Universal Architecture
+          </div>
+          <blockquote className="font-heading text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-white leading-relaxed tracking-tight">
+            &ldquo;Mathematics is not just a collection of formulas; it is the universal poetry of reason and the architecture of the cosmos.&rdquo;
+          </blockquote>
+          <p className="mt-4 text-xs sm:text-sm text-slate-400 font-mono">
+            — Mentis Mathematics Foundation Mission Principle
+          </p>
         </div>
       </section>
 

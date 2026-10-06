@@ -12,7 +12,7 @@ import asyncio
 import shutil
 import mimetypes
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
 from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -118,11 +118,18 @@ class User(BaseModel):
     name: str
     role: str = "user"
     mentis_score: int = 0
-    hero_wallpaper: Optional[str] = "image"
+    hero_wallpaper: str = "image"
     email_verified: bool = False
     verification_token: Optional[str] = None
     verification_token_expires: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @field_validator("hero_wallpaper", mode="before")
+    @classmethod
+    def validate_hero_wallpaper(cls, v):
+        if not v or not isinstance(v, str) or not v.strip():
+            return "image"
+        return v.strip()
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -3787,11 +3794,14 @@ async def update_profile(updates: UserUpdate, current_user: User = Depends(get_c
 async def set_hero_wallpaper(data: dict, current_user: User = Depends(get_current_user)):
     """Set persistent hero wallpaper preference for the user"""
     wallpaper = data.get("hero_wallpaper", "image")
+    if not wallpaper or not isinstance(wallpaper, str) or not wallpaper.strip():
+        wallpaper = "image"
+    wallpaper_clean = wallpaper.strip()
     await db.users.update_one(
         {"id": current_user.id},
-        {"$set": {"hero_wallpaper": str(wallpaper)}}
+        {"$set": {"hero_wallpaper": wallpaper_clean}}
     )
-    return {"message": "Hero wallpaper preference updated", "hero_wallpaper": str(wallpaper)}
+    return {"message": "Hero wallpaper preference updated", "hero_wallpaper": wallpaper_clean}
 
 
 # ============== USER PENDING ITEMS ==============
@@ -4568,6 +4578,13 @@ async def scheduled_notification_checker():
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks on app startup"""
+    try:
+        await db.users.update_many(
+            {"$or": [{"hero_wallpaper": {"$exists": False}}, {"hero_wallpaper": None}]},
+            {"$set": {"hero_wallpaper": "image"}}
+        )
+    except Exception as e:
+        logger.warning(f"Hero wallpaper migration skipped: {e}")
     asyncio.create_task(scheduled_notification_checker())
     logger.info("Started scheduled notification checker background task")
 

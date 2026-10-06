@@ -184,24 +184,30 @@ const API = `${BACKEND_URL}/api`;
  * persistent Hero Wallpaper account settings, and retrofuturistic synthwave effects.
  */
 const MathGeometryStudio = ({ className = '', heroImage = null }) => {
-  const { user } = useContext(AuthContext) || {};
+  const { user, setUser } = useContext(AuthContext) || {};
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Persistent hero wallpaper preference: defaults to saved or 'image'
-  const [currentWallpaper, setCurrentWallpaper] = useState(() => {
-    return localStorage.getItem('mentis_hero_wallpaper') || 'image';
-  });
+  // Helper to determine active wallpaper strictly for the current account
+  const getUserWallpaper = () => {
+    if (user?.id) {
+      return user.hero_wallpaper || 'image';
+    }
+    return 'image';
+  };
 
-  // Default viewMode and activeMode initialized from persistent wallpaper
+  // Persistent hero wallpaper preference: bound to current user's profile
+  const [currentWallpaper, setCurrentWallpaper] = useState(getUserWallpaper);
+
+  // Default viewMode and activeMode initialized from user's persistent wallpaper
   const [viewMode, setViewMode] = useState(() => {
-    const saved = localStorage.getItem('mentis_hero_wallpaper') || 'image';
+    const saved = getUserWallpaper();
     return saved === 'image' ? 'image' : '3d';
   });
 
   const [activeMode, setActiveMode] = useState(() => {
-    const saved = localStorage.getItem('mentis_hero_wallpaper') || 'image';
+    const saved = getUserWallpaper();
     return saved !== 'image' && GEOMETRY_MODELS.some((m) => m.id === saved)
       ? saved
       : 'icosahedron';
@@ -212,19 +218,24 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
   const [isInteracting, setIsInteracting] = useState(false);
   const [enableRetroGrid, setEnableRetroGrid] = useState(true);
 
-  // Synchronize with logged-in user's profile wallpaper preference
+  // Synchronize strictly with the currently authenticated user's account preference
   useEffect(() => {
-    if (user?.hero_wallpaper) {
-      setCurrentWallpaper(user.hero_wallpaper);
-      localStorage.setItem('mentis_hero_wallpaper', user.hero_wallpaper);
-      if (user.hero_wallpaper === 'image') {
+    if (user?.id) {
+      // User is authenticated: apply THIS account's saved wallpaper
+      const userWallpaper = user.hero_wallpaper || 'image';
+      setCurrentWallpaper(userWallpaper);
+      if (userWallpaper === 'image') {
         setViewMode('image');
-      } else if (GEOMETRY_MODELS.some((m) => m.id === user.hero_wallpaper)) {
+      } else if (GEOMETRY_MODELS.some((m) => m.id === userWallpaper)) {
         setViewMode('3d');
-        setActiveMode(user.hero_wallpaper);
+        setActiveMode(userWallpaper);
       }
+    } else {
+      // Logged out / Guest: reset strictly to default Foundation Showcase Image
+      setCurrentWallpaper('image');
+      setViewMode('image');
     }
-  }, [user?.hero_wallpaper]);
+  }, [user?.id, user?.hero_wallpaper]);
 
   // References for animation state
   const stateRef = useRef({
@@ -292,18 +303,24 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
     (viewMode === 'image' && currentWallpaper === 'image') ||
     (viewMode === '3d' && currentWallpaper === activeMode);
 
-  // Set persistent wallpaper
+  // Set persistent wallpaper for the current user's profile
   const handleSetWallpaper = async (targetVisual) => {
     const visual = targetVisual || (viewMode === 'image' ? 'image' : activeMode);
     setCurrentWallpaper(visual);
-    localStorage.setItem('mentis_hero_wallpaper', visual);
 
     const visualName =
       visual === 'image'
         ? 'Showcase Image'
         : (GEOMETRY_MODELS.find((m) => m.id === visual)?.name || '3D Model');
 
-    if (user) {
+    if (user?.id) {
+      // 1. Save user-specific local backup
+      localStorage.setItem(`mentis_hero_wallpaper_${user.id}`, visual);
+      // 2. Reactively update AuthContext so all views immediately reflect it
+      if (setUser) {
+        setUser((prev) => (prev ? { ...prev, hero_wallpaper: visual } : prev));
+      }
+      // 3. Persist to MongoDB backend for THIS user account
       try {
         const token = localStorage.getItem('token');
         await axios.put(
@@ -312,14 +329,15 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         toast.success(`"${visualName}" set as your account Hero Wallpaper!`, {
-          description: 'This visual will now constantly display on your account.'
+          description: 'This wallpaper is saved to your account and will display whenever you log in.'
         });
       } catch (err) {
-        toast.success(`"${visualName}" saved as your Hero Wallpaper!`);
+        console.error('Failed to sync wallpaper to cloud:', err);
+        toast.error('Failed to sync wallpaper to your account in cloud.');
       }
     } else {
-      toast.success(`"${visualName}" saved as your Hero Wallpaper!`, {
-        description: 'Saved to your browser. Log in to sync across devices.'
+      toast.info(`"${visualName}" previewed!`, {
+        description: 'Log in or sign up to permanently save this hero wallpaper to your account.'
       });
     }
   };
@@ -754,19 +772,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
         if (enableRetroGrid) {
           const horizonY = height * 0.78;
           const gridSpeed = (now * 0.04) % 32;
-
-          const horizonGrad = ctx.createLinearGradient(0, horizonY - 20, 0, horizonY + 4);
-          horizonGrad.addColorStop(0, 'rgba(249, 115, 22, 0)');
-          horizonGrad.addColorStop(1, 'rgba(249, 115, 22, 0.35)');
-          ctx.fillStyle = horizonGrad;
-          ctx.fillRect(0, horizonY - 20, width, 24);
-
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(0, horizonY);
-          ctx.lineTo(width, horizonY);
-          ctx.stroke();
 
           const numRays = 16;
           for (let i = -numRays; i <= numRays; i++) {

@@ -26,8 +26,14 @@ const Dashboard = () => {
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [selectedWallpaper, setSelectedWallpaper] = useState(
-    user?.hero_wallpaper || localStorage.getItem('mentis_hero_wallpaper') || 'image'
+    user?.hero_wallpaper || 'image'
   );
+
+  useEffect(() => {
+    if (user?.hero_wallpaper) {
+      setSelectedWallpaper(user.hero_wallpaper);
+    }
+  }, [user?.id, user?.hero_wallpaper]);
 
   const WALLPAPER_ITEMS = [
     { id: 'image', name: 'Foundation Showcase Image', category: 'Default Visual', formula: 'Mentis Hero Showcase' },
@@ -49,20 +55,23 @@ const Dashboard = () => {
 
   const handleSaveWallpaper = async (wallpaperId) => {
     setSelectedWallpaper(wallpaperId);
-    localStorage.setItem('mentis_hero_wallpaper', wallpaperId);
-    try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${API}/users/me/hero-wallpaper`,
-        { hero_wallpaper: wallpaperId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success('Hero Wallpaper updated for your account!');
+    if (user?.id) {
+      localStorage.setItem(`mentis_hero_wallpaper_${user.id}`, wallpaperId);
       if (setUser) {
-        setUser({ ...user, hero_wallpaper: wallpaperId });
+        setUser((prev) => (prev ? { ...prev, hero_wallpaper: wallpaperId } : prev));
       }
-    } catch (err) {
-      toast.success('Hero Wallpaper preference saved locally!');
+      try {
+        const token = localStorage.getItem('token');
+        await axios.put(
+          `${API}/users/me/hero-wallpaper`,
+          { hero_wallpaper: wallpaperId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success('Hero Wallpaper updated for your account!');
+      } catch (err) {
+        console.error('Failed to save wallpaper:', err);
+        toast.error('Failed to sync wallpaper to your account in cloud.');
+      }
     }
   };
 

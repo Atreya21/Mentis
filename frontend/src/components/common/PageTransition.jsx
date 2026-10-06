@@ -3,16 +3,16 @@ import { motion } from 'framer-motion';
 
 /**
  * PageTransition
- * Wraps page routes with a modern, cinematic entry and exit transition.
- * Uses hardware-accelerated transforms (opacity, subtle scale, Y-axis translation, blur filter)
- * with a tailored cubic-bezier spring curve.
+ * Wraps page routes with a cinematic morphing zoom-in / zoom-out transition.
+ * Uses GPU-accelerated 3D transforms (scale zoom, elevation shift, spatial blur filter)
+ * with organic cubic-bezier spring curves.
  */
 const pageVariants = {
   initial: {
     opacity: 0,
-    y: 12,
-    scale: 0.992,
-    filter: 'blur(3px)',
+    y: 18,
+    scale: 0.94,
+    filter: 'blur(8px)',
   },
   animate: {
     opacity: 1,
@@ -20,17 +20,17 @@ const pageVariants = {
     scale: 1,
     filter: 'blur(0px)',
     transition: {
-      duration: 0.35,
-      ease: [0.22, 1, 0.36, 1],
+      duration: 0.42,
+      ease: [0.16, 1, 0.3, 1], // Spring-like morphing deceleration
     },
   },
   exit: {
     opacity: 0,
-    y: -8,
-    scale: 0.99,
-    filter: 'blur(2px)',
+    y: -14,
+    scale: 1.04, // Dramatic morphing zoom-out through the lens
+    filter: 'blur(6px)',
     transition: {
-      duration: 0.22,
+      duration: 0.26,
       ease: [0.32, 0, 0.67, 0],
     },
   },
@@ -47,7 +47,7 @@ const PageTransition = ({ children }) => {
       initial="initial"
       animate="animate"
       exit="exit"
-      className="w-full flex-grow flex flex-col"
+      className="w-full flex-grow flex flex-col will-change-[transform,opacity,filter]"
     >
       {children}
     </motion.div>

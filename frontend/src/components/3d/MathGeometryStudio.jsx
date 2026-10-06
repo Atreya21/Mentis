@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   RotateCw,
@@ -13,10 +13,13 @@ import {
   Orbit,
   Box,
   Cpu,
-  Maximize2
+  Bookmark,
+  Star
 } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { AuthContext } from '@/App';
 import { Button } from '@/components/ui/button';
-import Card3D from '@/components/3d/Card3D';
 
 /**
  * 14 Mathematical Geometry Models Metadata & Specifications
@@ -171,37 +174,57 @@ const GEOMETRY_MODELS = [
   }
 ];
 
-// Helper to group models by category
-const MODEL_CATEGORIES = [
-  'Sacred Polyhedra',
-  'Higher Dimensions',
-  'Topology',
-  'Knot Theory',
-  'Complex Geometry',
-  'Analytic Number Theory',
-  'Polyhedral Geometry',
-  'Chaos Theory',
-  'Quantum Mechanics'
-];
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 /**
  * MathGeometryStudio
  * A professional, GPU-accelerated interactive 3D Mathematical Geometry Studio
- * with 14 parametric models, vertex morphing transitions, retrofuturistic synthwave grid,
- * CRT scanlines, live telemetry HUD, and model dropdown selector.
+ * with 14 parametric models, vertex morphing transitions with zoom breathing,
+ * persistent Hero Wallpaper account settings, and retrofuturistic synthwave effects.
  */
 const MathGeometryStudio = ({ className = '', heroImage = null }) => {
+  const { user } = useContext(AuthContext) || {};
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Default viewMode is 'image' as requested
-  const [viewMode, setViewMode] = useState('image'); // 'image' | '3d'
-  const [activeMode, setActiveMode] = useState('icosahedron');
+  // Persistent hero wallpaper preference: defaults to saved or 'image'
+  const [currentWallpaper, setCurrentWallpaper] = useState(() => {
+    return localStorage.getItem('mentis_hero_wallpaper') || 'image';
+  });
+
+  // Default viewMode and activeMode initialized from persistent wallpaper
+  const [viewMode, setViewMode] = useState(() => {
+    const saved = localStorage.getItem('mentis_hero_wallpaper') || 'image';
+    return saved === 'image' ? 'image' : '3d';
+  });
+
+  const [activeMode, setActiveMode] = useState(() => {
+    const saved = localStorage.getItem('mentis_hero_wallpaper') || 'image';
+    return saved !== 'image' && GEOMETRY_MODELS.some((m) => m.id === saved)
+      ? saved
+      : 'icosahedron';
+  });
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [telemetry, setTelemetry] = useState({ rotX: '15°', rotY: '24°', points: 12, fps: 60 });
   const [isInteracting, setIsInteracting] = useState(false);
   const [enableRetroGrid, setEnableRetroGrid] = useState(true);
+
+  // Synchronize with logged-in user's profile wallpaper preference
+  useEffect(() => {
+    if (user?.hero_wallpaper) {
+      setCurrentWallpaper(user.hero_wallpaper);
+      localStorage.setItem('mentis_hero_wallpaper', user.hero_wallpaper);
+      if (user.hero_wallpaper === 'image') {
+        setViewMode('image');
+      } else if (GEOMETRY_MODELS.some((m) => m.id === user.hero_wallpaper)) {
+        setViewMode('3d');
+        setActiveMode(user.hero_wallpaper);
+      }
+    }
+  }, [user?.hero_wallpaper]);
 
   // References for animation state
   const stateRef = useRef({
@@ -219,11 +242,11 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
     ripples: []
   });
 
-  // Morphing state reference
+  // Morphing state reference with dynamic zoom breathing
   const morphRef = useRef({
     active: false,
     startTime: 0,
-    duration: 520,
+    duration: 540,
     fromPts: [],
     targetPts: []
   });
@@ -241,7 +264,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
   // Quantum orbital particles state
   const quantumRef = useRef({
     particles: Array.from({ length: 80 }, () => ({
-      lobe: Math.floor(Math.random() * 5), // 0-3: clover lobes, 4: donut ring
+      lobe: Math.floor(Math.random() * 5),
       theta: Math.random() * Math.PI * 2,
       r: 0.2 + Math.random() * 0.8,
       phase: Math.random() * Math.PI * 2,
@@ -264,11 +287,47 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
     return GEOMETRY_MODELS.find((m) => m.id === activeMode) || GEOMETRY_MODELS[0];
   }, [activeMode]);
 
+  // Check if current visual is the active wallpaper
+  const isCurrentWallpaper =
+    (viewMode === 'image' && currentWallpaper === 'image') ||
+    (viewMode === '3d' && currentWallpaper === activeMode);
+
+  // Set persistent wallpaper
+  const handleSetWallpaper = async (targetVisual) => {
+    const visual = targetVisual || (viewMode === 'image' ? 'image' : activeMode);
+    setCurrentWallpaper(visual);
+    localStorage.setItem('mentis_hero_wallpaper', visual);
+
+    const visualName =
+      visual === 'image'
+        ? 'Showcase Image'
+        : (GEOMETRY_MODELS.find((m) => m.id === visual)?.name || '3D Model');
+
+    if (user) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.put(
+          `${API}/users/me/hero-wallpaper`,
+          { hero_wallpaper: visual },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success(`"${visualName}" set as your account Hero Wallpaper!`, {
+          description: 'This visual will now constantly display on your account.'
+        });
+      } catch (err) {
+        toast.success(`"${visualName}" saved as your Hero Wallpaper!`);
+      }
+    } else {
+      toast.success(`"${visualName}" saved as your Hero Wallpaper!`, {
+        description: 'Saved to your browser. Log in to sync across devices.'
+      });
+    }
+  };
+
   // Handler to switch model and trigger morphing
   const handleSelectModel = (modelId) => {
-    if (modelId === activeMode) {
+    if (modelId === activeMode && viewMode === '3d') {
       setIsDropdownOpen(false);
-      if (viewMode !== '3d') setViewMode('3d');
       return;
     }
 
@@ -276,9 +335,9 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
     morphRef.current = {
       active: true,
       startTime: performance.now(),
-      duration: 550,
+      duration: 540,
       fromPts: morphRef.current.currentSamplePts || [],
-      targetPts: [] // Populated dynamically in render loop
+      targetPts: []
     };
 
     setActiveMode(modelId);
@@ -373,7 +432,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
       const len = Math.hypot(x, y, z);
       return [x / len, y / len, z / len];
     });
-    // Stellated apex spikes (12 faces)
     const stellSpikes = [
       [0, 1, PHI], [0, 1, -PHI], [0, -1, PHI], [0, -1, -PHI],
       [1, PHI, 0], [1, -PHI, 0], [-1, PHI, 0], [-1, -PHI, 0],
@@ -383,7 +441,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
       return [(x / len) * 1.55, (y / len) * 1.55, (z / len) * 1.55];
     });
 
-    // 4. Clifford Flat Torus (in 4D, projected)
+    // 4. Clifford Flat Torus
     const cliffordPoints = [];
     const cliffordEdges = [];
     const cStepsU = 16;
@@ -466,7 +524,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
       trefoilEdges.push([i, (i + 1) % tSteps]);
     }
 
-    // 8. Hopf Fibration (Interlocking Nested Rings)
+    // 8. Hopf Fibration
     const hopfPoints = [];
     const hopfEdges = [];
     const numRings = 14;
@@ -479,7 +537,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
         const theta = (s / ringSegments) * Math.PI * 2;
         const rx = Math.cos(theta) * 0.95;
         const ry = Math.sin(theta) * 0.95;
-        // Rotate ring in 3D
         const x = rx * Math.cos(alpha) - ry * Math.sin(alpha) * Math.cos(beta);
         const y = ry * Math.sin(beta) * 1.1;
         const z = rx * Math.sin(alpha) + ry * Math.cos(alpha) * Math.cos(beta);
@@ -536,7 +593,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
     const sunPoints = [];
     const sunEdges = [];
     const sunN = 90;
-    const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~2.39996 rad
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
     for (let i = 0; i < sunN; i++) {
       const y = 1 - (i / (sunN - 1)) * 2;
       const radius = Math.sqrt(1 - y * y);
@@ -544,7 +601,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
       const x = Math.cos(theta) * radius;
       const z = Math.sin(theta) * radius;
       sunPoints.push([x * 1.05, y * 1.05, z * 1.05]);
-      // Connect to Fibonacci index offsets
       if (i >= 8) sunEdges.push([i - 8, i]);
       if (i >= 13) sunEdges.push([i - 13, i]);
     }
@@ -570,7 +626,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
     genPerm(p1);
     genPerm(p2);
     genPerm(p3);
-    // Deduplicate and normalize
     const buckyMap = new Map();
     buckyRaw.forEach(([x, y, z]) => {
       const len = Math.hypot(x, y, z);
@@ -591,7 +646,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
       }
     }
 
-    // Intersection observer to auto-pause offscreen
     const observer = new IntersectionObserver(
       ([entry]) => {
         isVisible = entry.isIntersecting;
@@ -643,7 +697,30 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
         const cx = width / 2;
         const cy = height / 2;
         const fov = 650;
-        const scaleBase = Math.min(width, height) * 0.28 * state.zoom;
+
+        // Dynamic morphing camera breathing zoom wave
+        const morph = morphRef.current;
+        let isCurrentlyMorphing = false;
+        let morphFactor = 1.0;
+
+        if (morph.active) {
+          const elapsed = now - morph.startTime;
+          morphFactor = Math.min(elapsed / morph.duration, 1.0);
+          isCurrentlyMorphing = morphFactor < 1.0;
+          if (morphFactor >= 1.0) morph.active = false;
+        }
+
+        const morphEase =
+          morphFactor < 0.5
+            ? 4 * morphFactor * morphFactor * morphFactor
+            : 1 - Math.pow(-2 * morphFactor + 2, 3) / 2;
+
+        const zoomBreathingWave = isCurrentlyMorphing
+          ? Math.sin(morphEase * Math.PI) * 0.12
+          : 0;
+
+        const scaleBase =
+          Math.min(width, height) * 0.28 * state.zoom * (1 + zoomBreathingWave);
 
         // 3D Rotation Matrix helper
         const cosX = Math.cos(state.rotX), sinX = Math.sin(state.rotX);
@@ -678,14 +755,12 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           const horizonY = height * 0.78;
           const gridSpeed = (now * 0.04) % 32;
 
-          // Horizon ambient neon glow
           const horizonGrad = ctx.createLinearGradient(0, horizonY - 20, 0, horizonY + 4);
           horizonGrad.addColorStop(0, 'rgba(249, 115, 22, 0)');
           horizonGrad.addColorStop(1, 'rgba(249, 115, 22, 0.35)');
           ctx.fillStyle = horizonGrad;
           ctx.fillRect(0, horizonY - 20, width, 24);
 
-          // Horizon line
           ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
           ctx.lineWidth = 1;
           ctx.beginPath();
@@ -693,7 +768,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           ctx.lineTo(width, horizonY);
           ctx.stroke();
 
-          // Perspective vertical rays converging to center horizon
           const numRays = 16;
           for (let i = -numRays; i <= numRays; i++) {
             const bottomX = cx + i * (width / (numRays * 1.5));
@@ -704,7 +778,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
             ctx.stroke();
           }
 
-          // Scrolling horizontal perspective lines
           for (let z = 1; z <= 7; z++) {
             const rawZ = (z * 28 + gridSpeed) % 210;
             const depth = rawZ / 210;
@@ -718,42 +791,16 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           }
         }
 
-        // ==========================================
-        // VERTEX MORPHING ENGINE
-        // ==========================================
-        const morph = morphRef.current;
-        let isCurrentlyMorphing = false;
-        let morphFactor = 1.0;
-
-        if (morph.active) {
-          const elapsed = now - morph.startTime;
-          morphFactor = Math.min(elapsed / morph.duration, 1.0);
-          isCurrentlyMorphing = morphFactor < 1.0;
-
-          if (morphFactor >= 1.0) {
-            morph.active = false;
-          }
-        }
-
-        // Morph cubic in-out ease
-        const morphEase =
-          morphFactor < 0.5
-            ? 4 * morphFactor * morphFactor * morphFactor
-            : 1 - Math.pow(-2 * morphFactor + 2, 3) / 2;
-
-        // Current target point list depending on activeMode
+        // Active model geometry routing
         let currentTargetPoints = [];
         let currentEdges = [];
         let modelTheme = 'orange';
 
-        // 1. Icosahedron
         if (activeMode === 'icosahedron') {
           currentTargetPoints = icoVertices;
           currentEdges = icoEdges;
           modelTheme = 'orange';
-        }
-        // 2. 4D Tesseract
-        else if (activeMode === 'tesseract') {
+        } else if (activeMode === 'tesseract') {
           const cosXW = Math.cos(state.rot4D_XW), sinXW = Math.sin(state.rot4D_XW);
           const cosYZ = Math.cos(state.rot4D_YZ), sinYZ = Math.sin(state.rot4D_YZ);
           currentTargetPoints = tesseract4D.map(([x, y, z, w]) => {
@@ -767,22 +814,24 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           });
           currentEdges = tesseractEdges;
           modelTheme = 'pink';
-        }
-        // 3. Stellated Dodecahedron
-        else if (activeMode === 'dodecahedron') {
+        } else if (activeMode === 'dodecahedron') {
           currentTargetPoints = [...doddBase, ...stellSpikes];
           currentEdges = [];
           for (let i = 0; i < doddBase.length; i++) {
             for (let j = 0; j < stellSpikes.length; j++) {
-              if (Math.hypot(doddBase[i][0] - stellSpikes[j][0], doddBase[i][1] - stellSpikes[j][1], doddBase[i][2] - stellSpikes[j][2]) < 1.3) {
+              if (
+                Math.hypot(
+                  doddBase[i][0] - stellSpikes[j][0],
+                  doddBase[i][1] - stellSpikes[j][1],
+                  doddBase[i][2] - stellSpikes[j][2]
+                ) < 1.3
+              ) {
                 currentEdges.push([i, doddBase.length + j]);
               }
             }
           }
           modelTheme = 'cyan';
-        }
-        // 4. Clifford Flat Torus
-        else if (activeMode === 'clifford_torus') {
+        } else if (activeMode === 'clifford_torus') {
           const cosXW = Math.cos(state.rot4D_XW), sinXW = Math.sin(state.rot4D_XW);
           currentTargetPoints = cliffordPoints.map(([x, y, z, w]) => {
             const rx = x * cosXW - w * sinXW;
@@ -793,67 +842,46 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           });
           currentEdges = cliffordEdges;
           modelTheme = 'emerald';
-        }
-        // 5. Möbius Ribbon
-        else if (activeMode === 'mobius') {
+        } else if (activeMode === 'mobius') {
           currentTargetPoints = mobiusPoints;
           currentEdges = mobiusEdges;
           modelTheme = 'cyan';
-        }
-        // 6. Klein Bottle
-        else if (activeMode === 'klein') {
+        } else if (activeMode === 'klein') {
           currentTargetPoints = kleinPoints;
           currentEdges = kleinEdges;
           modelTheme = 'pink';
-        }
-        // 7. Trefoil Knot
-        else if (activeMode === 'trefoil') {
+        } else if (activeMode === 'trefoil') {
           currentTargetPoints = trefoilPoints;
           currentEdges = trefoilEdges;
           modelTheme = 'orange';
-        }
-        // 8. Hopf Fibration
-        else if (activeMode === 'hopf') {
+        } else if (activeMode === 'hopf') {
           currentTargetPoints = hopfPoints;
           currentEdges = hopfEdges;
           modelTheme = 'cyan';
-        }
-        // 9. Calabi-Yau 6D
-        else if (activeMode === 'calabi_yau') {
+        } else if (activeMode === 'calabi_yau') {
           currentTargetPoints = cyPoints;
           currentEdges = cyEdges;
           modelTheme = 'pink';
-        }
-        // 10. Riemann Zeta
-        else if (activeMode === 'riemann_zeta') {
+        } else if (activeMode === 'riemann_zeta') {
           currentTargetPoints = zetaPoints;
           currentEdges = zetaEdges;
           modelTheme = 'orange';
-        }
-        // 11. Sunflower Sphere
-        else if (activeMode === 'sunflower_sphere') {
+        } else if (activeMode === 'sunflower_sphere') {
           currentTargetPoints = sunPoints;
           currentEdges = sunEdges;
           modelTheme = 'cyan';
-        }
-        // 12. Fullerene C60
-        else if (activeMode === 'buckyball') {
+        } else if (activeMode === 'buckyball') {
           currentTargetPoints = buckyPoints;
           currentEdges = buckyEdges;
           modelTheme = 'emerald';
         }
 
-        // Cache sample vertices for next morph
         morphRef.current.currentSamplePts = currentTargetPoints.slice(0, 60);
 
         // ==========================================
         // RENDER STANDARD WIREFRAME OR MORPHING
         // ==========================================
-        if (
-          activeMode !== 'lorenz' &&
-          activeMode !== 'quantum_orbital'
-        ) {
-          // Compute projected points (with morphing if active)
+        if (activeMode !== 'lorenz' && activeMode !== 'quantum_orbital') {
           const projectedPts = currentTargetPoints.map(([tx, ty, tz], idx) => {
             let finalX = tx;
             let finalY = ty;
@@ -917,7 +945,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
             ctx.shadowBlur = 0;
           });
 
-          // Extra: Trefoil knot orbiting quantum beads
+          // Trefoil knot orbiting quantum beads
           if (activeMode === 'trefoil') {
             for (let b = 0; b < 6; b++) {
               const beadIndex = Math.floor((now * 0.04 + b * (tSteps / 6)) % tSteps);
@@ -934,9 +962,8 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
             }
           }
 
-          // Extra: Riemann Zeta critical zero highlights
+          // Riemann Zeta critical zeros highlights
           if (activeMode === 'riemann_zeta') {
-            // Highlights around critical zeros (t ~ 14.13, 21.02, 25.01)
             [15, 39, 54, 73].forEach((zeroIdx) => {
               const zp = projectedPts[zeroIdx];
               if (zp) {
@@ -954,9 +981,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           }
         }
 
-        // ==========================================
-        // DRAW MODE: LORENZ STRANGE ATTRACTOR
-        // ==========================================
+        // Lorenz Attractor
         else if (activeMode === 'lorenz') {
           const lorenz = lorenzRef.current;
           const dt = 0.012;
@@ -1005,14 +1030,10 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           });
         }
 
-        // ==========================================
-        // DRAW MODE: QUANTUM HYDROGEN d-ORBITAL
-        // ==========================================
+        // Quantum Hydrogen d-Orbital
         else if (activeMode === 'quantum_orbital') {
           const quantum = quantumRef.current;
-          const qTime = now * 0.002;
 
-          // Quadrupole 4 clover lobe wireframe cages
           for (let lobe = 0; lobe < 4; lobe++) {
             const angle = (lobe * Math.PI) / 2;
             const lobeDirX = Math.cos(angle);
@@ -1038,7 +1059,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
             ctx.stroke();
           }
 
-          // Central donut ring wireframe
           ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
           ctx.lineWidth = 1.2;
           ctx.beginPath();
@@ -1050,7 +1070,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           }
           ctx.stroke();
 
-          // Orbiting Quantum Probability Particles
           quantum.particles.forEach((qp) => {
             qp.phase += qp.speed;
             let px = 0, py = 0, pz = 0;
@@ -1062,7 +1081,6 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
               py = Math.sin(baseAngle) * dist + Math.cos(qp.phase * 3) * 0.12;
               pz = Math.cos(qp.phase * 2) * 0.35 * qp.r;
             } else {
-              // Torus ring
               const r = 0.45 + Math.sin(qp.phase) * 0.08;
               px = Math.cos(qp.phase) * r;
               py = Math.sin(qp.phase) * r;
@@ -1080,7 +1098,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           });
         }
 
-        // Draw Interactive Click Shockwaves
+        // Click ripples
         state.ripples.forEach((rip, rIdx) => {
           rip.radius += 5;
           rip.alpha *= 0.94;
@@ -1109,9 +1127,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
     };
   }, [activeMode, viewMode, enableRetroGrid]);
 
-  // ==========================================
-  // MOUSE & TOUCH EVENT HANDLERS (FULL 3D ORBIT)
-  // ==========================================
+  // Orbit controls
   const handleMouseDown = (e) => {
     stateRef.current.isDragging = true;
     stateRef.current.lastMouseX = e.clientX;
@@ -1188,15 +1204,15 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 hover:bg-slate-800/80 border border-slate-700/80 text-xs font-mono font-medium text-slate-200 hover:text-white transition-all shadow-sm group"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 hover:bg-slate-800/80 border border-slate-700/80 text-xs font-mono font-medium text-slate-200 hover:text-white transition-all shadow-sm group active:scale-95"
               data-testid="geometry-model-dropdown-btn"
             >
               <currentModelMeta.icon className="w-3.5 h-3.5 text-orange-400 group-hover:scale-110 transition-transform flex-shrink-0" />
-              <span className="truncate max-w-[130px] sm:max-w-[190px]">
-                {currentModelMeta.name}
+              <span className="truncate max-w-[120px] sm:max-w-[180px]">
+                {viewMode === 'image' ? 'Showcase Image' : currentModelMeta.name}
               </span>
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 font-mono border border-orange-500/30 hidden md:inline">
-                14
+                14 Labs
               </span>
               <ChevronDown
                 className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
@@ -1205,15 +1221,15 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
               />
             </button>
 
-            {/* Custom Retrofuturistic Dropdown Menu */}
+            {/* Custom Retrofuturistic Dropdown Menu with Spring Zoom */}
             <AnimatePresence>
               {isDropdownOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                  initial={{ opacity: 0, y: -8, scale: 0.92 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  transition={{ duration: 0.18, ease: 'easeOut' }}
-                  className="absolute left-0 top-full mt-2 w-72 sm:w-80 max-h-[380px] overflow-y-auto rounded-xl bg-slate-950/95 border border-slate-700/90 shadow-[0_15px_40px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-50 p-2 scrollbar-thin scrollbar-thumb-slate-700 select-none"
+                  exit={{ opacity: 0, y: -8, scale: 0.94 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute left-0 top-full mt-2 w-72 sm:w-80 max-h-[400px] overflow-y-auto rounded-xl bg-slate-950/95 border border-slate-700/90 shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl z-50 p-2 scrollbar-thin scrollbar-thumb-slate-700 select-none origin-top-left"
                   style={{ backdropFilter: 'blur(24px)' }}
                 >
                   <div className="px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 border-b border-slate-800/80 flex items-center justify-between mb-1.5">
@@ -1221,9 +1237,37 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
                     <span className="text-orange-400 font-bold">14 Active Labs</span>
                   </div>
 
+                  {/* Option for Default Showcase Image */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode('image');
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-xs font-mono transition-all flex items-center justify-between gap-2 mb-1 group ${
+                      viewMode === 'image'
+                        ? 'bg-gradient-to-r from-orange-500/25 to-pink-500/20 text-white border border-orange-500/40 shadow-sm'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Eye className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-semibold text-xs truncate">Foundation Showcase Image</div>
+                        <div className="text-[10px] text-slate-400">Default Mentis Hero Visual</div>
+                      </div>
+                    </div>
+                    {currentWallpaper === 'image' && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-0.5">
+                        <Star className="w-2.5 h-2.5" /> Wallpaper
+                      </span>
+                    )}
+                  </button>
+
                   <div className="space-y-1">
                     {GEOMETRY_MODELS.map((model) => {
-                      const isSelected = model.id === activeMode;
+                      const isSelected = viewMode === '3d' && model.id === activeMode;
+                      const isModelWallpaper = currentWallpaper === model.id;
                       const Icon = model.icon;
                       return (
                         <button
@@ -1253,9 +1297,16 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
                               </div>
                             </div>
                           </div>
-                          {isSelected && (
-                            <Check className="w-3.5 h-3.5 text-orange-400 flex-shrink-0 mt-1" />
-                          )}
+                          <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                            {isModelWallpaper && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-0.5">
+                                <Star className="w-2.5 h-2.5" /> Wallpaper
+                              </span>
+                            )}
+                            {isSelected && (
+                              <Check className="w-3.5 h-3.5 text-orange-400" />
+                            )}
+                          </div>
                         </button>
                       );
                     })}
@@ -1266,13 +1317,38 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           </div>
         </div>
 
-        {/* Right: Switcher between Showcase Image & 3D Lab */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* Center & Right: Wallpaper Preference Button & View Mode Toggle */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Hero Wallpaper Set / Active Indicator */}
+          {isCurrentWallpaper ? (
+            <div
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-semibold shadow-sm shadow-emerald-500/20 animate-pulse"
+              title="This visual is currently saved as your persistent account hero wallpaper"
+            >
+              <Check className="w-3 h-3 text-emerald-400" />
+              <span className="hidden sm:inline">Active Wallpaper</span>
+              <span className="sm:hidden">Wallpaper</span>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleSetWallpaper()}
+              className="text-xs h-7 px-2 sm:px-2.5 rounded-lg border border-orange-500/30 hover:border-orange-500/60 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 hover:text-white transition-all shadow-sm flex items-center gap-1 active:scale-95"
+              title="Save this visual as your default account hero wallpaper"
+            >
+              <Bookmark className="w-3 h-3 text-orange-400" />
+              <span className="hidden sm:inline">Set as Wallpaper</span>
+              <span className="sm:hidden">Set</span>
+            </Button>
+          )}
+
+          {/* Switcher between Showcase Image & 3D Lab */}
           <Button
             size="sm"
             variant="ghost"
             onClick={() => setViewMode(viewMode === '3d' ? 'image' : '3d')}
-            className={`text-xs h-7 px-2.5 rounded-lg border transition-all ${
+            className={`text-xs h-7 px-2.5 rounded-lg border transition-all active:scale-95 ${
               viewMode === '3d'
                 ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20'
                 : 'border-orange-500/40 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20'
@@ -1295,7 +1371,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
         </div>
       </div>
 
-      {/* Main Studio Viewport */}
+      {/* Main Studio Viewport with Morphing Zoom Transition */}
       <div className="relative h-[380px] sm:h-[420px] lg:h-[460px] w-full overflow-hidden select-none">
         {/* Retrofuturistic CRT Scanline Overlay Effect */}
         <div
@@ -1307,106 +1383,145 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
           }}
         />
 
-        {viewMode === '3d' ? (
-          <>
-            <canvas
-              ref={canvasRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onClick={handleClick}
-              onWheel={handleWheel}
-              className={`w-full h-full cursor-grab active:cursor-grabbing transition-transform ${
-                isInteracting ? 'scale-[1.01]' : 'scale-100'
-              }`}
-            />
+        <AnimatePresence mode="wait">
+          {viewMode === '3d' ? (
+            <motion.div
+              key="3d-studio"
+              initial={{ opacity: 0, scale: 0.92, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 1.05, filter: 'blur(8px)' }}
+              transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+              className="relative w-full h-full"
+            >
+              <canvas
+                ref={canvasRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onClick={handleClick}
+                onWheel={handleWheel}
+                className={`w-full h-full cursor-grab active:cursor-grabbing transition-transform ${
+                  isInteracting ? 'scale-[1.01]' : 'scale-100'
+                }`}
+              />
 
-            {/* Orbit / Zoom Hint */}
-            <div className="absolute top-3 left-4 pointer-events-none z-20 flex flex-col gap-1">
-              <div className="text-[10px] sm:text-[11px] font-mono text-orange-400 font-semibold tracking-wide flex items-center gap-1.5 bg-slate-950/75 px-2.5 py-1 rounded-md border border-slate-800/90 backdrop-blur-md shadow-md">
-                <RotateCw
-                  className="w-3 h-3 animate-spin text-orange-400"
-                  style={{ animationDuration: '6s' }}
-                />
-                <span>Drag to Orbit in 3D • Scroll to Zoom</span>
-              </div>
-            </div>
-
-            {/* Live Telemetry HUD */}
-            <div className="absolute top-3 right-4 pointer-events-none z-20 hidden sm:flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-950/75 px-2.5 py-1 rounded-md border border-slate-800/90 backdrop-blur-md shadow-md">
-              <span className="text-emerald-400 font-bold">{telemetry.fps} FPS</span>
-              <span>•</span>
-              <span>θ: {telemetry.rotX}</span>
-              <span>•</span>
-              <span>φ: {telemetry.rotY}</span>
-            </div>
-
-            {/* Active Model Formula & Details Card */}
-            <div className="absolute bottom-4 inset-x-4 pointer-events-none z-20">
-              <div className="p-3 rounded-xl bg-slate-950/85 backdrop-blur-md border border-slate-800/90 max-w-md mx-auto text-center shadow-xl">
-                <div className="flex items-center justify-center gap-1.5 text-xs font-mono font-bold text-white">
-                  <currentModelMeta.icon className="w-3.5 h-3.5 text-orange-400" />
-                  <span>{currentModelMeta.name}</span>
-                  <span className="text-[10px] text-slate-500 font-normal ml-1">
-                    ({currentModelMeta.category})
-                  </span>
-                </div>
-                <div className="text-xs font-mono text-orange-400 mt-0.5 font-semibold">
-                  {currentModelMeta.formula}
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
-                  {currentModelMeta.info}
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          /* Default View: Hero Showcase Image with Retrofuturistic Glass HUD */
-          <div className="relative w-full h-full group">
-            <img
-              src={
-                heroImage ||
-                'https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85'
-              }
-              alt="Mentis Mathematics Foundation Hero Showcase"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-
-            {/* Cinematic Gradient Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/40 via-transparent to-slate-950/40 pointer-events-none" />
-
-            {/* Top Interactive Badge */}
-            <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 text-white text-xs font-medium shadow-lg">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Interactive Math Universe</span>
-            </div>
-
-            {/* Bottom Cybernetic Launch HUD */}
-            <div className="absolute bottom-4 inset-x-4 z-20 p-4 rounded-xl bg-slate-950/90 backdrop-blur-xl border border-slate-800/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xl">
-              <div>
-                <div className="text-xs uppercase font-mono text-orange-400 font-bold tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Mentis 3D Geometry Studio</span>
-                </div>
-                <div className="text-sm font-bold text-white mt-0.5">
-                  Explore 14 live interactive mathematical models & manifolds
+              {/* Orbit / Zoom Hint */}
+              <div className="absolute top-3 left-4 pointer-events-none z-20 flex flex-col gap-1">
+                <div className="text-[10px] sm:text-[11px] font-mono text-orange-400 font-semibold tracking-wide flex items-center gap-1.5 bg-slate-950/75 px-2.5 py-1 rounded-md border border-slate-800/90 backdrop-blur-md shadow-md">
+                  <RotateCw
+                    className="w-3 h-3 animate-spin text-orange-400"
+                    style={{ animationDuration: '6s' }}
+                  />
+                  <span>Drag to Orbit in 3D • Scroll to Zoom</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  onClick={() => setViewMode('3d')}
-                  className="w-full sm:w-auto rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-xs px-4 shadow-lg shadow-orange-500/25 flex items-center gap-1.5 font-semibold hover:scale-105 transition-all"
-                >
-                  <Compass className="w-3.5 h-3.5" />
-                  <span>Launch 3D Lab</span>
-                </Button>
+              {/* Live Telemetry HUD */}
+              <div className="absolute top-3 right-4 pointer-events-none z-20 hidden sm:flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-950/75 px-2.5 py-1 rounded-md border border-slate-800/90 backdrop-blur-md shadow-md">
+                <span className="text-emerald-400 font-bold">{telemetry.fps} FPS</span>
+                <span>•</span>
+                <span>θ: {telemetry.rotX}</span>
+                <span>•</span>
+                <span>φ: {telemetry.rotY}</span>
               </div>
-            </div>
-          </div>
-        )}
+
+              {/* Active Model Formula & Details Card */}
+              <div className="absolute bottom-4 inset-x-4 pointer-events-none z-20">
+                <div className="p-3 rounded-xl bg-slate-950/85 backdrop-blur-md border border-slate-800/90 max-w-md mx-auto text-center shadow-xl">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-mono font-bold text-white">
+                    <currentModelMeta.icon className="w-3.5 h-3.5 text-orange-400" />
+                    <span>{currentModelMeta.name}</span>
+                    <span className="text-[10px] text-slate-500 font-normal ml-1">
+                      ({currentModelMeta.category})
+                    </span>
+                  </div>
+                  <div className="text-xs font-mono text-orange-400 mt-0.5 font-semibold">
+                    {currentModelMeta.formula}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                    {currentModelMeta.info}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            /* Default View: Hero Showcase Image with Retrofuturistic Glass HUD */
+            <motion.div
+              key="image-showcase"
+              initial={{ opacity: 0, scale: 0.94, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 1.05, filter: 'blur(8px)' }}
+              transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+              className="relative w-full h-full group"
+            >
+              <img
+                src={
+                  heroImage ||
+                  'https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85'
+                }
+                alt="Mentis Mathematics Foundation Hero Showcase"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+
+              {/* Cinematic Gradient Overlays */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/40 via-transparent to-slate-950/40 pointer-events-none" />
+
+              {/* Top Interactive Badge */}
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 text-white text-xs font-medium shadow-lg">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Interactive Math Universe</span>
+              </div>
+
+              {/* Bottom Cybernetic Launch & Wallpaper HUD */}
+              <div className="absolute bottom-4 inset-x-4 z-20 p-4 rounded-xl bg-slate-950/90 backdrop-blur-xl border border-slate-800/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xl">
+                <div>
+                  <div className="text-xs uppercase font-mono text-orange-400 font-bold tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Mentis 3D Geometry Studio</span>
+                  </div>
+                  <div className="text-sm font-bold text-white mt-0.5">
+                    Explore 14 live interactive mathematical models & manifolds
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleSetWallpaper('image')}
+                    className={`rounded-full text-xs px-3.5 flex items-center gap-1.5 transition-all ${
+                      currentWallpaper === 'image'
+                        ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
+                        : 'border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:border-orange-500/40'
+                    }`}
+                  >
+                    {currentWallpaper === 'image' ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span>Active Wallpaper</span>
+                      </>
+                    ) : (
+                      <>
+                        <Bookmark className="w-3 h-3 text-orange-400" />
+                        <span>Set as Wallpaper</span>
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    onClick={() => setViewMode('3d')}
+                    className="w-full sm:w-auto rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-xs px-4 shadow-lg shadow-orange-500/25 flex items-center gap-1.5 font-semibold hover:scale-105 transition-all"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Launch 3D Lab</span>
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Quick Category / Model Chips Bar at Bottom (when in 3D Mode) */}
@@ -1427,7 +1542,7 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
                 key={btn.id}
                 type="button"
                 onClick={() => handleSelectModel(btn.id)}
-                className={`text-[11px] font-mono py-1 px-2.5 rounded-lg transition-all flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
+                className={`text-[11px] font-mono py-1 px-2.5 rounded-lg transition-all flex items-center gap-1 whitespace-nowrap flex-shrink-0 hover:scale-105 active:scale-95 ${
                   activeMode === btn.id
                     ? 'bg-gradient-to-r from-orange-500/25 to-pink-500/20 text-white border border-orange-500/40 font-semibold shadow-sm'
                     : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800'
@@ -1435,6 +1550,9 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
               >
                 {activeMode === btn.id && <Sparkles className="w-2.5 h-2.5 text-orange-400" />}
                 <span>{btn.label}</span>
+                {currentWallpaper === btn.id && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-0.5" />
+                )}
               </button>
             ))}
           </div>

@@ -118,6 +118,7 @@ class User(BaseModel):
     name: str
     role: str = "user"
     mentis_score: int = 0
+    hero_wallpaper: Optional[str] = "image"
     email_verified: bool = False
     verification_token: Optional[str] = None
     verification_token_expires: Optional[datetime] = None
@@ -3749,6 +3750,7 @@ async def get_matrix_members_public():
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
+    hero_wallpaper: Optional[str] = None
 
 @api_router.patch("/users/me")
 async def update_profile(updates: UserUpdate, current_user: User = Depends(get_current_user)):
@@ -3765,6 +3767,9 @@ async def update_profile(updates: UserUpdate, current_user: User = Depends(get_c
             raise HTTPException(status_code=400, detail="Email already in use")
         update_data['email'] = updates.email.strip()
     
+    if updates.hero_wallpaper is not None:
+        update_data['hero_wallpaper'] = updates.hero_wallpaper.strip()
+    
     if not update_data:
         raise HTTPException(status_code=400, detail="No updates provided")
     
@@ -3777,6 +3782,17 @@ async def update_profile(updates: UserUpdate, current_user: User = Depends(get_c
     updated_user = await db.users.find_one({"id": current_user.id}, {"_id": 0, "password": 0})
     
     return {"message": "Profile updated", "user": updated_user}
+
+@api_router.put("/users/me/hero-wallpaper")
+async def set_hero_wallpaper(data: dict, current_user: User = Depends(get_current_user)):
+    """Set persistent hero wallpaper preference for the user"""
+    wallpaper = data.get("hero_wallpaper", "image")
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$set": {"hero_wallpaper": str(wallpaper)}}
+    )
+    return {"message": "Hero wallpaper preference updated", "hero_wallpaper": str(wallpaper)}
+
 
 # ============== USER PENDING ITEMS ==============
 

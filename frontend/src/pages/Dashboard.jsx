@@ -1,4 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { AuthContext } from '@/App';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
@@ -7,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Sparkles, User, Award, Edit, Video, Mail, Check, X, Clock, LogOut } from 'lucide-react';
+import { BookOpen, Sparkles, User, Award, Edit, Video, Mail, Check, X, Clock, LogOut, Compass, Bookmark, Eye, Star, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -23,6 +25,46 @@ const Dashboard = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [selectedWallpaper, setSelectedWallpaper] = useState(
+    user?.hero_wallpaper || localStorage.getItem('mentis_hero_wallpaper') || 'image'
+  );
+
+  const WALLPAPER_ITEMS = [
+    { id: 'image', name: 'Foundation Showcase Image', category: 'Default Visual', formula: 'Mentis Hero Showcase' },
+    { id: 'icosahedron', name: 'Golden-Ratio Icosahedron', category: 'Sacred Polyhedra', formula: 'x² + y² + z² = Φ' },
+    { id: 'tesseract', name: '4D Hypercube (Tesseract)', category: 'Higher Dimensions', formula: 'x₄² + y₄² + z₄² + w₄² = 1' },
+    { id: 'dodecahedron', name: 'Stellated Dodecahedron', category: 'Sacred Polyhedra', formula: 'V_stell = V_face + λ n̂' },
+    { id: 'clifford_torus', name: '4D Clifford Flat Torus', category: 'Higher Dimensions', formula: 'X² + Y² = 1/2' },
+    { id: 'mobius', name: 'Möbius Ribbon Manifold', category: 'Topology', formula: 'x(u,v) Non-orientable' },
+    { id: 'klein', name: 'Klein Bottle (Figure-8)', category: 'Topology', formula: 'r(u,v) Figure-8 Immersion' },
+    { id: 'trefoil', name: 'Toroidal Trefoil Knot T(2,3)', category: 'Knot Theory', formula: 'x = sin t + 2sin 2t' },
+    { id: 'hopf', name: 'Hopf Fibration (S³ → S²)', category: 'Topology', formula: 'π(z₀, z₁) Interlocking' },
+    { id: 'calabi_yau', name: 'Calabi-Yau 6D Slice', category: 'Complex Geometry', formula: 'z₁⁵ + z₂⁵ = 1' },
+    { id: 'riemann_zeta', name: 'Riemann Zeta Critical Helix', category: 'Analytic Number Theory', formula: 'ζ(1/2 + it)' },
+    { id: 'sunflower_sphere', name: 'Fibonacci Phyllotaxis Sphere', category: 'Sacred Polyhedra', formula: 'θ_i = i · 2.39996 rad' },
+    { id: 'buckyball', name: 'Fullerene C60 Buckyball', category: 'Polyhedral Geometry', formula: 'Truncated Icosahedron' },
+    { id: 'lorenz', name: 'Lorenz Strange Attractor', category: 'Chaos Theory', formula: 'dx/dt = σ(y - x)' },
+    { id: 'quantum_orbital', name: 'Hydrogen d-Orbital (ψ₃,₂,₀)', category: 'Quantum Mechanics', formula: 'Quadrupole Lobe Density' }
+  ];
+
+  const handleSaveWallpaper = async (wallpaperId) => {
+    setSelectedWallpaper(wallpaperId);
+    localStorage.setItem('mentis_hero_wallpaper', wallpaperId);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `${API}/users/me/hero-wallpaper`,
+        { hero_wallpaper: wallpaperId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Hero Wallpaper updated for your account!');
+      if (setUser) {
+        setUser({ ...user, hero_wallpaper: wallpaperId });
+      }
+    } catch (err) {
+      toast.success('Hero Wallpaper preference saved locally!');
+    }
+  };
 
   // Function to refresh user data from backend
   const refreshUserData = async () => {
@@ -247,6 +289,78 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Account Hero Wallpaper & 3D Visual Preferences Section */}
+        <Card className="bg-slate-900/80 border-slate-700/80 mb-10 overflow-hidden shadow-xl backdrop-blur-md">
+          <CardHeader className="border-b border-slate-800/80 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2.5 text-white text-xl">
+                  <Bookmark className="w-5 h-5 text-orange-400" />
+                  <span>Account Hero Wallpaper &amp; Visual Preferences</span>
+                </CardTitle>
+                <p className="text-sm text-slate-400 mt-1">
+                  Choose your permanent default hero visual. This visual will constantly display across your account on the homepage.
+                </p>
+              </div>
+              <Link to="/">
+                <Button size="sm" variant="outline" className="rounded-full border-orange-500/40 text-orange-300 hover:text-white hover:bg-orange-500/20 text-xs">
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  View Live on Homepage
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {WALLPAPER_ITEMS.map((item) => {
+                const isActive = selectedWallpaper === item.id;
+                return (
+                  <motion.div
+                    key={item.id}
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => handleSaveWallpaper(item.id)}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
+                      isActive
+                        ? 'bg-gradient-to-br from-orange-500/20 to-pink-500/15 border-orange-500/60 shadow-lg shadow-orange-500/15'
+                        : 'bg-slate-950/70 hover:bg-slate-800/60 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-mono uppercase text-slate-400 truncate">
+                          {item.category}
+                        </span>
+                        {isActive && (
+                          <span className="flex items-center gap-0.5 text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/20 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                            <Check className="w-2.5 h-2.5" /> ACTIVE
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs font-bold text-white font-heading truncate">
+                        {item.name}
+                      </div>
+                      <div className="text-[10px] font-mono text-orange-400/80 truncate mt-0.5">
+                        {item.formula}
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {isActive ? 'Current View' : 'Click to Set'}
+                      </span>
+                      {isActive ? (
+                        <Star className="w-3 h-3 text-orange-400 fill-current" />
+                      ) : (
+                        <Bookmark className="w-3 h-3 text-slate-600 hover:text-orange-400" />
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Email Requests Section */}
         {pendingEmailRequests.length > 0 && (

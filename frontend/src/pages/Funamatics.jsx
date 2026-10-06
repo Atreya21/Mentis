@@ -150,7 +150,7 @@ const Funamatics = () => {
               <div className="space-y-1">
                 <Label className="text-xs text-slate-400">Math Domain</Label>
                 <div className="flex flex-wrap gap-1">
-                  {filterOptions.math_domain.slice(0, 6).map(opt => (
+                  {filterOptions.math_domain.slice(0, 10).map(opt => (
                     <Badge
                       key={opt.value}
                       className={`cursor-pointer text-xs ${
@@ -246,14 +246,24 @@ const Funamatics = () => {
                     </div>
                   )}
                   <div className="p-6 relative z-[2]">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
+                    <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                         game.difficulty === 'easy' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
                         game.difficulty === 'medium' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
                         'bg-red-500/20 text-red-400 border border-red-500/30'
                       }`}>
                         {game.difficulty}
                       </span>
+                      {game.math_domain && game.math_domain.map((d, i) => (
+                        <span key={`domain-${i}`} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 border border-orange-500/30 capitalize">
+                          {d.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                      {game.education_level && game.education_level.map((l, i) => (
+                        <span key={`level-${i}`} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 border border-pink-500/30 capitalize">
+                          {l.replace(/_/g, ' ')}
+                        </span>
+                      ))}
                     </div>
                     <h3 className="font-heading text-2xl font-bold text-white mb-3">
                       {game.title}

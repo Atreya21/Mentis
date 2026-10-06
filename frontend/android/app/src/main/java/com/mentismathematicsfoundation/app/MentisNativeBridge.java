@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat;
 
 public class MentisNativeBridge {
     private final Activity activity;
+    private boolean permissionRequestedOnce = false;
 
     public MentisNativeBridge(Activity activity) {
         this.activity = activity;
@@ -39,11 +40,47 @@ public class MentisNativeBridge {
             activity.runOnUiThread(() -> {
                 if (ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) 
                     != PackageManager.PERMISSION_GRANTED) {
+                    permissionRequestedOnce = true;
                     ActivityCompat.requestPermissions(
                         activity, 
                         new String[]{Manifest.permission.POST_NOTIFICATIONS}, 
                         1001
                     );
+                } else {
+                    if (activity instanceof MainActivity) {
+                        ((MainActivity) activity).checkAndNotifyPermissionStatus();
+                    }
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public void promptOrOpenSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity.runOnUiThread(() -> {
+                if (ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) 
+                    != PackageManager.PERMISSION_GRANTED) {
+                    
+                    boolean shouldShowRationale = ActivityCompat.shouldShowRequestPermissionRationale(
+                        activity, Manifest.permission.POST_NOTIFICATIONS
+                    );
+
+                    // If Android suppresses the prompt (rationale not shown and already requested once), open settings
+                    if (permissionRequestedOnce && !shouldShowRationale) {
+                        openNotificationSettings();
+                    } else {
+                        permissionRequestedOnce = true;
+                        ActivityCompat.requestPermissions(
+                            activity, 
+                            new String[]{Manifest.permission.POST_NOTIFICATIONS}, 
+                            1001
+                        );
+                    }
+                } else {
+                    if (activity instanceof MainActivity) {
+                        ((MainActivity) activity).checkAndNotifyPermissionStatus();
+                    }
                 }
             });
         }
@@ -82,11 +119,17 @@ public class MentisNativeBridge {
     }
 
     @JavascriptInterface
-    public void startBackgroundSync(String userId, String wsUrl) {
+    public void startBackgroundSync(String userIdOrToken, String wsUrl) {
+        startBackgroundSyncWithToken(userIdOrToken, userIdOrToken, wsUrl);
+    }
+
+    @JavascriptInterface
+    public void startBackgroundSyncWithToken(String token, String userId, String wsUrl) {
         try {
             Intent intent = new Intent(activity, MentisWebSocketService.class);
             intent.setAction(MentisWebSocketService.ACTION_START);
             intent.putExtra(MentisWebSocketService.EXTRA_USER_ID, userId);
+            intent.putExtra(MentisWebSocketService.EXTRA_AUTH_TOKEN, token);
             intent.putExtra(MentisWebSocketService.EXTRA_WS_URL, wsUrl);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

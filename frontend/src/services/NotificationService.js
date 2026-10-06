@@ -45,10 +45,13 @@ class NotificationService {
     return this.permission === 'granted';
   }
 
-  // Request notification permission from user
   async requestPermission() {
     if (this.isNative()) {
-      window.MentisNative.requestNotificationPermission();
+      if (window.MentisNative.promptOrOpenSettings) {
+        window.MentisNative.promptOrOpenSettings();
+      } else {
+        window.MentisNative.requestNotificationPermission();
+      }
       const granted = window.MentisNative.hasNotificationPermission();
       this.permission = granted ? 'granted' : 'default';
       return this.permission;

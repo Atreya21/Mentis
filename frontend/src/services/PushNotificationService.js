@@ -25,6 +25,7 @@ class PushNotificationService {
       // Auto start background sync if logged in
       try {
         const userStr = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
         if (userStr) {
           const user = JSON.parse(userStr);
           const userId = user.id || user._id;
@@ -32,7 +33,11 @@ class PushNotificationService {
             const wsUrl = process.env.REACT_APP_BACKEND_URL 
               ? process.env.REACT_APP_BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://')
               : 'wss://mentismathematicsfoundation.com';
-            window.MentisNative.startBackgroundSync(userId, wsUrl);
+            if (window.MentisNative.startBackgroundSyncWithToken) {
+              window.MentisNative.startBackgroundSyncWithToken(token || userId, userId, wsUrl);
+            } else {
+              window.MentisNative.startBackgroundSync(token || userId, wsUrl);
+            }
           }
         }
       } catch (e) {}
@@ -99,11 +104,16 @@ class PushNotificationService {
   // Request permission and subscribe
   async subscribe() {
     if (this.isNative()) {
-      window.MentisNative.requestNotificationPermission();
+      if (window.MentisNative.promptOrOpenSettings) {
+        window.MentisNative.promptOrOpenSettings();
+      } else {
+        window.MentisNative.requestNotificationPermission();
+      }
 
-      // Start background sync
+      // Start background sync with auth token
       try {
         const userStr = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
         if (userStr) {
           const user = JSON.parse(userStr);
           const userId = user.id || user._id;
@@ -111,7 +121,11 @@ class PushNotificationService {
             const wsUrl = process.env.REACT_APP_BACKEND_URL 
               ? process.env.REACT_APP_BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://')
               : 'wss://mentismathematicsfoundation.com';
-            window.MentisNative.startBackgroundSync(userId, wsUrl);
+            if (window.MentisNative.startBackgroundSyncWithToken) {
+              window.MentisNative.startBackgroundSyncWithToken(token || userId, userId, wsUrl);
+            } else {
+              window.MentisNative.startBackgroundSync(token || userId, wsUrl);
+            }
           }
         }
       } catch (e) {}
@@ -286,6 +300,17 @@ class PushNotificationService {
 
   // Send test notification
   async sendTestNotification() {
+    if (this.isNative()) {
+      if (typeof window !== 'undefined' && window.MentisNative) {
+        window.MentisNative.showNotification(
+          'Mentis Notification Test', 
+          'Live notifications are active and working perfectly! 🎉', 
+          '/connect'
+        );
+        return true;
+      }
+    }
+
     const token = localStorage.getItem('token');
     
     const response = await fetch(`${API}/push/test`, {

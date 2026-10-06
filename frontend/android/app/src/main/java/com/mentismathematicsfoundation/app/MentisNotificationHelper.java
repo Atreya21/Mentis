@@ -6,14 +6,17 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.media.AudioAttributes;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
 public class MentisNotificationHelper {
-    public static final String CHANNEL_ID = "mentis_chat_channel";
-    public static final String CHANNEL_NAME = "Mentis Chat Notifications";
-    public static final String CHANNEL_DESC = "Notifications for incoming messages and Mathmate chats";
+    public static final String CHANNEL_ID = "mentis_chat_channel_v2";
+    public static final String CHANNEL_NAME = "Mentis Messages & Alerts";
+    public static final String CHANNEL_DESC = "Instant notifications for messages and Mathmate live chats";
 
     public static void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -28,6 +31,14 @@ public class MentisNotificationHelper {
             channel.enableVibration(true);
             channel.setVibrationPattern(new long[]{0, 250, 150, 250});
             channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+            channel.setShowBadge(true);
+
+            Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
+                .build();
+            channel.setSound(defaultSoundUri, audioAttributes);
 
             NotificationManager manager = context.getSystemService(NotificationManager.class);
             if (manager != null) {
@@ -52,6 +63,8 @@ public class MentisNotificationHelper {
             int notificationId = (int) System.currentTimeMillis();
             PendingIntent pendingIntent = PendingIntent.getActivity(context, notificationId, intent, pendingFlags);
 
+            Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title != null && !title.isEmpty() ? title : "Mentis")
@@ -61,13 +74,14 @@ public class MentisNotificationHelper {
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setSound(defaultSoundUri)
+                .setVibrate(new long[]{0, 250, 150, 250})
+                .setFullScreenIntent(pendingIntent, false) // Heads-up notification on modern Android
                 .setContentIntent(pendingIntent);
 
             NotificationManagerCompat manager = NotificationManagerCompat.from(context);
             manager.notify(notificationId, builder.build());
         } catch (SecurityException se) {
-            // Permission not yet granted
             se.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();

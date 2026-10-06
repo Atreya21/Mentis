@@ -106,24 +106,28 @@ const ConnectPage = () => {
       } else {
         await pushService.subscribe();
 
-        // Check if native app permission is still not granted (e.g. permanently denied by Android)
         if (typeof window !== 'undefined' && window.MentisNative) {
+          // If native app, wait briefly to check if already granted, otherwise let system prompt handle it
           const hasPerm = window.MentisNative.hasNotificationPermission();
-          if (!hasPerm) {
-            toast.info('Please enable notifications in Android Settings to receive message alerts.', {
+          if (hasPerm) {
+            setNotificationsEnabled(true);
+            toast.success('Device notifications enabled!');
+            setTimeout(async () => {
+              try {
+                await pushService.sendTestNotification();
+              } catch (e) {}
+            }, 600);
+          } else {
+            // Permission requested; if system suppressed it, offer Settings button
+            toast.info('Permission requested. If no prompt appears, please tap to open Settings.', {
               action: {
                 label: 'Open Settings',
                 onClick: () => window.MentisNative.openNotificationSettings()
               },
-              duration: 8000
+              duration: 7000
             });
-            setTimeout(() => {
-              if (window.MentisNative && !window.MentisNative.hasNotificationPermission()) {
-                window.MentisNative.openNotificationSettings();
-              }
-            }, 800);
-            return;
           }
+          return;
         }
 
         setNotificationsEnabled(true);

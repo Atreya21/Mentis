@@ -69,18 +69,89 @@ const AdminDashboard = () => {
   const [factDialogOpen, setFactDialogOpen] = useState(false);
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
   
+  const [filterOptions, setFilterOptions] = useState({
+    math_domain: [
+      { value: 'algebra', label: 'Algebra' },
+      { value: 'geometry', label: 'Geometry' },
+      { value: 'calculus', label: 'Calculus' },
+      { value: 'trigonometry', label: 'Trigonometry' },
+      { value: 'statistics', label: 'Statistics & Probability' },
+      { value: 'number_theory', label: 'Number Theory' },
+      { value: 'linear_algebra', label: 'Linear Algebra' },
+      { value: 'discrete_math', label: 'Discrete Mathematics' },
+      { value: 'differential_equations', label: 'Differential Equations' },
+      { value: 'applied_math', label: 'Applied Mathematics' },
+      { value: 'combinatorics', label: 'Combinatorics' },
+      { value: 'real_analysis', label: 'Real Analysis' },
+      { value: 'topology', label: 'Topology' }
+    ],
+    education_level: [
+      { value: 'primary', label: 'Primary School' },
+      { value: 'high_school', label: 'High School' },
+      { value: 'ug', label: 'Undergraduate (UG)' },
+      { value: 'pg', label: 'Postgraduate (PG)' },
+      { value: 'research', label: 'Research' }
+    ],
+    class_grade: [
+      { value: 'class_1', label: 'Class 1' },
+      { value: 'class_2', label: 'Class 2' },
+      { value: 'class_3', label: 'Class 3' },
+      { value: 'class_4', label: 'Class 4' },
+      { value: 'class_5', label: 'Class 5' },
+      { value: 'class_6', label: 'Class 6' },
+      { value: 'class_7', label: 'Class 7' },
+      { value: 'class_8', label: 'Class 8' },
+      { value: 'class_9', label: 'Class 9' },
+      { value: 'class_10', label: 'Class 10' },
+      { value: 'class_11', label: 'Class 11' },
+      { value: 'class_12', label: 'Class 12' },
+      { value: 'year_1', label: 'Year 1 (College)' },
+      { value: 'year_2', label: 'Year 2 (College)' },
+      { value: 'year_3', label: 'Year 3 (College)' },
+      { value: 'year_4', label: 'Year 4 (College)' }
+    ],
+    difficulty: [
+      { value: 'beginner', label: 'Beginner' },
+      { value: 'intermediate', label: 'Intermediate' },
+      { value: 'advanced', label: 'Advanced' },
+      { value: 'expert', label: 'Expert' }
+    ],
+    exam_type: [
+      { value: 'jee', label: 'JEE (Main/Advanced)' },
+      { value: 'neet', label: 'NEET' },
+      { value: 'gate', label: 'GATE' },
+      { value: 'gre', label: 'GRE' },
+      { value: 'olympiad', label: 'Math Olympiad' },
+      { value: 'cat', label: 'CAT' },
+      { value: 'cbse', label: 'CBSE Board' },
+      { value: 'icse', label: 'ICSE Board' }
+    ],
+    language: [
+      { value: 'english', label: 'English' },
+      { value: 'hindi', label: 'Hindi' },
+      { value: 'bengali', label: 'Bengali' },
+      { value: 'tamil', label: 'Tamil' },
+      { value: 'telugu', label: 'Telugu' }
+    ]
+  });
+
   const [gameForm, setGameForm] = useState({
     title: '',
     description: '',
     url: '',
     thumbnail: '',
-    difficulty: 'easy'
+    difficulty: 'easy',
+    math_domain: [],
+    education_level: []
   });
   
   const [factForm, setFactForm] = useState({
     title: '',
     content: '',
-    image_url: ''
+    image_url: '',
+    math_domain: [],
+    education_level: [],
+    difficulty: 'beginner'
   });
 
   const [resourceForm, setResourceForm] = useState({
@@ -88,10 +159,18 @@ const AdminDashboard = () => {
     description: '',
     content_type: 'notes',
     url: '',
-    topic: ''
+    topic: '',
+    math_domain: [],
+    education_level: [],
+    difficulty: 'beginner',
+    class_grade: '',
+    exam_type: [],
+    language: 'english',
+    tags: ''
   });
 
   useEffect(() => {
+    fetchFilterOptions();
     fetchPendingResources();
     fetchAllResources();
     fetchAllGames();
@@ -108,6 +187,17 @@ const AdminDashboard = () => {
     fetchTutorials();
     fetchFaqs();
   }, []);
+
+  const fetchFilterOptions = async () => {
+    try {
+      const res = await axios.get(`${API}/filter-options`);
+      if (res.data && Object.keys(res.data).length > 0) {
+        setFilterOptions(prev => ({ ...prev, ...res.data }));
+      }
+    } catch (err) {
+      console.log('Using default filter options');
+    }
+  };
 
   const fetchPendingCuriofacts = async () => {
     try {
@@ -520,9 +610,17 @@ const AdminDashboard = () => {
       await axios.post(`${API}/games`, processedGameForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Game created successfully!');
+      toast.success('Game created successfully with filters!');
       setGameDialogOpen(false);
-      setGameForm({ title: '', description: '', url: '', thumbnail: '', difficulty: 'easy' });
+      setGameForm({
+        title: '',
+        description: '',
+        url: '',
+        thumbnail: '',
+        difficulty: 'easy',
+        math_domain: [],
+        education_level: []
+      });
       fetchStats();
       fetchAllGames();
     } catch (err) {
@@ -542,9 +640,16 @@ const AdminDashboard = () => {
       await axios.post(`${API}/curiofacts`, processedFactForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Curiofact published successfully!');
+      toast.success('Curiofact published successfully with filters!');
       setFactDialogOpen(false);
-      setFactForm({ title: '', content: '', image_url: '' });
+      setFactForm({
+        title: '',
+        content: '',
+        image_url: '',
+        math_domain: [],
+        education_level: [],
+        difficulty: 'beginner'
+      });
       fetchStats();
       fetchAllFacts();
     } catch (err) {
@@ -559,14 +664,30 @@ const AdminDashboard = () => {
       // Convert Google Drive URLs for resources (PDFs, docs, etc.)
       const processedResourceForm = {
         ...resourceForm,
-        url: convertGoogleDriveUrl(resourceForm.url, true) // forceDownload for documents
+        url: convertGoogleDriveUrl(resourceForm.url, true), // forceDownload for documents
+        tags: typeof resourceForm.tags === 'string'
+          ? resourceForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+          : (resourceForm.tags || [])
       };
       await axios.post(`${API}/admin/create-resource`, processedResourceForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Resource created and approved!');
+      toast.success('Resource created and approved with custom filters!');
       setResourceDialogOpen(false);
-      setResourceForm({ title: '', description: '', content_type: 'notes', url: '', topic: '' });
+      setResourceForm({
+        title: '',
+        description: '',
+        content_type: 'notes',
+        url: '',
+        topic: '',
+        math_domain: [],
+        education_level: [],
+        difficulty: 'beginner',
+        class_grade: '',
+        exam_type: [],
+        language: 'english',
+        tags: ''
+      });
       fetchStats();
       fetchAllResources();
     } catch (err) {
@@ -1017,9 +1138,117 @@ const AdminDashboard = () => {
                       <img src={convertGoogleDriveUrl(gameForm.thumbnail)} alt="Preview" className="max-w-xs h-32 object-cover rounded-lg border border-slate-700" onError={(e) => e.target.style.display='none'} />
                     </div>
                   )}
-                  <Button type="submit" className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="submit-game-btn">
-                    <Plus className="w-4 h-4 mr-2" /> Add Game
-                  </Button>
+
+                  {/* Math Domain Filter Selection */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-slate-300">
+                        Math Domain Filter <span className="text-xs text-slate-400">({gameForm.math_domain?.length || 0} selected)</span>
+                      </Label>
+                      {gameForm.math_domain?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setGameForm({ ...gameForm, math_domain: [] })}
+                          className="text-xs text-orange-400 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 p-3 rounded-lg bg-slate-900 border border-slate-700">
+                      {(filterOptions.math_domain || []).map(opt => {
+                        const isSelected = gameForm.math_domain?.includes(opt.value);
+                        return (
+                          <Badge
+                            key={opt.value}
+                            className={`cursor-pointer transition-all text-xs py-1 px-2.5 ${
+                              isSelected
+                                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                            }`}
+                            onClick={() => {
+                              const current = gameForm.math_domain || [];
+                              setGameForm({
+                                ...gameForm,
+                                math_domain: isSelected
+                                  ? current.filter(v => v !== opt.value)
+                                  : [...current, opt.value]
+                              });
+                            }}
+                          >
+                            {isSelected ? '✓ ' : '+ '}{opt.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Education Level Filter Selection */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-slate-300">
+                        Education Level Filter <span className="text-xs text-slate-400">({gameForm.education_level?.length || 0} selected)</span>
+                      </Label>
+                      {gameForm.education_level?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setGameForm({ ...gameForm, education_level: [] })}
+                          className="text-xs text-pink-400 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 p-3 rounded-lg bg-slate-900 border border-slate-700">
+                      {(filterOptions.education_level || []).map(opt => {
+                        const isSelected = gameForm.education_level?.includes(opt.value);
+                        return (
+                          <Badge
+                            key={opt.value}
+                            className={`cursor-pointer transition-all text-xs py-1 px-2.5 ${
+                              isSelected
+                                ? 'bg-pink-500 text-white hover:bg-pink-600'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                            }`}
+                            onClick={() => {
+                              const current = gameForm.education_level || [];
+                              setGameForm({
+                                ...gameForm,
+                                education_level: isSelected
+                                  ? current.filter(v => v !== opt.value)
+                                  : [...current, opt.value]
+                              });
+                            }}
+                          >
+                            {isSelected ? '✓ ' : '+ '}{opt.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <Button type="submit" className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600" data-testid="submit-game-btn">
+                      <Plus className="w-4 h-4 mr-2" /> Add Game with Filters
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="border-slate-700 text-slate-300 hover:bg-slate-700"
+                      onClick={async () => {
+                        try {
+                          await axios.post(`${API}/games/seed?force=true`);
+                          toast.success('Successfully seeded/updated all curated math games!');
+                          fetchAllGames();
+                        } catch (err) {
+                          toast.error('Failed to seed games');
+                        }
+                      }}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2 text-orange-400" />
+                      Sync / Reset Curated Games Library
+                    </Button>
+                  </div>
                 </form>
               </CardContent>
             </Card>
@@ -1060,16 +1289,34 @@ const AdminDashboard = () => {
                       data-testid="fact-content-input"
                     />
                   </div>
-                  <div>
-                    <Label className="text-slate-300">Image URL <span className="text-orange-400 text-xs">(Google Drive supported)</span></Label>
-                    <Input
-                      type="url"
-                      value={factForm.image_url}
-                      onChange={(e) => setFactForm({ ...factForm, image_url: e.target.value })}
-                      className="bg-slate-900 border-slate-700 text-white"
-                      placeholder="https://drive.google.com/file/d/... or direct image URL"
-                      data-testid="fact-image-input"
-                    />
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-300">Image URL <span className="text-orange-400 text-xs">(Google Drive supported)</span></Label>
+                      <Input
+                        type="url"
+                        value={factForm.image_url}
+                        onChange={(e) => setFactForm({ ...factForm, image_url: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white"
+                        placeholder="https://drive.google.com/file/d/... or direct image URL"
+                        data-testid="fact-image-input"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-slate-300">Difficulty Level</Label>
+                      <Select 
+                        value={factForm.difficulty || 'beginner'} 
+                        onValueChange={(value) => setFactForm({ ...factForm, difficulty: value })}
+                      >
+                        <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="beginner">Beginner</SelectItem>
+                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                          <SelectItem value="advanced">Advanced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   {factForm.image_url && (
                     <div>
@@ -1077,8 +1324,97 @@ const AdminDashboard = () => {
                       <img src={convertGoogleDriveUrl(factForm.image_url)} alt="Preview" className="max-w-xs h-32 object-cover rounded-lg border border-slate-700" onError={(e) => e.target.style.display='none'} />
                     </div>
                   )}
+
+                  {/* Math Domain Filter */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-slate-300">
+                        Math Domain Filter <span className="text-xs text-slate-400">({factForm.math_domain?.length || 0} selected)</span>
+                      </Label>
+                      {factForm.math_domain?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFactForm({ ...factForm, math_domain: [] })}
+                          className="text-xs text-pink-400 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 p-3 rounded-lg bg-slate-900 border border-slate-700">
+                      {(filterOptions.math_domain || []).slice(0, 10).map(opt => {
+                        const isSelected = factForm.math_domain?.includes(opt.value);
+                        return (
+                          <Badge
+                            key={opt.value}
+                            className={`cursor-pointer transition-all text-xs py-1 px-2.5 ${
+                              isSelected
+                                ? 'bg-pink-500 text-white hover:bg-pink-600'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                            }`}
+                            onClick={() => {
+                              const current = factForm.math_domain || [];
+                              setFactForm({
+                                ...factForm,
+                                math_domain: isSelected
+                                  ? current.filter(v => v !== opt.value)
+                                  : [...current, opt.value]
+                              });
+                            }}
+                          >
+                            {isSelected ? '✓ ' : '+ '}{opt.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Education Level Filter */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-slate-300">
+                        Education Level Filter <span className="text-xs text-slate-400">({factForm.education_level?.length || 0} selected)</span>
+                      </Label>
+                      {factForm.education_level?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFactForm({ ...factForm, education_level: [] })}
+                          className="text-xs text-purple-400 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 p-3 rounded-lg bg-slate-900 border border-slate-700">
+                      {(filterOptions.education_level || []).map(opt => {
+                        const isSelected = factForm.education_level?.includes(opt.value);
+                        return (
+                          <Badge
+                            key={opt.value}
+                            className={`cursor-pointer transition-all text-xs py-1 px-2.5 ${
+                              isSelected
+                                ? 'bg-purple-500 text-white hover:bg-purple-600'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                            }`}
+                            onClick={() => {
+                              const current = factForm.education_level || [];
+                              setFactForm({
+                                ...factForm,
+                                education_level: isSelected
+                                  ? current.filter(v => v !== opt.value)
+                                  : [...current, opt.value]
+                              });
+                            }}
+                          >
+                            {isSelected ? '✓ ' : '+ '}{opt.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <Button type="submit" className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600" data-testid="submit-fact-btn">
-                    <Plus className="w-4 h-4 mr-2" /> Publish Curiofact
+                    <Plus className="w-4 h-4 mr-2" /> Publish Curiofact with Filters
                   </Button>
                 </form>
               </CardContent>
@@ -1162,11 +1498,208 @@ const AdminDashboard = () => {
                       />
                     </div>
                   </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-300">Difficulty Level</Label>
+                      <Select 
+                        value={resourceForm.difficulty || 'beginner'} 
+                        onValueChange={(value) => setResourceForm({ ...resourceForm, difficulty: value })}
+                      >
+                        <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+                          <SelectValue placeholder="Select difficulty" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(filterOptions.difficulty || []).map(d => (
+                            <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-slate-300">Target Class / Grade</Label>
+                      <Select 
+                        value={resourceForm.class_grade || 'none'} 
+                        onValueChange={(value) => setResourceForm({ ...resourceForm, class_grade: value === 'none' ? '' : value })}
+                      >
+                        <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+                          <SelectValue placeholder="Select class/grade (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None / General</SelectItem>
+                          {(filterOptions.class_grade || []).map(cg => (
+                            <SelectItem key={cg.value} value={cg.value}>{cg.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Math Domain Filter */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-slate-300">
+                        Math Domain Filter <span className="text-xs text-slate-400">({resourceForm.math_domain?.length || 0} selected)</span>
+                      </Label>
+                      {resourceForm.math_domain?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setResourceForm({ ...resourceForm, math_domain: [] })}
+                          className="text-xs text-emerald-400 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 p-3 rounded-lg bg-slate-900 border border-slate-700">
+                      {(filterOptions.math_domain || []).map(opt => {
+                        const isSelected = resourceForm.math_domain?.includes(opt.value);
+                        return (
+                          <Badge
+                            key={opt.value}
+                            className={`cursor-pointer transition-all text-xs py-1 px-2.5 ${
+                              isSelected
+                                ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                            }`}
+                            onClick={() => {
+                              const current = resourceForm.math_domain || [];
+                              setResourceForm({
+                                ...resourceForm,
+                                math_domain: isSelected
+                                  ? current.filter(v => v !== opt.value)
+                                  : [...current, opt.value]
+                              });
+                            }}
+                          >
+                            {isSelected ? '✓ ' : '+ '}{opt.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Education Level Filter */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-slate-300">
+                        Education Level Filter <span className="text-xs text-slate-400">({resourceForm.education_level?.length || 0} selected)</span>
+                      </Label>
+                      {resourceForm.education_level?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setResourceForm({ ...resourceForm, education_level: [] })}
+                          className="text-xs text-teal-400 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 p-3 rounded-lg bg-slate-900 border border-slate-700">
+                      {(filterOptions.education_level || []).map(opt => {
+                        const isSelected = resourceForm.education_level?.includes(opt.value);
+                        return (
+                          <Badge
+                            key={opt.value}
+                            className={`cursor-pointer transition-all text-xs py-1 px-2.5 ${
+                              isSelected
+                                ? 'bg-teal-500 text-white hover:bg-teal-600'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                            }`}
+                            onClick={() => {
+                              const current = resourceForm.education_level || [];
+                              setResourceForm({
+                                ...resourceForm,
+                                education_level: isSelected
+                                  ? current.filter(v => v !== opt.value)
+                                  : [...current, opt.value]
+                              });
+                            }}
+                          >
+                            {isSelected ? '✓ ' : '+ '}{opt.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Target Exam Filter */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-slate-300">
+                        Target Exams <span className="text-xs text-slate-400">({resourceForm.exam_type?.length || 0} selected)</span>
+                      </Label>
+                      {resourceForm.exam_type?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setResourceForm({ ...resourceForm, exam_type: [] })}
+                          className="text-xs text-blue-400 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 p-3 rounded-lg bg-slate-900 border border-slate-700">
+                      {(filterOptions.exam_type || []).map(opt => {
+                        const isSelected = resourceForm.exam_type?.includes(opt.value);
+                        return (
+                          <Badge
+                            key={opt.value}
+                            className={`cursor-pointer transition-all text-xs py-1 px-2.5 ${
+                              isSelected
+                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                            }`}
+                            onClick={() => {
+                              const current = resourceForm.exam_type || [];
+                              setResourceForm({
+                                ...resourceForm,
+                                exam_type: isSelected
+                                  ? current.filter(v => v !== opt.value)
+                                  : [...current, opt.value]
+                              });
+                            }}
+                          >
+                            {isSelected ? '✓ ' : '+ '}{opt.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Language and Tags */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-300">Language</Label>
+                      <Select 
+                        value={resourceForm.language || 'english'} 
+                        onValueChange={(value) => setResourceForm({ ...resourceForm, language: value })}
+                      >
+                        <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(filterOptions.language || []).map(lang => (
+                            <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-slate-300">Tags <span className="text-xs text-slate-500">(comma-separated)</span></Label>
+                      <Input
+                        value={resourceForm.tags}
+                        onChange={(e) => setResourceForm({ ...resourceForm, tags: e.target.value })}
+                        className="bg-slate-900 border-slate-700 text-white"
+                        placeholder="e.g., calculus, pyq, solved examples"
+                      />
+                    </div>
+                  </div>
+
                   <p className="text-xs text-slate-500">
                     💡 Tip: For Google Drive files, make sure sharing is set to &quot;Anyone with the link can view&quot;
                   </p>
                   <Button type="submit" className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600" data-testid="submit-resource-btn">
-                    <Plus className="w-4 h-4 mr-2" /> Add Resource
+                    <Plus className="w-4 h-4 mr-2" /> Add Resource with Filters
                   </Button>
                 </form>
               </CardContent>

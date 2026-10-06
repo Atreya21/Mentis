@@ -183,6 +183,8 @@ class Game(BaseModel):
     url: str
     thumbnail: Optional[str] = None
     difficulty: str
+    math_domain: List[str] = []
+    education_level: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class GameCreate(BaseModel):
@@ -191,6 +193,8 @@ class GameCreate(BaseModel):
     url: str
     thumbnail: Optional[str] = None
     difficulty: str
+    math_domain: List[str] = []
+    education_level: List[str] = []
 
 class Curiofact(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -1342,6 +1346,139 @@ async def update_resource_status(resource_id: str, update: ResourceApprove, admi
     
     return Resource(**result)
 
+DEFAULT_GAMES = [
+    {
+        "id": "game-mathsframe-01",
+        "title": "Mathsframe Interactive Games",
+        "description": "Collection of top-rated interactive mathematics games and visual challenges covering arithmetic, geometry, fractions, times tables, and shape sorting with engaging arcade mechanics.",
+        "url": "https://mathsframe.co.uk/en/resources/category/22/most-popular",
+        "thumbnail": "https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=800",
+        "difficulty": "easy",
+        "math_domain": ["algebra", "geometry", "number_theory"],
+        "education_level": ["primary", "high_school"]
+    },
+    {
+        "id": "game-desmos-polygraph-02",
+        "title": "Desmos Polygraph & Coordinate Challenges",
+        "description": "Collaborative interactive mathematical guessing games and graphical puzzles. Deduce hidden mathematical curves, coordinate points, and geometric figures while mastering mathematical vocabulary.",
+        "url": "https://classroom.amplify.com/activity/5984b0d9723ca40cd48051d6?collections=651ca31cf69ee59aa9e3818a%2C632c77b104648305feffcfda",
+        "thumbnail": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800",
+        "difficulty": "medium",
+        "math_domain": ["geometry", "algebra", "calculus"],
+        "education_level": ["high_school", "ug"]
+    },
+    {
+        "id": "game-perfect-circle-03",
+        "title": "Draw a Perfect Circle",
+        "description": "Challenge your geometric precision! Freehand draw a circle and let the mathematical engine score your symmetry, eccentricity, and radius variance in real time.",
+        "url": "https://neal.fun/perfect-circle/",
+        "thumbnail": "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800",
+        "difficulty": "easy",
+        "math_domain": ["geometry", "applied_math"],
+        "education_level": ["primary", "high_school", "ug"]
+    },
+    {
+        "id": "game-amplify-desmos-04",
+        "title": "Amplify Desmos Interactive Math Lab",
+        "description": "Rich digital math explorations covering linear equations, quadratic curves, transformations, exponential growth, and trigonometry through visual sliders and dynamic simulations.",
+        "url": "https://classroom.amplify.com/search?subjects=Math",
+        "thumbnail": "https://images.unsplash.com/photo-1509869175650-a1c97834a563?w=800",
+        "difficulty": "medium",
+        "math_domain": ["algebra", "calculus", "geometry", "trigonometry"],
+        "education_level": ["high_school", "ug"]
+    },
+    {
+        "id": "game-nerdle-05",
+        "title": "Nerdle — Daily Math Equation Game",
+        "description": "The viral daily mathematical puzzle where players have six guesses to deduce a hidden eight-character mathematical equation using digits and operators. Test your algebraic logic.",
+        "url": "https://nerdlegame.com/",
+        "thumbnail": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800",
+        "difficulty": "medium",
+        "math_domain": ["algebra", "number_theory", "discrete_math"],
+        "education_level": ["primary", "high_school", "ug", "pg"]
+    },
+    {
+        "id": "game-seeing-theory-06",
+        "title": "Seeing Theory — Visual Probability & Statistics",
+        "description": "An award-winning interactive visual introduction to probability and statistics from Brown University. Experiment with compound probability, random variables, statistical inference, and Bayesian reasoning.",
+        "url": "https://seeing-theory.brown.edu/",
+        "thumbnail": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800",
+        "difficulty": "hard",
+        "math_domain": ["statistics", "applied_math"],
+        "education_level": ["high_school", "ug", "pg", "research"]
+    },
+    {
+        "id": "game-phet-math-07",
+        "title": "PhET Interactive Math Simulations",
+        "description": "Research-backed gamified math simulations from CU Boulder. Experiment with vector additions, graph quadratics, calculus derivatives, area models, and fraction matchers.",
+        "url": "https://phet.colorado.edu/en/simulations/browse?subject=math",
+        "thumbnail": "https://images.unsplash.com/photo-1596495577886-d920f1fb7238?w=800",
+        "difficulty": "easy",
+        "math_domain": ["algebra", "geometry", "calculus", "applied_math"],
+        "education_level": ["primary", "high_school", "ug"]
+    },
+    {
+        "id": "game-euclidea-08",
+        "title": "Euclidea — Geometric Construction Puzzle",
+        "description": "A brilliantly designed puzzle game based on classical Euclidean ruler-and-compass geometric constructions. Discover elegant minimal-step geometric proofs and constructions.",
+        "url": "https://www.euclidea.xyz/",
+        "thumbnail": "https://images.unsplash.com/photo-1634170380000-149bfbbb39fd?w=800",
+        "difficulty": "hard",
+        "math_domain": ["geometry", "discrete_math"],
+        "education_level": ["high_school", "ug", "pg"]
+    },
+    {
+        "id": "game-geogebra-09",
+        "title": "GeoGebra Interactive Math Playground",
+        "description": "Thousands of dynamic mathematical experiments, calculus curve visualizers, Fourier series simulations, 3D geometric polyhedra, and fractal generators.",
+        "url": "https://www.geogebra.org/materials",
+        "thumbnail": "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800",
+        "difficulty": "medium",
+        "math_domain": ["geometry", "calculus", "linear_algebra", "applied_math"],
+        "education_level": ["high_school", "ug", "pg"]
+    },
+    {
+        "id": "game-nrich-10",
+        "title": "NRICH Maths Interactive Challenges",
+        "description": "University of Cambridge's mathematical enrichment hub offering non-routine problem solving, strategic game theory challenges, and investigative math tasks for inquisitive minds.",
+        "url": "https://nrich.maths.org/",
+        "thumbnail": "https://images.unsplash.com/photo-1612207897744-6b7c13b5e36e?w=800",
+        "difficulty": "hard",
+        "math_domain": ["number_theory", "discrete_math", "combinatorics"],
+        "education_level": ["high_school", "ug", "pg"]
+    },
+    {
+        "id": "game-wolfram-11",
+        "title": "Wolfram Math Demonstrations",
+        "description": "Open-code interactive computational explorations powered by Mathematica. Visualize complex topology, Mandelbrot fractals, cellular automata, differential systems, and quantum matrices.",
+        "url": "https://demonstrations.wolfram.com/",
+        "thumbnail": "https://images.unsplash.com/photo-1632571401005-458e9d244591?w=800",
+        "difficulty": "hard",
+        "math_domain": ["topology", "complex_analysis", "differential_equations", "applied_math"],
+        "education_level": ["ug", "pg", "research"]
+    },
+    {
+        "id": "game-brilliant-12",
+        "title": "Brilliant Interactive Math Explorations",
+        "description": "Visual, first-principles mathematical puzzles that turn complex abstract concepts in algebra, combinatorics, probability, and logic into intuitive games.",
+        "url": "https://brilliant.org/courses/math-fundamentals/",
+        "thumbnail": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800",
+        "difficulty": "medium",
+        "math_domain": ["algebra", "discrete_math", "number_theory", "combinatorics"],
+        "education_level": ["high_school", "ug"]
+    },
+    {
+        "id": "game-dragonbox-13",
+        "title": "DragonBox Algebraic Foundations",
+        "description": "A pioneering visual algebra learning experience that turns equation solving, balance rules, and unknown variables into intuitive gameplay mechanics without fear.",
+        "url": "https://dragonbox.com/",
+        "thumbnail": "https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?w=800",
+        "difficulty": "easy",
+        "math_domain": ["algebra", "number_theory"],
+        "education_level": ["primary", "high_school"]
+    }
+]
+
 @api_router.get("/games", response_model=List[Game])
 async def get_games(
     search: Optional[str] = None,
@@ -1349,6 +1486,14 @@ async def get_games(
     math_domain: Optional[str] = None,
     education_level: Optional[str] = None
 ):
+    # Auto-seed default games if collection is empty
+    count = await db.games.count_documents({})
+    if count == 0:
+        for g in DEFAULT_GAMES:
+            g_doc = Game(**g).model_dump()
+            g_doc['created_at'] = g_doc['created_at'].isoformat()
+            await db.games.insert_one(g_doc)
+    
     query = {}
     
     # Search in title and description
@@ -1375,9 +1520,44 @@ async def get_games(
     
     games = await db.games.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     for g in games:
-        if isinstance(g['created_at'], str):
+        if isinstance(g.get('created_at'), str):
             g['created_at'] = datetime.fromisoformat(g['created_at'])
     return games
+
+@api_router.post("/games/seed")
+async def seed_games(force: bool = False):
+    """Seed or update default games in database"""
+    if force:
+        await db.games.delete_many({})
+    count = await db.games.count_documents({})
+    if count == 0 or force:
+        for g in DEFAULT_GAMES:
+            g_doc = Game(**g).model_dump()
+            g_doc['created_at'] = g_doc['created_at'].isoformat()
+            await db.games.insert_one(g_doc)
+        return {"message": f"Successfully seeded {len(DEFAULT_GAMES)} games", "count": len(DEFAULT_GAMES)}
+    else:
+        added = 0
+        for g in DEFAULT_GAMES:
+            existing = await db.games.find_one({"url": g["url"]})
+            if not existing:
+                g_doc = Game(**g).model_dump()
+                g_doc['created_at'] = g_doc['created_at'].isoformat()
+                await db.games.insert_one(g_doc)
+                added += 1
+            else:
+                await db.games.update_one(
+                    {"url": g["url"]},
+                    {"$set": {
+                        "math_domain": g["math_domain"],
+                        "education_level": g["education_level"],
+                        "title": g["title"],
+                        "description": g["description"],
+                        "thumbnail": g["thumbnail"],
+                        "difficulty": g["difficulty"]
+                    }}
+                )
+        return {"message": f"Updated games, added {added} new games", "added": added}
 
 @api_router.post("/games", response_model=Game)
 async def create_game(game_data: GameCreate, admin: User = Depends(get_admin_user)):
@@ -3649,17 +3829,25 @@ async def setup_master_admin():
 async def websocket_endpoint(websocket: WebSocket, token: str):
     user_id = None
     try:
-        # Verify token and get user
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        user_id = payload.get("sub")
+        # Verify token and get user (supports JWT access token or direct valid user_id)
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            user_id = payload.get("sub")
+        except Exception:
+            # If not a valid JWT, check if token itself is a valid user ID (used by native background service)
+            user_id = token
+        
         if not user_id:
             await websocket.close(code=4001)
             return
         
-        user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        user = await db.users.find_one({"$or": [{"id": user_id}, {"_id": user_id}]}, {"_id": 0})
         if not user:
+            logger.warning(f"WebSocket auth failed: user {user_id} not found in database")
             await websocket.close(code=4001)
             return
+        
+        user_id = user["id"]
         
         await manager.connect(websocket, user_id)
         

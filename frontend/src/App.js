@@ -10,6 +10,7 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 import MessagePopupContainer from '@/components/MessagePopupContainer';
+import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 import pushService from '@/services/PushNotificationService';
 import notificationService from '@/services/NotificationService';
 import { WebSocketProvider } from '@/context/WebSocketContext';
@@ -163,6 +164,7 @@ function App() {
         <WebSocketProvider user={user}>
           <div className="App min-h-screen flex flex-col bg-slate-950">
             <Navigation />
+            <NotificationPermissionBanner />
             <div className="flex-grow">
               <Routes>
                 <Route path="/" element={<LandingPage />} />

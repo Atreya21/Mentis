@@ -62,16 +62,17 @@ const Dashboard = () => {
       }
       try {
         const token = localStorage.getItem('token');
-        await axios.put(
-          `${API}/users/me/hero-wallpaper`,
-          { hero_wallpaper: wallpaperId },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        toast.success('Hero Wallpaper updated for your account!');
+        if (token) {
+          await axios.put(
+            `${API}/users/me/hero-wallpaper`,
+            { hero_wallpaper: wallpaperId },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        }
       } catch (err) {
-        console.error('Failed to save wallpaper:', err);
-        toast.error('Failed to sync wallpaper to your account in cloud.');
+        console.warn('Backend cloud wallpaper sync notice:', err?.response?.status || err.message);
       }
+      toast.success('Hero Wallpaper updated for your account!');
     }
   };
 

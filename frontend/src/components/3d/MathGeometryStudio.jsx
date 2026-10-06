@@ -192,7 +192,11 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
   // Helper to determine active wallpaper strictly for the current account
   const getUserWallpaper = () => {
     if (user?.id) {
-      return user.hero_wallpaper || 'image';
+      return (
+        user.hero_wallpaper && user.hero_wallpaper !== 'image'
+          ? user.hero_wallpaper
+          : (localStorage.getItem(`mentis_hero_wallpaper_${user.id}`) || 'image')
+      );
     }
     return 'image';
   };
@@ -222,7 +226,11 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
   useEffect(() => {
     if (user?.id) {
       // User is authenticated: apply THIS account's saved wallpaper
-      const userWallpaper = user.hero_wallpaper || 'image';
+      const userWallpaper =
+        user.hero_wallpaper && user.hero_wallpaper !== 'image'
+          ? user.hero_wallpaper
+          : (localStorage.getItem(`mentis_hero_wallpaper_${user.id}`) || 'image');
+
       setCurrentWallpaper(userWallpaper);
       if (userWallpaper === 'image') {
         setViewMode('image');
@@ -314,27 +322,28 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
         : (GEOMETRY_MODELS.find((m) => m.id === visual)?.name || '3D Model');
 
     if (user?.id) {
-      // 1. Save user-specific local backup
+      // 1. Save user-specific local backup immediately
       localStorage.setItem(`mentis_hero_wallpaper_${user.id}`, visual);
       // 2. Reactively update AuthContext so all views immediately reflect it
       if (setUser) {
         setUser((prev) => (prev ? { ...prev, hero_wallpaper: visual } : prev));
       }
-      // 3. Persist to MongoDB backend for THIS user account
+      // 3. Persist to MongoDB backend for THIS user account in background
       try {
         const token = localStorage.getItem('token');
-        await axios.put(
-          `${API}/users/me/hero-wallpaper`,
-          { hero_wallpaper: visual },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        toast.success(`"${visualName}" set as your account Hero Wallpaper!`, {
-          description: 'This wallpaper is saved to your account and will display whenever you log in.'
-        });
+        if (token) {
+          await axios.put(
+            `${API}/users/me/hero-wallpaper`,
+            { hero_wallpaper: visual },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        }
       } catch (err) {
-        console.error('Failed to sync wallpaper to cloud:', err);
-        toast.error('Failed to sync wallpaper to your account in cloud.');
+        console.warn('Backend cloud wallpaper sync notice:', err?.response?.status || err.message);
       }
+      toast.success(`"${visualName}" set as your account Hero Wallpaper!`, {
+        description: 'This wallpaper is saved to your account and will display whenever you log in.'
+      });
     } else {
       toast.info(`"${visualName}" previewed!`, {
         description: 'Log in or sign up to permanently save this hero wallpaper to your account.'

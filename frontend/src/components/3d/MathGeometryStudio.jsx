@@ -1191,31 +1191,31 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
       </div>
 
       {/* Top Header & Model Dropdown Bar */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md z-30 relative gap-2">
+      <div className="flex items-center justify-between px-2.5 sm:px-4 py-2 sm:py-2.5 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md z-30 relative gap-2 min-w-0">
         {/* Left: View Mode Indicator & Quick Model Dropdown Trigger */}
-        <div className="flex items-center gap-2 min-w-0" ref={dropdownRef}>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1" ref={dropdownRef}>
           <span className="relative flex h-2 w-2 flex-shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
           </span>
 
           {/* Model Selector Dropdown Button */}
-          <div className="relative">
+          <div className="relative min-w-0 max-w-[150px] sm:max-w-[185px]">
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 hover:bg-slate-800/80 border border-slate-700/80 text-xs font-mono font-medium text-slate-200 hover:text-white transition-all shadow-sm group active:scale-95"
+              className="w-full flex items-center justify-between gap-1.5 px-2 py-1 rounded-lg bg-slate-950/80 hover:bg-slate-800/80 border border-slate-700/80 text-xs font-mono font-medium text-slate-200 hover:text-white transition-all shadow-sm group active:scale-95"
               data-testid="geometry-model-dropdown-btn"
+              title={viewMode === 'image' ? 'Showcase Image' : currentModelMeta.name}
             >
-              <currentModelMeta.icon className="w-3.5 h-3.5 text-orange-400 group-hover:scale-110 transition-transform flex-shrink-0" />
-              <span className="truncate max-w-[120px] sm:max-w-[180px]">
-                {viewMode === 'image' ? 'Showcase Image' : currentModelMeta.name}
-              </span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 font-mono border border-orange-500/30 hidden md:inline">
-                14 Labs
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0 truncate">
+                <currentModelMeta.icon className="w-3.5 h-3.5 text-orange-400 group-hover:scale-110 transition-transform flex-shrink-0" />
+                <span className="truncate">
+                  {viewMode === 'image' ? 'Showcase Image' : currentModelMeta.name}
+                </span>
+              </div>
               <ChevronDown
-                className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                className={`w-3.5 h-3.5 text-slate-400 flex-shrink-0 transition-transform duration-200 ${
                   isDropdownOpen ? 'rotate-180 text-orange-400' : ''
                 }`}
               />
@@ -1318,28 +1318,28 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
         </div>
 
         {/* Center & Right: Wallpaper Preference Button & View Mode Toggle */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {/* Hero Wallpaper Set / Active Indicator */}
           {isCurrentWallpaper ? (
             <div
-              className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-semibold shadow-sm shadow-emerald-500/20 animate-pulse"
-              title="This visual is currently saved as your persistent account hero wallpaper"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-mono font-semibold shadow-sm flex-shrink-0"
+              title="Currently set as your persistent account hero wallpaper"
             >
-              <Check className="w-3 h-3 text-emerald-400" />
+              <Check className="w-3 h-3 text-emerald-400 flex-shrink-0" />
               <span className="hidden sm:inline">Active Wallpaper</span>
-              <span className="sm:hidden">Wallpaper</span>
+              <span className="sm:hidden">Active</span>
             </div>
           ) : (
             <Button
               size="sm"
               variant="ghost"
               onClick={() => handleSetWallpaper()}
-              className="text-xs h-7 px-2 sm:px-2.5 rounded-lg border border-orange-500/30 hover:border-orange-500/60 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 hover:text-white transition-all shadow-sm flex items-center gap-1 active:scale-95"
+              className="text-xs h-7 px-2 sm:px-2.5 rounded-lg border border-orange-500/30 hover:border-orange-500/60 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 hover:text-white transition-all shadow-sm flex items-center gap-1 active:scale-95 flex-shrink-0"
               title="Save this visual as your default account hero wallpaper"
             >
-              <Bookmark className="w-3 h-3 text-orange-400" />
+              <Bookmark className="w-3 h-3 text-orange-400 flex-shrink-0" />
               <span className="hidden sm:inline">Set as Wallpaper</span>
-              <span className="sm:hidden">Set</span>
+              <span className="sm:hidden">Wallpaper</span>
             </Button>
           )}
 
@@ -1348,23 +1348,23 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
             size="sm"
             variant="ghost"
             onClick={() => setViewMode(viewMode === '3d' ? 'image' : '3d')}
-            className={`text-xs h-7 px-2.5 rounded-lg border transition-all active:scale-95 ${
+            className={`text-xs h-7 px-2 sm:px-2.5 rounded-lg border transition-all active:scale-95 flex-shrink-0 flex items-center gap-1 ${
               viewMode === '3d'
                 ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20'
                 : 'border-orange-500/40 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20'
             }`}
             data-testid="toggle-studio-view-btn"
+            title={viewMode === '3d' ? 'Switch to Showcase Image' : 'Switch to 3D Lab'}
           >
             {viewMode === '3d' ? (
               <>
-                <Eye className="w-3.5 h-3.5 mr-1 text-cyan-400" />
-                <span className="hidden sm:inline">Showcase Image</span>
-                <span className="sm:hidden">Image</span>
+                <Eye className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+                <span className="hidden md:inline">Image</span>
               </>
             ) : (
               <>
-                <Compass className="w-3.5 h-3.5 mr-1 text-orange-400" />
-                <span>Launch 3D Lab</span>
+                <Compass className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
+                <span className="hidden md:inline">3D Lab</span>
               </>
             )}
           </Button>
@@ -1425,27 +1425,22 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
                 <span>φ: {telemetry.rotY}</span>
               </div>
 
-              {/* Active Model Formula & Details Card */}
-              <div className="absolute bottom-4 inset-x-4 pointer-events-none z-20">
-                <div className="p-3 rounded-xl bg-slate-950/85 backdrop-blur-md border border-slate-800/90 max-w-md mx-auto text-center shadow-xl">
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-mono font-bold text-white">
-                    <currentModelMeta.icon className="w-3.5 h-3.5 text-orange-400" />
-                    <span>{currentModelMeta.name}</span>
-                    <span className="text-[10px] text-slate-500 font-normal ml-1">
-                      ({currentModelMeta.category})
-                    </span>
-                  </div>
-                  <div className="text-xs font-mono text-orange-400 mt-0.5 font-semibold">
+              {/* Sleek Minimal Formula Telemetry at Bottom */}
+              <div className="absolute bottom-3 inset-x-0 pointer-events-none z-20 flex justify-center px-4">
+                <div className="px-3 py-1 rounded-full bg-slate-950/75 backdrop-blur-md border border-slate-800/80 text-center shadow-lg flex items-center gap-2 max-w-md">
+                  <currentModelMeta.icon className="w-3 h-3 text-orange-400 flex-shrink-0" />
+                  <span className="text-[11px] font-mono text-orange-400 font-semibold truncate">
                     {currentModelMeta.formula}
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                  </span>
+                  <span className="text-slate-600 hidden sm:inline">•</span>
+                  <span className="text-[10px] text-slate-400 truncate hidden sm:inline">
                     {currentModelMeta.info}
-                  </div>
+                  </span>
                 </div>
               </div>
             </motion.div>
           ) : (
-            /* Default View: Hero Showcase Image with Retrofuturistic Glass HUD */
+            /* Default View: Hero Showcase Image with Clean Unobstructed Canvas */
             <motion.div
               key="image-showcase"
               initial={{ opacity: 0, scale: 0.94, filter: 'blur(8px)' }}
@@ -1472,92 +1467,10 @@ const MathGeometryStudio = ({ className = '', heroImage = null }) => {
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>Interactive Math Universe</span>
               </div>
-
-              {/* Bottom Cybernetic Launch & Wallpaper HUD */}
-              <div className="absolute bottom-4 inset-x-4 z-20 p-4 rounded-xl bg-slate-950/90 backdrop-blur-xl border border-slate-800/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xl">
-                <div>
-                  <div className="text-xs uppercase font-mono text-orange-400 font-bold tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Mentis 3D Geometry Studio</span>
-                  </div>
-                  <div className="text-sm font-bold text-white mt-0.5">
-                    Explore 14 live interactive mathematical models & manifolds
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleSetWallpaper('image')}
-                    className={`rounded-full text-xs px-3.5 flex items-center gap-1.5 transition-all ${
-                      currentWallpaper === 'image'
-                        ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
-                        : 'border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:border-orange-500/40'
-                    }`}
-                  >
-                    {currentWallpaper === 'image' ? (
-                      <>
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        <span>Active Wallpaper</span>
-                      </>
-                    ) : (
-                      <>
-                        <Bookmark className="w-3 h-3 text-orange-400" />
-                        <span>Set as Wallpaper</span>
-                      </>
-                    )}
-                  </Button>
-
-                  <Button
-                    size="sm"
-                    onClick={() => setViewMode('3d')}
-                    className="w-full sm:w-auto rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-xs px-4 shadow-lg shadow-orange-500/25 flex items-center gap-1.5 font-semibold hover:scale-105 transition-all"
-                  >
-                    <Compass className="w-3.5 h-3.5" />
-                    <span>Launch 3D Lab</span>
-                  </Button>
-                </div>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      {/* Quick Category / Model Chips Bar at Bottom (when in 3D Mode) */}
-      {viewMode === '3d' && (
-        <div className="px-3 py-2 bg-slate-950/95 border-t border-slate-800/80 backdrop-blur-md flex items-center gap-1.5 overflow-x-auto scrollbar-none z-20 relative">
-          <div className="flex items-center gap-1.5 w-full">
-            {[
-              { id: 'icosahedron', label: 'Icosahedron' },
-              { id: 'tesseract', label: '4D Tesseract' },
-              { id: 'mobius', label: 'Möbius' },
-              { id: 'trefoil', label: 'Trefoil Knot' },
-              { id: 'klein', label: 'Klein Bottle' },
-              { id: 'lorenz', label: 'Lorenz Chaos' },
-              { id: 'riemann_zeta', label: 'Zeta Spiral' },
-              { id: 'buckyball', label: 'C60 Fullerene' }
-            ].map((btn) => (
-              <button
-                key={btn.id}
-                type="button"
-                onClick={() => handleSelectModel(btn.id)}
-                className={`text-[11px] font-mono py-1 px-2.5 rounded-lg transition-all flex items-center gap-1 whitespace-nowrap flex-shrink-0 hover:scale-105 active:scale-95 ${
-                  activeMode === btn.id
-                    ? 'bg-gradient-to-r from-orange-500/25 to-pink-500/20 text-white border border-orange-500/40 font-semibold shadow-sm'
-                    : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800'
-                }`}
-              >
-                {activeMode === btn.id && <Sparkles className="w-2.5 h-2.5 text-orange-400" />}
-                <span>{btn.label}</span>
-                {currentWallpaper === btn.id && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-0.5" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

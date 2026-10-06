@@ -182,12 +182,12 @@ const LandingPage = () => {
             </motion.div>
           </motion.div>
 
-          {/* Right Column: Interactive 3D Math Geometry Studio */}
+          {/* Right Column: Interactive 3D Math Geometry Studio & Default Showcase */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative hidden md:block"
+            className="relative mt-6 md:mt-0 w-full"
           >
             <MathGeometryStudio heroImage={heroImage} />
           </motion.div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -11,6 +12,9 @@ import Footer from '@/components/Footer';
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt';
 import MessagePopupContainer from '@/components/MessagePopupContainer';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
+import TopLoadingBar from '@/components/common/TopLoadingBar';
+import InteractiveSpotlight from '@/components/common/InteractiveSpotlight';
+import PageTransition from '@/components/common/PageTransition';
 import pushService from '@/services/PushNotificationService';
 import notificationService from '@/services/NotificationService';
 import { WebSocketProvider } from '@/context/WebSocketContext';
@@ -75,6 +79,34 @@ const ConditionalFooter = () => {
   }
   
   return <Footer />;
+};
+
+// Animated routes wrapper with route transition animations
+const AnimatedRoutes = ({ user }) => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
+        <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <PageTransition><LoginPage /></PageTransition>} />
+        <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <PageTransition><SignupPage /></PageTransition>} />
+        <Route path="/forgot-password" element={<PageTransition><ForgotPasswordPage /></PageTransition>} />
+        <Route path="/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
+        <Route path="/verify-email" element={<PageTransition><VerifyEmailPage /></PageTransition>} />
+        <Route path="/resend-verification" element={<PageTransition><ResendVerificationPage /></PageTransition>} />
+        <Route path="/about" element={<PageTransition><AboutUs /></PageTransition>} />
+        <Route path="/resources" element={user ? <PageTransition><ResourceHub /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/funamatics" element={user ? <PageTransition><Funamatics /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/curiofacts" element={user ? <PageTransition><Curiofacts /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/matrix" element={user ? <PageTransition><Matrix /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/connect" element={user ? <PageTransition><ConnectPage /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/reels" element={user ? <PageTransition><ReelsPage /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/dashboard" element={user ? <PageTransition><Dashboard /></PageTransition> : <Navigate to="/login" />} />
+        <Route path="/admin" element={(user?.role === 'admin' || user?.role === 'master_admin') ? <PageTransition><AdminDashboard /></PageTransition> : <Navigate to="/" />} />
+      </Routes>
+    </AnimatePresence>
+  );
 };
 
 function App() {
@@ -162,29 +194,14 @@ function App() {
     <AuthContext.Provider value={{ user, setUser, login, signup, logout }}>
       <BrowserRouter>
         <WebSocketProvider user={user}>
-          <div className="App min-h-screen flex flex-col bg-slate-950">
+          <div className="App min-h-screen flex flex-col bg-slate-950 relative overflow-x-hidden selection:bg-orange-500/30 selection:text-orange-200">
+            <TopLoadingBar />
+            <InteractiveSpotlight />
             <Navigation />
             <NotificationPermissionBanner />
-            <div className="flex-grow">
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
-                <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignupPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/verify-email" element={<VerifyEmailPage />} />
-                <Route path="/resend-verification" element={<ResendVerificationPage />} />
-                <Route path="/about" element={<AboutUs />} />
-                <Route path="/resources" element={user ? <ResourceHub /> : <Navigate to="/login" />} />
-                <Route path="/funamatics" element={user ? <Funamatics /> : <Navigate to="/login" />} />
-                <Route path="/curiofacts" element={user ? <Curiofacts /> : <Navigate to="/login" />} />
-                <Route path="/matrix" element={user ? <Matrix /> : <Navigate to="/login" />} />
-                <Route path="/connect" element={user ? <ConnectPage /> : <Navigate to="/login" />} />
-                <Route path="/reels" element={user ? <ReelsPage /> : <Navigate to="/login" />} />
-                <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-                <Route path="/admin" element={(user?.role === 'admin' || user?.role === 'master_admin') ? <AdminDashboard /> : <Navigate to="/" />} />
-              </Routes>
-            </div>
+            <main className="flex-grow flex flex-col">
+              <AnimatedRoutes user={user} />
+            </main>
             <ConditionalFooter />
             <Toaster position="top-right" />
             <MessagePopupContainer />

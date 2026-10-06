@@ -9,7 +9,7 @@ import axios from 'axios';
 import { AuthContext } from '@/App';
 import MathCanvas3D from '@/components/3d/MathCanvas3D';
 import Card3D from '@/components/3d/Card3D';
-import FloatingMathBadges from '@/components/3d/FloatingMathBadges';
+import MathGeometryStudio from '@/components/3d/MathGeometryStudio';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -137,33 +137,12 @@ const LandingPage = () => {
               Explore curated libraries, interactive game labs, live community forums, and creative mathematical media — crafted to illuminate the elegance of numbers.
             </motion.p>
 
-            {/* 3D Micro-Stats Strip */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.45 }}
-              className="grid grid-cols-3 gap-2.5 sm:gap-3.5 my-6 max-w-md"
-            >
-              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md hover:border-orange-500/40 transition-colors">
-                <div className="font-heading text-lg sm:text-2xl font-bold text-orange-400">13+</div>
-                <div className="text-[11px] sm:text-xs text-slate-400 font-medium">Interactive Labs</div>
-              </div>
-              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md hover:border-pink-500/40 transition-colors">
-                <div className="font-heading text-lg sm:text-2xl font-bold text-pink-400">100%</div>
-                <div className="text-[11px] sm:text-xs text-slate-400 font-medium">Open & Free</div>
-              </div>
-              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur-md hover:border-cyan-500/40 transition-colors">
-                <div className="font-heading text-lg sm:text-2xl font-bold text-cyan-400">7+</div>
-                <div className="text-[11px] sm:text-xs text-slate-400 font-medium">Core Sections</div>
-              </div>
-            </motion.div>
-
             {!user && (
               <motion.div
-                className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 sm:p-4 mb-5 sm:mb-6 backdrop-blur-sm"
+                className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 sm:p-4 my-5 backdrop-blur-sm"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
+                transition={{ duration: 0.8, delay: 0.45 }}
               >
                 <p className="text-orange-400 text-xs sm:text-sm font-medium flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping" />
@@ -173,10 +152,10 @@ const LandingPage = () => {
             )}
 
             <motion.div 
-              className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap mt-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
+              transition={{ duration: 0.8, delay: 0.55 }}
             >
               <Link to="/signup" className="w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:w-auto rounded-full h-12 sm:h-14 px-7 sm:px-9 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 shine-effect glow-on-hover text-sm sm:text-base font-semibold shadow-lg shadow-orange-500/25 transition-all hover:scale-105" data-testid="hero-get-started-btn">
@@ -203,51 +182,14 @@ const LandingPage = () => {
             </motion.div>
           </motion.div>
 
-          {/* Right Column: 3D Holographic Showcase Card */}
+          {/* Right Column: Interactive 3D Math Geometry Studio */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative hidden md:block"
           >
-            {/* Floating 3D Mathematical Formulas around the card */}
-            <FloatingMathBadges />
-
-            <Card3D
-              tiltMax={10}
-              depth={35}
-              borderColor="from-orange-500/50 via-pink-500/50 to-cyan-500/50"
-              className="w-full max-w-lg mx-auto"
-            >
-              <div className="relative rounded-xl overflow-hidden group">
-                <img
-                  src={heroImage}
-                  alt="Mentis Mathematics Foundation Hero Showcase"
-                  className="rounded-xl w-full h-[380px] lg:h-[440px] object-cover transition-transform duration-700 group-hover:scale-105"
-                  onError={(e) => {
-                    e.target.src = 'https://images.unsplash.com/photo-1741298167028-1e781b6b3bbe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA4Mzl8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMG1hdGhlbWF0aWNzJTIwZ2VvbWV0cnklMjBhcnR8ZW58MHx8fHwxNzY5OTM2NzAyfDA&ixlib=rb-4.1.0&q=85';
-                  }}
-                />
-
-                {/* Glass Overlay Badges */}
-                <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 text-white text-xs font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Interactive Math Universe</span>
-                </div>
-
-                <div className="absolute bottom-4 inset-x-4 z-10 p-4 rounded-xl bg-slate-950/85 backdrop-blur-md border border-white/10 flex items-center justify-between">
-                  <div>
-                    <div className="text-xs uppercase font-mono text-orange-400 font-semibold tracking-wider">Mentis Foundation</div>
-                    <div className="text-sm font-bold text-white mt-0.5">Where Minds Meet Mathematics</div>
-                  </div>
-                  <Link to="/resources">
-                    <Button size="sm" className="rounded-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-xs px-3">
-                      Explore Hub <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </Card3D>
+            <MathGeometryStudio heroImage={heroImage} />
           </motion.div>
         </div>
       </section>
